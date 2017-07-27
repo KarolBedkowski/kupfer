@@ -27,6 +27,13 @@ __kupfer_settings__ = plugin_support.PluginSettings(
         "type": int,
         "value": 28,
     },
+    {
+        "key" : "check_doc_exist",
+        "label": _("Check is documents still exists"),
+        "type": bool,
+        "value": True,
+
+    }
 )
 
 ALIASES = {
@@ -87,11 +94,12 @@ class RecentsSource (Source):
 
         items = manager.get_items()
         item_leaves = []
+        check_doc_exist = __kupfer_settings__["check_doc_exist"]
         for item in items:
             day_age = item.get_age()
             if max_days >= 0 and day_age > max_days:
                 continue
-            if not item.exists():
+            if check_doc_exist and not item.exists():
                 continue
             if item.get_private_hint():
                 continue
