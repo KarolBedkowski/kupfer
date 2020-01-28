@@ -253,7 +253,7 @@ def build(bld):
         bld(
             source = "Documentation/Manpage.rst",
             target = "kupfer.1",
-            rule = '%s ${SRC} > ${TGT}' % bld.env["RST2MAN"],
+            rule = '%s ${SRC} > ${TGT}' % bld.env["RST2MAN"][0],
         )
         bld.add_group()
         # compress and install man page
@@ -301,5 +301,3 @@ def test(bld):
 
 def shutdown(bld):
     pass
-
-
