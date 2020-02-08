@@ -41,7 +41,8 @@ def apply_mallard(self):
 
     # Check if the declared page list is consistent
     declared_pages = self.to_list(bld.env["DOC_PAGES"])
-    missing_pages = set([str(p) for p in pages]).difference(declared_pages)
+    pages = [os.path.basename(str(p)) for p in pages]
+    missing_pages = set(pages).difference(declared_pages)
     if missing_pages:
         print("Warning: Some pages not declared:")
         print("\n".join([str(p) for p in missing_pages]))
