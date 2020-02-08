@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: latin-1
 # Thomas Nagy, 2005-2018
 #
@@ -168,4 +168,3 @@ if __name__ == '__main__':
 	#import waflib.extras.compat15#PRELUDE
 	from waflib import Scripting
 	Scripting.waf_entry_point(cwd, VERSION, wafdir)
-
