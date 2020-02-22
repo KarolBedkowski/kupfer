@@ -189,7 +189,7 @@ def _new_package(bld, name):
     obj = bld("py")
     node = bld.path.find_dir(name)
     obj.source = node.ant_glob("*.py")
-    obj.install_path = "${PYTHONDIR}/%s" % name
+    obj.install_path = "${PYTHONDIR}/"
 
     # Find embedded package datafiles
     pkgnode = bld.path.find_dir(name)
