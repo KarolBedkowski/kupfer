@@ -60,7 +60,7 @@ def apply_mallard(self):
         bld.install_files(lang_install_path, legal_xml)
 
     c_install_path = os.path.join(self.install_path, "C", bld.env["DOC_ID"])
-    for page in pages:
+    for page in cnode.ant_glob("*.page"):
         bld.install_files(c_install_path, page)
     bld.install_files(c_install_path, legal_xml)
 
