@@ -193,10 +193,12 @@ def _new_package(bld, name):
 
     # Find embedded package datafiles
     pkgnode = bld.path.find_dir(name)
-
-    bld.install_files(obj.install_path, pkgnode.ant_glob("icon-list"))
-    bld.install_files(obj.install_path, pkgnode.ant_glob("*.png"))
-    bld.install_files(obj.install_path, pkgnode.ant_glob("*.svg"))
+    bld.install_files(obj.install_path, pkgnode.ant_glob("icon-list"),
+                      relative_trick=True)
+    bld.install_files(obj.install_path, pkgnode.ant_glob("*.png"),
+                      relative_trick=True)
+    bld.install_files(obj.install_path, pkgnode.ant_glob("*.svg"),
+                      relative_trick=True)
 
 def _find_packages_in_directory(bld, name):
     """Go through directory @name and recursively add all
