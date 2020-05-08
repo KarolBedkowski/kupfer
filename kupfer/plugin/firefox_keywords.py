@@ -137,10 +137,10 @@ class KeywordsSource (Source, FilesystemWatchMixin):
         fpath = get_firefox_home_file("places.sqlite")
         if not (fpath and os.path.isfile(fpath)):
             return []
-        for _ in range(2):
+        fpath = fpath.replace("?", "%3f").replace("#", "%23")
+        fpath = "file:" + fpath + "?immutable=1&mode=ro"
+        for _ in range(3):
             try:
-                fpath = fpath.replace("?", "%3f").replace("#", "%23")
-                fpath = "file:" + fpath + "?immutable=1&mode=ro"
                 self.output_debug("Reading bookmarks from", fpath)
                 with closing(sqlite3.connect(fpath, timeout=1)) as conn:
                     c = conn.cursor()
@@ -150,10 +150,12 @@ class KeywordsSource (Source, FilesystemWatchMixin):
                               WHERE moz_places.id = moz_keywords.place_id
                               """)
                     return [Keyword(title, kw,  url) for url, title, kw in c]
-            except sqlite3.Error:
+            except sqlite3.Error as err:
                 # Something is wrong with the database
                 # wait short time and try again
+                self.output_debug("Reading bookmarks error", str(err))
                 time.sleep(1)
+        self.output_debug("Read bookmarks failed")
         self.output_exc()
         return []
 
