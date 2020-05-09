@@ -37,10 +37,12 @@ class BookmarksSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
         fpath = get_firefox_home_file("places.sqlite")
         if not (fpath and os.path.isfile(fpath)):
             return []
+
+        fpath = fpath.replace("?", "%3f").replace("#", "%23")
+        fpath = "file:" + fpath + "?immutable=1&mode=ro"
+
         for _ in range(2):
             try:
-                fpath = fpath.replace("?", "%3f").replace("#", "%23")
-                fpath = "file:" + fpath + "?immutable=1&mode=ro"
                 self.output_debug("Reading bookmarks from", fpath)
                 with closing(sqlite3.connect(fpath, timeout=1)) as conn:
                     c = conn.cursor()
@@ -52,9 +54,10 @@ class BookmarksSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
                               LIMIT ?""",
                               (MAX_ITEMS, ))
                     return [UrlLeaf(url, title) for url, title in c]
-            except sqlite3.Error:
+            except sqlite3.Error as err:
                 # Something is wrong with the database
                 # wait short time and try again
+                self.output_debug("Read bookmarks error:", str(err))
                 time.sleep(1)
         self.output_exc()
         return []
