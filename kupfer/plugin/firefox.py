@@ -2,7 +2,7 @@ __kupfer_name__ = _("Firefox Bookmarks")
 __kupfer_sources__ = ("BookmarksSource", )
 __kupfer_actions__ = ()
 __description__ = _("Index of Firefox bookmarks")
-__version__ = "2017.1"
+__version__ = "2020.1"
 __author__ = "Ulrik, William Friesen, Karol Będkowski"
 
 from contextlib import closing
@@ -14,10 +14,21 @@ from kupfer.objects import Source
 from kupfer.objects import UrlLeaf
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer.obj.helplib import FilesystemWatchMixin
+from kupfer import plugin_support
 
 from ._firefox_support import get_firefox_home_file
 
 MAX_ITEMS = 10000
+
+__kupfer_settings__ = plugin_support.PluginSettings(
+    {
+        "key": "profile",
+        "label": _("Firefox profile name or path"),
+        "type": str,
+        "value": "",
+    },
+)
+
 
 class BookmarksSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
     appleaf_content_id = ("firefox", "firefox-esr")
@@ -34,7 +45,8 @@ class BookmarksSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
 
     def _get_ffx3_bookmarks(self):
         """Query the firefox places bookmark database"""
-        fpath = get_firefox_home_file("places.sqlite")
+        profile = __kupfer_settings__["profile"]
+        fpath = get_firefox_home_file("places.sqlite", profile)
         if not (fpath and os.path.isfile(fpath)):
             return []
 
