@@ -1,5 +1,3 @@
-# encoding: utf-8
-
 from kupfer import icons
 from kupfer import pretty
 from kupfer import utils
@@ -19,7 +17,7 @@ class TimedPerform (Perform):
         from kupfer import scheduler
         # make a timer that will fire when Kupfer exits
         interval = utils.parse_time_interval(iobj.object)
-        pretty.print_debug(__name__, "Run %s in %s seconds" % (leaf, interval))
+        pretty.print_debug(__name__, f"Run {leaf} in {interval} seconds")
         timer = scheduler.Timer(True)
         args = (ctx,) if leaf.wants_context() else ()
         timer.set(interval, leaf.run, *args)
@@ -57,7 +55,7 @@ class ComposedLeaf (RunnableLeaf):
         act = puid.resolve_action_id(actid, obj)
         iobj = puid.resolve_unique_id(iobjid)
         if (not obj or not act) or (iobj is None) != (iobjid is None):
-            raise InvalidDataError("Parts of %s not restored" % str(self))
+            raise InvalidDataError(f"Parts of {self} not restored")
         self.object[:] = [obj, act, iobj]
 
     def get_actions(self):
@@ -112,7 +110,7 @@ class MultipleLeaf (Leaf):
         for id_ in state["object"]:
             obj = puid.resolve_unique_id(id_)
             if obj is None:
-                raise InvalidDataError("%s could not be restored!" % (id_, ))
+                raise InvalidDataError(f"{id_} could not be restored!")
             objects.append(obj)
         self.object[:] = objects
 

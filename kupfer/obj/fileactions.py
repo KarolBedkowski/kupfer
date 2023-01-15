@@ -1,6 +1,6 @@
 import os
 
-from gi.repository import Gio 
+from gi.repository import Gio
 
 from kupfer import utils
 from kupfer import launch
@@ -41,7 +41,7 @@ class Open (Action):
         def_app = Gio.app_info_get_default_for_type(content_type, False)
         if not def_app:
             raise NoDefaultApplicationError(
-                    (_("No default application for %(file)s (%(type)s)") % 
+                    (_("No default application for %(file)s (%(type)s)") %
                      {"file": str(leaf), "type": content_type}) + "\n" +
                     _('Please use "%s"') % _("Set Default Application...")
                 )
@@ -76,7 +76,7 @@ class GetParent (Action):
     rank_adjust = -5
     def __init__(self, name=_("Get Parent Folder")):
         super().__init__(name)
-    
+
     def has_result(self):
         return True
 
@@ -96,7 +96,7 @@ class GetParent (Action):
 class OpenTerminal (Action):
     action_accelerator = "t"
     def __init__(self, name=_("Open Terminal Here")):
-        super(OpenTerminal, self).__init__(name)
+        super().__init__(name)
 
     def wants_context(self):
         return True
@@ -117,13 +117,13 @@ class Execute (Action):
     rank_adjust = 10
     def __init__(self, in_terminal=False, quoted=True):
         name = _("Run in Terminal") if in_terminal else _("Run (Execute)")
-        super(Execute, self).__init__(name)
+        super().__init__(name)
         self.in_terminal = in_terminal
         self.quoted = quoted
 
     def repr_key(self):
         return (self.in_terminal, self.quoted)
-    
+
     def activate(self, leaf):
         if self.quoted:
             argv = [leaf.object]
@@ -137,6 +137,5 @@ class Execute (Action):
     def get_description(self):
         if self.in_terminal:
             return _("Run this program in a Terminal")
-        else:
-            return _("Run this program")
 
+        return _("Run this program")

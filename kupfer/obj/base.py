@@ -41,7 +41,7 @@ class _BuiltinObject (type):
         return type.__new__(mcls, name, bases, dict)
 
 
-class KupferObject (object, metaclass=_BuiltinObject):
+class KupferObject (metaclass=_BuiltinObject):
     """
     Base class for kupfer data model
 
@@ -82,10 +82,10 @@ class KupferObject (object, metaclass=_BuiltinObject):
 
     def __repr__(self):
         key = self.repr_key()
-        keys = " %s" % (key, ) if (key is not None and key != "") else ""
+        keys = f" {key}" if (key is not None and key != "") else ""
         if self._is_builtin:
-            return "<builtin.%s%s>" % (self.__class__.__name__, keys)
-        return "<%s.%s%s>" % (self.__module__, self.__class__.__name__, keys)
+            return f"<builtin.{self.__class__.__name__}{keys}>"
+        return f"<{self.__module__}.{self.__class__.__name__}{keys}>"
 
     def repr_key(self):
         """
@@ -158,7 +158,7 @@ def aslist(seq):
         seq = list(seq)
     return seq
 
-class _NonpersistentToken (object):
+class _NonpersistentToken :
     "Goes None when pickled"
     __slots__ = "object"
     def __init__(self, object_):
@@ -177,7 +177,7 @@ class Leaf (KupferObject):
     """
     def __init__(self, obj, name):
         """Represented object @obj and its @name"""
-        super(Leaf, self).__init__(name)
+        super().__init__(name)
         self.object = obj
         self._content_source = None
 
@@ -423,17 +423,18 @@ class Source (KupferObject, pretty.OutputMixin):
         if self.is_dynamic():
             if force_update:
                 return sort_func(self.get_items_forced())
-            else:
-                return sort_func(self.get_items())
+
+            return sort_func(self.get_items())
 
         if self.cached_items is None or force_update:
             if force_update:
                 self.cached_items = aslist(sort_func(self.get_items_forced()))
-                self.output_debug("Loaded %d items" % len(self.cached_items))
+                self.output_debug(f"Loaded {len(self.cached_items)} items")
             else:
                 self.cached_items = \
                         datatools.SavedIterable(sort_func(self.get_items()))
                 self.output_debug("Loaded items")
+
         return self.cached_items
 
     def has_parent(self):
@@ -476,7 +477,7 @@ class TextSource (KupferObject):
         self.placeholder = placeholder
 
     def __eq__(self, other):
-        return (type(self) == type(other) and repr(self).__eq__(repr(other)))
+        return (type(self) is type(other) and repr(self).__eq__(repr(other)))
 
     def __hash__(self ):
         return hash(repr(self))
@@ -509,13 +510,13 @@ class TextSource (KupferObject):
         return "edit-select-all"
 
     def get_search_text(self):
-        return self.placeholder if self.placeholder else _("Text")
+        return self.placeholder or _("Text")
 
     def get_empty_text(self):
-        return self.placeholder if self.placeholder else _("Text")
+        return self.placeholder or _("Text")
 
 
-class ActionGenerator (object):
+class ActionGenerator :
     """A "source" for actions
 
     NOTE: The ActionGenerator should not perform any expensive

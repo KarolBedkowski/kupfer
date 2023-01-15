@@ -29,7 +29,7 @@ class FileSource (Source):
         name = GLib.filename_display_basename(dirlist[0])
         if len(dirlist) > 1:
             name = _("%s et. al.") % name
-        super(FileSource, self).__init__(name)
+        super().__init__(name)
         self.dirlist = dirlist
         self.depth = depth
 
@@ -72,12 +72,12 @@ class DirectorySource (Source, PicklingHelperMixin, FilesystemWatchMixin):
         # Use glib filename reading to make display name out of filenames
         # this function returns a `unicode` object
         name = GLib.filename_display_basename(dir)
-        super(DirectorySource, self).__init__(name)
+        super().__init__(name)
         self.directory = dir
         self.show_hidden = show_hidden
 
     def __repr__(self):
-        return "%s.%s(\"%s\", show_hidden=%s)" % (self.__class__.__module__,
+        return "{}.{}(\"{}\", show_hidden={})".format(self.__class__.__module__,
                 self.__class__.__name__, str(self.directory), self.show_hidden)
 
     def initialize(self):
@@ -110,7 +110,7 @@ class DirectorySource (Source, PicklingHelperMixin, FilesystemWatchMixin):
 
     def get_parent(self):
         if not self.has_parent():
-            return super(DirectorySource, self).has_parent(self)
+            return super().has_parent(self)
         return DirectorySource(self._parent_path())
 
     def get_description(self):
@@ -137,7 +137,7 @@ class SourcesSource (Source):
     """ A source whose items are SourceLeaves for @source """
     def __init__(self, sources, name=None, use_reprs=True):
         if not name: name = _("Catalog Index")
-        super(SourcesSource, self).__init__(name)
+        super().__init__(name)
         self.sources = sources
         self.use_reprs = use_reprs
 
@@ -163,7 +163,7 @@ class MultiSource (Source):
     """
     fallback_icon_name = "kupfer-catalog"
     def __init__(self, sources):
-        super(MultiSource, self).__init__(_("Catalog"))
+        super().__init__(_("Catalog"))
         self.sources = sources
     
     def is_dynamic(self):

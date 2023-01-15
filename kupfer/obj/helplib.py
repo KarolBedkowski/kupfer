@@ -9,7 +9,7 @@ from gi.repository import Gio, GLib
 
 from kupfer import pretty
 
-class PicklingHelperMixin (object):
+class PicklingHelperMixin :
     """ This pickling helper will define __getstate__/__setstate__
     acting simply on the class dictionary; it is up to the inheriting
     class to set up:
@@ -47,7 +47,7 @@ class NonpersistentToken (PicklingHelperMixin):
     def pickle_prepare(self):
         self.data = None
 
-class FilesystemWatchMixin (object):
+class FilesystemWatchMixin :
     """A mixin for Sources watching directories"""
 
     def monitor_directories(self, *directories, **kwargs):

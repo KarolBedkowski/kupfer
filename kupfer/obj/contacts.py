@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 """
 Kupfer's Contacts API
 
@@ -200,7 +199,7 @@ class PhoneContact(ContactLeaf):
         return self.object[PHONE_KEY]
 
     def get_description(self):
-        return '%s: %s' % (self.object[LABEL_KEY], self.object[PHONE_KEY])
+        return f'{self.object[LABEL_KEY]}: {self.object[PHONE_KEY]}'
 
 
 class AddressContact(ContactLeaf):
