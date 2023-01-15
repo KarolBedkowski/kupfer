@@ -8,7 +8,7 @@ from kupfer.core.plugins import (load_plugin_sources, sources_attribute,
         content_decorators_attribute, action_generators_attribute,
         initialize_plugin)
 
-class PluginDescription (object):
+class PluginDescription :
     text_sources = ()
     action_decorators = ()
     content_decorators = ()
@@ -60,7 +60,7 @@ def exception_guard(name, callback=None, *args, **kwargs):
         yield
     except Exception:
         import traceback
-        pretty.print_error(__name__, "Loading %s raised an exception:" % name)
+        pretty.print_error(__name__, f"Loading {name} raised an exception:")
         traceback.print_exc()
         pretty.print_error(__name__, "This error is probably a bug in", name)
         pretty.print_error(__name__, "Please file a bug report")

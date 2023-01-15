@@ -1,5 +1,3 @@
-
-
 import itertools
 import operator
 import os
@@ -53,7 +51,7 @@ def peekfirst(seq):
         return (itm, old_iter)
     return (None, seq)
 
-class Searcher (object):
+class Searcher :
     """
     This class searches KupferObjects efficiently, and
     stores searches in a cache for a very limited time (*)
@@ -124,7 +122,7 @@ class Searcher (object):
             matches = rankables
 
             match_lists.append(matches)
-        
+
         if score:
             matches = search.find_best_sort(match_lists)
         else:
@@ -178,7 +176,7 @@ class Pane (GObject.GObject):
     """
     __gtype_name__ = "Pane"
     def __init__(self):
-        super(Pane, self).__init__()
+        super().__init__()
         self.selection = None
         self.latest_key = None
         self.outstanding_search = -1
@@ -201,14 +199,14 @@ class Pane (GObject.GObject):
         self.emit("search-result", match, match_iter, context)
 
 GObject.signal_new("search-result", Pane, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN, (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT, 
+        GObject.TYPE_BOOLEAN, (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT,
         GObject.TYPE_PYOBJECT))
 
 class LeafPane (Pane, pretty.OutputMixin):
     __gtype_name__ = "LeafPane"
 
     def __init__(self):
-        super(LeafPane, self).__init__()
+        super().__init__()
         self.source_stack = []
         self.source = None
         self.object_stack = []
@@ -321,7 +319,7 @@ GObject.signal_new("new-source", LeafPane, GObject.SignalFlags.RUN_LAST,
 
 class PrimaryActionPane (Pane):
     def __init__(self):
-        super(PrimaryActionPane, self).__init__()
+        super().__init__()
         self.set_item(None)
 
     def select(self, item):
@@ -437,7 +435,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
     __gtype_name__ = "DataController"
 
     def __init__(self):
-        super(DataController, self).__init__()
+        super().__init__()
 
         self.source_pane = LeafPane()
         self.object_pane = SecondaryObjectPane()
@@ -473,7 +471,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         we register text sources """
         sc = GetSourceController()
         sc.add_text_sources(plugin_id, srcs)
-    
+
     def register_action_decorators(self, plugin_id, actions):
         # Keep a mapping: Decorated Leaf Type -> List of actions
         decorate_types = {}
@@ -779,7 +777,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
             return self.source_pane.browse_up()
         if pane is ObjectPane:
             return self.object_pane.browse_up()
-    
+
     def browse_down(self, pane, alternate=False):
         """Browse into @leaf if it's possible
         and save away the previous sources in the stack
@@ -918,12 +916,14 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         sel = pane.get_selection()
         if sel and sel not in objects:
             objects.append(sel)
+
         if not objects:
             return None
-        elif len(objects) == 1:
+
+        if len(objects) == 1:
             return objects[0]
-        else:
-            return compose.MultipleLeaf(objects)
+
+        return compose.MultipleLeaf(objects)
 
     def _get_current_command_objects(self):
         """
@@ -1019,5 +1019,3 @@ GObject.signal_new("command-result", DataController, GObject.SignalFlags.RUN_LAS
 # arguments: none
 GObject.signal_new("launched-action", DataController, GObject.SignalFlags.RUN_LAST,
         GObject.TYPE_BOOLEAN, ())
-
-

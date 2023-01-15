@@ -53,6 +53,7 @@ def iobjects_valid_for_action(action, for_item):
         for i in iobjs:
             if (isinstance(i, types) and valid_object(i, for_item=for_item)):
                 yield i
+
     def type_check(itms):
         for i in itms:
             if isinstance(i, types):
@@ -60,6 +61,5 @@ def iobjects_valid_for_action(action, for_item):
 
     if hasattr(action, "valid_object"):
         return type_obj_check
-    else:
-        return type_check
 
+    return type_check

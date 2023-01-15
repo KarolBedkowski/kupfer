@@ -1,5 +1,3 @@
-
-
 import gzip
 import hashlib
 import itertools
@@ -8,6 +6,7 @@ import os
 import threading
 import time
 import weakref
+from pathlib import Path
 
 from kupfer import config, pretty, scheduler
 from kupfer import conspickle
@@ -41,7 +40,7 @@ class PeriodicRescanner (pretty.OutputMixin):
         self.cur = iter(self.catalog)
         self.output_debug("Registering new campaign, in %d s" % self.startup)
         self.timer.set(self.startup, self._new_campaign)
-    
+
     def _new_campaign(self):
         self.output_info("Starting new campaign, interval %d s" % self.period)
         self.cur = iter(self.catalog)
@@ -115,13 +114,13 @@ class SourcePickler (pretty.OutputMixin):
                 # be overly careful
                 assert fpath.startswith(config.get_cache_home())
                 assert "kupfer" in fpath
-                os.unlink(fpath)
+                Path(fpath).unlink()
 
     def get_filename(self, source):
         """Return cache filename for @source"""
         # make sure we take the source name into account
         # so that we get a "break" when locale changes
-        source_id = "%s%s%s" % (repr(source), str(source), source.version)
+        source_id = f"{source!r}{source}{source.version}"
         hash_str = hashlib.md5(source_id.encode("utf-8")).hexdigest()
         filename = self.name_template % (hash_str, self.format_version)
         return os.path.join(config.get_cache_home(), filename)
@@ -143,7 +142,7 @@ class SourcePickler (pretty.OutputMixin):
     def _unpickle_source(self, pickle_file):
         try:
             pfile = self.open(pickle_file, "rb")
-        except IOError as e:
+        except OSError as e:
             return None
         try:
             source = pickle.loads(pfile.read())
@@ -152,7 +151,7 @@ class SourcePickler (pretty.OutputMixin):
             self.output_debug("Loading", source, "from", sname(pickle_file))
         except (pickle.PickleError, Exception) as e:
             source = None
-            self.output_info("Error loading %s: %s" % (pickle_file, e))
+            self.output_info(f"Error loading {pickle_file}: {e}")
         finally:
             pfile.close()
         return source
@@ -216,7 +215,7 @@ class SourceDataPickler (pretty.OutputMixin):
     def _load_data(self, pickle_file):
         try:
             pfile = self.open(pickle_file, "rb")
-        except IOError as e:
+        except OSError as e:
             return None
         try:
             data = conspickle.BasicUnpickler.loads(pfile.read())
@@ -225,7 +224,7 @@ class SourceDataPickler (pretty.OutputMixin):
             # self.output_debug(data)
         except (pickle.PickleError, Exception) as e:
             data = None
-            self.output_error("Loading %s: %s" % (pickle_file, e))
+            self.output_error(f"Loading {pickle_file}: {e}")
         finally:
             pfile.close()
         return data
@@ -247,7 +246,7 @@ class SourceDataPickler (pretty.OutputMixin):
         if data:
             self.output_debug("Storing configuration for", source, "as", sname)
             ## Write to temporary and rename into place
-            tmp_pickle_file = "%s.%s" % (pickle_file, os.getpid())
+            tmp_pickle_file = f"{pickle_file}.{os.getpid()}"
             output = self.open(tmp_pickle_file, "wb")
             output.write(data)
             output.close()
@@ -324,7 +323,7 @@ class SourceController (pretty.OutputMixin):
         self.output_debug("Removing objects for plugin:", plugin_id)
 
         # sources
-        for src in self.sources:
+        for src in list(self.sources):
             if self.get_plugin_id_for_object(src) == plugin_id:
                 self._remove(src)
                 removed_source = True
@@ -387,8 +386,8 @@ class SourceController (pretty.OutputMixin):
             else:
                 names[name] = action
         for action in renames:
-            self.output_debug("Disambiguate Action %s" % (action, ))
-            plugin_suffix = " (%s)" % (type(action).__module__.split(".")[-1], )
+            self.output_debug(f"Disambiguate Action {action}")
+            plugin_suffix = f" ({type(action).__module__.split('.')[-1]})"
             if not action.name.endswith(plugin_suffix):
                 action.name += plugin_suffix
 
@@ -479,14 +478,14 @@ class SourceController (pretty.OutputMixin):
         for typ in self.content_decorators:
             if not isinstance(leaf, typ):
                 continue
-            for content in self.content_decorators[typ]:
-                dsrc = None
+            for content in list(self.content_decorators[typ]):
                 with pluginload.exception_guard(
                         content,
                         self._remove_source,
                         content,
                         is_decorator=True):
                     dsrc = content.decorate_item(leaf)
+
                 if dsrc:
                     if types and not self.good_source_for_types(dsrc, types):
                         continue
@@ -495,11 +494,9 @@ class SourceController (pretty.OutputMixin):
     def get_actions_for_leaf(self, leaf):
         for typ in self.action_decorators:
             if isinstance(leaf, typ):
-                for act in self.action_decorators[typ]:
-                    yield act
+                yield from self.action_decorators[typ]
         for agenerator in self.action_generators:
-            for action in agenerator.get_actions_for_leaf(leaf):
-                yield action
+            yield from agenerator.get_actions_for_leaf(leaf)
 
     def decorate_object(self, obj, action=None):
         if hasattr(obj, "has_content") and not obj.has_content():

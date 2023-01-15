@@ -1,6 +1,7 @@
 import hashlib
 import pickle
 import os
+from pathlib import Path
 
 from gi.repository import Gio, GLib
 
@@ -38,10 +39,11 @@ def parse_kfcom_file(filepath):
         id_ = conspickle.BasicUnpickler.loads(data)
         command_object = puid.resolve_unique_id(id_)
     except pickle.UnpicklingError as err:
-        raise ExecutionError("Could not parse: %s" % str(err))
+        raise ExecutionError(f"Could not parse: {err}")
     except Exception:
-        raise ExecutionError('"%s" is not a saved command' %
-                os.path.basename(filepath))
+        raise ExecutionError(
+            f'"{os.path.basename(filepath)}" is not a saved command')
+
     if command_object is None:
         raise ExecutionError(_('Command in "%s" is not available') %
                 GLib.filename_display_basename(filepath))
@@ -49,8 +51,7 @@ def parse_kfcom_file(filepath):
     try:
         return tuple(command_object.object)
     except (AttributeError, TypeError):
-        raise ExecutionError('"%s" is not a saved command' %
-                os.path.basename(filepath))
+        raise ExecutionError(f'"{os.path.basename(filepath)}" is not a saved command')
     finally:
         GLib.idle_add(update_icon, command_object, filepath)
 
@@ -66,11 +67,10 @@ def save_to_file(command_leaf, filename):
 def _write_thumbnail(gfile, pixbuf):
     uri = gfile.get_uri()
     hashname = hashlib.md5(uri.encode("utf-8")).hexdigest()
-    thumb_dir = os.path.expanduser("~/.thumbnails/normal")
-    if not os.path.exists(thumb_dir):
-        os.makedirs(thumb_dir, 0o700)
-    thumb_filename = os.path.join(thumb_dir, hashname + ".png")
-    pixbuf.savev(thumb_filename, "png", [], [])
+    thumb_dir = Path("~/.thumbnails/normal").expanduser()
+    thumb_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+    thumb_filename = thumb_dir.joinpath(hashname + ".png")
+    pixbuf.savev(str(thumb_filename), "png", [], [])
     return thumb_filename
 
 def update_icon(kobj, filepath):

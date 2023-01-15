@@ -1,5 +1,6 @@
 import pickle as pickle
 import os
+from pathlib import Path
 
 from kupfer import config
 from kupfer import conspickle
@@ -17,16 +18,19 @@ _register = {}
 _favorites = set()
 
 
-class Mnemonics (object):
+class Mnemonics :
     """
     Class to describe a collection of mnemonics
     as well as the total count
     """
     def __init__(self):
-        self.mnemonics = dict()
+        self.mnemonics = {}
         self.count = 0
+
     def __repr__(self):
-        return "<%s %d %s>" % (self.__class__.__name__, self.count, "".join(["%s: %d, " % (m,c) for m,c in self.mnemonics.items()]))
+        mnm = "".join(f"{m}: {c}, " for m, c in self.mnemonics.items())
+        return f"<{self.__class__.__name__} {self.count} {mnm}>"
+
     def increment(self, mnemonic=None):
         if mnemonic:
             mcount = self.mnemonics.get(mnemonic, 0)
@@ -50,31 +54,31 @@ class Mnemonics (object):
     def get_mnemonics(self):
         return self.mnemonics
 
-class Learning (object):
+class Learning :
     @classmethod
     def _unpickle_register(cls, pickle_file):
         try:
             pfile = open(pickle_file, "rb")
-        except IOError as e:
+        except OSError as e:
             return None
         try:
             data = conspickle.ConservativeUnpickler.loads(pfile.read())
             assert isinstance(data, dict), "Stored object not a dict"
-            pretty.print_debug(__name__, "Reading from %s" % (pickle_file, ))
+            pretty.print_debug(__name__, f"Reading from {pickle_file}")
         except (pickle.PickleError, Exception) as e:
             data = None
-            pretty.print_error(__name__, "Error loading %s: %s" % (pickle_file, e))
+            pretty.print_error(__name__, f"Error loading {pickle_file}: {e}")
         finally:
             pfile.close()
         return data
 
     @classmethod
-    def _pickle_register(self, reg, pickle_file):
+    def _pickle_register(cls, reg, pickle_file):
         ## Write to tmp then rename over for atomicity
-        tmp_pickle_file = "%s.%s" % (pickle_file, os.getpid())
-        pretty.print_debug(__name__, "Saving to %s" % (pickle_file, ))
-        with open(tmp_pickle_file, "wb") as output:
-            output.write(pickle.dumps(reg, pickle.HIGHEST_PROTOCOL))
+        tmp_pickle_file = f"{pickle_file}.{os.getpid()}"
+        pretty.print_debug(__name__, f"Saving to {pickle_file}")
+        Path(tmp_pickle_file).write_bytes(
+            pickle.dumps(reg, pickle.HIGHEST_PROTOCOL))
         os.rename(tmp_pickle_file, pickle_file)
         return True
 
@@ -116,8 +120,8 @@ def get_correlation_bonus(obj, for_leaf):
     """
     if _register.setdefault(CORRELATION_KEY, {}).get(repr(for_leaf)) == repr(obj):
         return 50
-    else:
-        return 0
+
+    return 0
 
 def set_correlation(obj, for_leaf):
     """
@@ -166,7 +170,7 @@ def _prune_register():
             continue
         mn.decrement()
         if not mn:
-            del _register[leaf]
+            _register.pop(leaf)
 
     l = len(_register)
     pretty.print_debug(__name__, "Pruned register (%d mnemonics)" % l)

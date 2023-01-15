@@ -77,10 +77,11 @@ def activate_action(context, obj, action, iobj):
     kwargs = {}
     if _wants_context(action):
         kwargs['ctx'] = context
+
     if not _is_multiple(obj) and not _is_multiple(iobj):
         return _activate_action_single(obj, action, iobj, kwargs)
-    else:
-        return _activate_action_multiple(obj, action, iobj, kwargs)
+
+    return _activate_action_multiple(obj, action, iobj, kwargs)
 
 def _activate_action_single(obj, action, iobj, kwargs):
     if action.requires_object():
@@ -147,7 +148,7 @@ def parse_late_action_result(action, ret):
         res = RESULT_OBJECT
     return res
 
-class ExecutionToken (object):
+class ExecutionToken :
     """
     A token object that an ``Action`` carries with it
     from ``activate``.
@@ -274,12 +275,12 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
         self.output_debug("Late result", repr(result), "for", token)
         command_id, (_ign1, action, _ign2) = token
         if result is None:
-            raise ActionExecutionError("Late result from %s was None" % action)
+            raise ActionExecutionError(f"Late result from {action} was None")
         assert isinstance(result, (Leaf, Source))
         res_name = str(result)
         res_desc = result.get_description()
         if res_desc:
-            description = "%s (%s)" % (res_name, res_desc)
+            description = f"{res_name} ({res_desc})"
         else:
             description = res_name
 
@@ -317,7 +318,7 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
         if not action or not obj:
             raise ActionExecutionError("Primary Object and Action required")
         if iobj is None and action.requires_object():
-            raise ActionExecutionError("%s requires indirect object" % action)
+            raise ActionExecutionError(f"{action} requires indirect object")
         self.output_debug(repr(obj), repr(action), repr(iobj), repr(ui_ctx))
 
         # The execution token object for the current invocation
@@ -359,7 +360,7 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
 
     def _combine_action_result_multiple(self, action, retvals):
         self.output_debug("Combining", repr(action), retvals,
-                "delegate=%s" % self._delegate)
+                f"delegate={self._delegate}")
 
         def _make_retvalue(res, values):
             "Construct a return value for type res"

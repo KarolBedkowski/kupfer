@@ -1,4 +1,3 @@
-
 import json
 
 # Action Accelerator configuration
@@ -28,7 +27,7 @@ class AccelConfig(pretty.OutputMixin):
             return False
 
         try:
-            with open(data_file, "r") as fp:
+            with open(data_file) as fp:
                 self.accels = json.load(fp)
             self.output_debug("Read", data_file)
         except FileNotFoundError:

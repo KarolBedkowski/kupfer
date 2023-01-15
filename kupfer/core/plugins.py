@@ -38,14 +38,14 @@ def get_plugin_ids():
         if is_plugname(modname):
             yield modname
 
-class FakePlugin (object):
+class FakePlugin :
     def __init__(self, plugin_id, attributes, exc_info):
         self.is_fake_plugin = True
         self.exc_info = exc_info
         self.__name__ = plugin_id
         vars(self).update(attributes)
     def __repr__(self):
-        return "<%s %s>" % (type(self).__name__, self.__name__)
+        return f"<{type(self).__name__} {self.__name__}>"
 
 def get_plugin_info():
     """Generator, yields dictionaries of plugin descriptions
@@ -64,10 +64,10 @@ def get_plugin_info():
                 continue
             plugin = vars(plugin)
         except ImportError as e:
-            pretty.print_error(__name__, "import plugin '%s':" % plugin_name, e)
+            pretty.print_error(__name__, f"import plugin '{plugin_name}':", e)
             continue
         except Exception as e:
-            pretty.print_error(__name__, "Could not load '%s'" % plugin_name)
+            pretty.print_error(__name__, f"Could not load '{plugin_name}'")
             pretty.print_exc(__name__)
             continue
         localized_name = plugin.get("__kupfer_name__", None)
@@ -153,7 +153,7 @@ def _import_plugin_fake(modpath, error=None):
         try:
             filename = loader.archive + loader.prefix
         except AttributeError:
-            filename = "<%s>" % modpath
+            filename = f"<{modpath}>"
 
     env = {
         "__name__": modpath,
@@ -166,8 +166,9 @@ def _import_plugin_fake(modpath, error=None):
     except Exception as exc:
         pretty.print_error(__name__, "When loading", modpath)
         pretty.print_exc(__name__)
-    attributes = dict((k, env.get(k)) for k in info_attributes)
-    attributes.update((k, env.get(k)) for k in ["__name__", "__file__"])
+
+    attributes = {k: env.get(k) for k in info_attributes}
+    attributes.update((k, env.get(k)) for k in ("__name__", "__file__"))
     return FakePlugin(modpath, attributes, error)
 
 def _import_hook_fake(pathcomps):
@@ -181,7 +182,7 @@ def _import_hook_true(pathcomps):
     try:
         setctl = settings.GetSettingsController()
         if not setctl.get_plugin_enabled(pathcomps[-1]):
-            raise NotEnabledError("%s is not enabled" % pathcomps[-1])
+            raise NotEnabledError(f"{pathcomps[-1]} is not enabled")
         plugin = __import__(path, fromlist=fromlist)
     except ImportError as exc:
         # Try to find a fake plugin if it exists
@@ -191,12 +192,12 @@ def _import_hook_true(pathcomps):
         pretty.print_error(__name__, "Could not import plugin '%s': %s" %
                 (plugin.__name__, exc))
     else:
-        pretty.print_debug(__name__, "Loading %s" % plugin.__name__)
-        pretty.print_debug(__name__, "  from %s" % plugin.__file__)
+        pretty.print_debug(__name__, f"Loading {plugin.__name__}")
+        pretty.print_debug(__name__, f"  from {plugin.__file__}")
     return plugin
 
 def _import_plugin_true(name):
-    """Try to import the plugin from the package, 
+    """Try to import the plugin from the package,
     and then from our plugin directories in $DATADIR
     """
     plugin = None
@@ -211,7 +212,7 @@ def _import_plugin_true(name):
         # catch any other error for plugins and write traceback
         import traceback
         traceback.print_exc()
-        pretty.print_error(__name__, "Could not import plugin '%s'" % name)
+        pretty.print_error(__name__, f"Could not import plugin '{name}'")
     return plugin
 
 def _staged_import(name, import_hook):
@@ -260,14 +261,14 @@ def get_plugin_attributes(plugin_name, attrs, warn=False):
     try:
         plugin = import_plugin(plugin_name)
     except ImportError as e:
-        pretty.print_info(__name__, "Skipping plugin %s: %s" % (plugin_name, e))
+        pretty.print_info(__name__, f"Skipping plugin {plugin_name}: {e}")
         return
     for attr in attrs:
         try:
             obj = getattr(plugin, attr)
         except AttributeError as e:
             if warn:
-                pretty.print_info(__name__, "Plugin %s: %s" % (plugin_name, e))
+                pretty.print_info(__name__, f"Plugin {plugin_name}: {e}")
             yield None
         else:
             yield obj
@@ -275,8 +276,10 @@ def get_plugin_attributes(plugin_name, attrs, warn=False):
 def get_plugin_attribute(plugin_name, attr):
     """Get single plugin attribute"""
     attrs = tuple(get_plugin_attributes(plugin_name, (attr,)))
-    obj, = (attrs if attrs else (None, ))
-    return obj
+    if attrs:
+        return attrs[0]
+
+    return None
 
 def load_plugin_sources(plugin_name, attr=sources_attribute, instantiate=True):
     sources = get_plugin_attribute(plugin_name, attr)
@@ -289,7 +292,7 @@ def load_plugin_sources(plugin_name, attr=sources_attribute, instantiate=True):
             else:
                 yield source
         else:
-            pretty.print_info(__name__, "Source not found for %s" % plugin_name)
+            pretty.print_info(__name__, f"Source not found for {plugin_name}")
 
 
 # Plugin Initialization & Error
@@ -301,7 +304,7 @@ def _loader_hook(modpath):
     modname = ".".join(modpath)
     loader = pkgutil.find_loader(modname)
     if not loader:
-        raise ImportError("No loader found for %s" % modname)
+        raise ImportError(f"No loader found for {modname}")
     if not loader.is_package(modname):
         raise ImportError("Is not a package")
     return loader
@@ -322,7 +325,7 @@ def _load_icons(plugin_name):
 
     try:
         icon_file = pkgutil.get_data(modname, PLUGIN_ICON_FILE)
-    except IOError as exc:
+    except OSError as exc:
         # icon-list file just missing, let is pass silently
         return
 
@@ -357,12 +360,15 @@ def unimport_plugin(plugin_name):
         except:
             pretty.print_error(__name__, "Error finalizing", plugin_name)
             pretty.print_exc(__name__)
-        del _plugin_hooks[plugin_name]
-    del _imported_plugins[plugin_name]
+
+        _plugin_hooks.pop(plugin_name)
+
+    _imported_plugins.pop(plugin_name)
     plugin_module_name = ".".join(_plugin_path(plugin_name))
     pretty.print_debug(__name__, "Dereferencing module", plugin_module_name)
     if plugin_module_name in sys.modules:
         sys.modules.pop(plugin_module_name)
+
     for mod in list(sys.modules):
         if mod.startswith(plugin_module_name + "."):
             pretty.print_debug(__name__, "Dereferencing module", mod)
@@ -370,7 +376,7 @@ def unimport_plugin(plugin_name):
 
 def register_plugin_unimport_hook(plugin_name, callback, *args):
     if plugin_name not in _imported_plugins:
-        raise ValueError("No such plugin %s" % plugin_name)
+        raise ValueError(f"No such plugin {plugin_name}")
     _plugin_hooks.setdefault(plugin_name, []).append((callback, args))
 
 def get_plugin_error(plugin_name):
@@ -384,4 +390,3 @@ def get_plugin_error(plugin_name):
             return plugin.exc_info
     except ImportError:
         return sys.exc_info()
-

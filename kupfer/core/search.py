@@ -1,5 +1,3 @@
-# -*- coding: UTF-8 -*-
-
 import operator
 import itertools
 from kupfer.core import learn, relevance
@@ -10,7 +8,7 @@ def make_rankables(itr, rank=0):
 def wrap_rankable(obj, rank=0):
     return Rankable(str(obj), obj, rank)
 
-class Rankable (object):
+class Rankable :
     """
     Rankable has an object (represented item),
     value (determines rank) and an associated rank
@@ -22,12 +20,12 @@ class Rankable (object):
         self.value = value
         self.object = obj
         self.aliases = getattr(obj, "name_aliases", ())
-    
+
     def __str__(self):
-        return "%.2f: %r, %r" % (self.rank, self.value, self.object)
+        return f"{self.rank:.2f}: {self.value!r}, {self.object!r}"
 
     def __repr__(self):
-        return "<Rankable %s repres %r at %x>" % (self, self.object, id(self))
+        return f"<Rankable {self} repres {self.object!r} at {id(self):x}>"
 
 def bonus_objects(rankables, key):
     """
@@ -64,8 +62,8 @@ def add_rank_objects(rankables, rank):
 def _score_for_key(query):
     if len(query) == 1:
         return relevance.score_single
-    else:
-        return relevance.score
+
+    return relevance.score
 
 def score_objects(rankables, key):
     """

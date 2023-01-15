@@ -1,6 +1,7 @@
 import urllib.parse
 from urllib.parse import urlparse as _urlparse
 from urllib.parse import urlunparse as _urlunparse
+from contextlib import suppress
 
 from kupfer import pretty
 
@@ -8,16 +9,13 @@ QFURL_SCHEME = "qpfer"
 
 # One would hope that there was a better way to do this
 urllib.parse.uses_netloc.append(QFURL_SCHEME)
-try:
+with suppress(AttributeError):
     urllib.parse.uses_fragment.append(QFURL_SCHEME)
-except AttributeError:
-    # Python 2.7.3 drops `uses_fragment` global
-    pass
 
 class QfurlError (Exception):
     pass
 
-class qfurl (object):
+class qfurl :
     """A qfurl is a URI to locate unique objects in kupfer's catalog.
 
     The qfurl is built up as follows:
@@ -52,11 +50,11 @@ class qfurl (object):
     def __init__(self, obj=None, url=None):
         """Create a new qfurl for object @obj"""
         if obj:
-            typname = "%s.%s" % (type(obj).__module__, type(obj).__name__)
+            typname = f"{type(obj).__module__}.{type(obj).__name__}"
             try:
                 qfid = obj.qf_id
             except AttributeError:
-                raise QfurlError("%s has no qfurl" % obj)
+                raise QfurlError(f"{obj} has no qfurl")
             self.url = _urlunparse((QFURL_SCHEME, "", qfid, "", "", typname))
         else:
             self.url = url
@@ -88,7 +86,7 @@ class qfurl (object):
         """
         scheme, mother, qfid, _ign, _ore, typname = _urlparse(url)
         if scheme != QFURL_SCHEME:
-            raise QfurlError("Wrong scheme: %s" % scheme)
+            raise QfurlError(f"Wrong scheme: {scheme}")
         qfid = qfid.lstrip("/")
         return mother, qfid, typname
 
@@ -96,8 +94,8 @@ class qfurl (object):
         """Resolve self in a catalog of sources
 
         Return *immediately* on match found"""
-        mother, qfid, typname = self._parts_mother_id_typename(self.url)
-        module, name = typname.rsplit(".", 1) if typname else (None, None)
+        _mother, _qfid, typname = self._parts_mother_id_typename(self.url)
+        _module, name = typname.rsplit(".", 1) if typname else (None, None)
         for src in catalog:
             if name:
                 if name not in (pt.__name__
@@ -109,11 +107,11 @@ class qfurl (object):
             for obj in src.get_leaves():
                 if not hasattr(obj, "qf_id"):
                     continue
-                try:
+
+                with suppress(QfurlError):
                     if self == qfurl(obj):
                         return obj
-                except QfurlError:
-                    pass
+
         pretty.print_debug(__name__, "No match found for", self)
         return None
 

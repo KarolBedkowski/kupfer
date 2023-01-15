@@ -4,7 +4,7 @@
 #                     David Siegel, James Walker
 #                     Jason Smith, Miguel de Icaza
 #                     Rick Harding, Thomsen Anders
-#                     Volker Braun, Jonathon Anderson 
+#                     Volker Braun, Jonathon Anderson
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from __future__ import division
 
 """
 This module provides relevance matching and formatting of related strings
@@ -29,17 +28,9 @@ based on the relevance.  It originates in Gnome-Do.
  * Module updated by Ulrik Sverdrup to clean up and dramatically speed up
    the code, by using more pythonic constructs as well as doing less work.
 
-Compatibility: Python 2.4 and later, including Python 3
+Compatibility: Python 3
 """
 
-
-
-# This module is compatible with both Python 2 and Python 3;
-# we need the iterator form of range for either version, stored in range()
-try:
-    range = xrange
-except NameError:
-    pass
 
 def formatCommonSubstrings(s, query, format_clean=None, format_match=None):
     """
@@ -170,14 +161,14 @@ def score(s, query):
                 firstCount += 1
             else:
                 bad += 1
-    
+
     # A first character match counts extra
     if query[0] == ls[0]:
         firstCount += 2
-        
+
     # The longer the acronym, the better it scores
     good += firstCount * firstCount * 4
-    
+
     # Better yet if the match itself started there
     if first == 0:
         good += 2
@@ -191,12 +182,12 @@ def score(s, query):
     # This fix makes sure that perfect matches always rank higher
     # than split matches.  Perfect matches get the .9 - 1.0 range
     # everything else lower
-    
+
     if last - first == len(query):
         score = .9 + .1 * score
     else:
         score = .9 * score
-    
+
     return score
 
 def _findBestMatch(s, query):
@@ -218,11 +209,11 @@ def _findBestMatch(s, query):
     (-1, -1)
     """
     bestMatch = -1, -1
-    
+
     # Find the last instance of the last character of the query
     # since we never need to search beyond that
     lastChar = s.rfind(query[-1])
-    
+
     # No instance of the character?
     if lastChar == -1:
         return bestMatch
