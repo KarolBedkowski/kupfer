@@ -18,7 +18,7 @@ from kupfer import utils, task
 
 class DownloadTask (task.ThreadTask):
     def __init__(self, uri, destdir=None, tempfile=False, finish_callback=None):
-        super(DownloadTask, self).__init__()
+        super().__init__()
         self.uri = uri
         self.download_finish_callback = finish_callback
         self.destdir = destdir
@@ -46,7 +46,7 @@ class DownloadTask (task.ThreadTask):
                 utils.get_destfile_in_directory(self.destdir, destname)
         try:
             if not self.destfile:
-                raise IOError("Could not write output file")
+                raise OSError("Could not write output file")
 
             shutil.copyfileobj(self.response, self.destfile)
         finally:

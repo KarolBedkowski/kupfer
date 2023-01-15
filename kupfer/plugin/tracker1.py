@@ -15,9 +15,9 @@ __version__ = "2017.2"
 __author__ = "US"
 
 import os
-from xml.etree.cElementTree import ElementTree
+from xml.etree.ElementTree import ElementTree
 
-from gi.repository import Gio 
+from gi.repository import Gio
 import dbus
 
 from kupfer.objects import Action, Source
@@ -118,7 +118,7 @@ def get_file_results_sparql(searchobj, query, max_items=50, order_by="rank",
 
     if location:
         location_filter = \
-        'FILTER(tracker:uri-is-descendant ("%s", nie:url (?s)))' % sparql_escape(location)
+        f'FILTER(tracker:uri-is-descendant ("{sparql_escape(location)}", nie:url (?s)))'
     else:
         location_filter = ""
 
@@ -192,8 +192,8 @@ class TrackerQuerySource (Source):
     def get_items(self):
         if self.search_results:
             return self.search_results
-        else:
-            return get_tracker_filequery(self.query, **self.search_args)
+
+        return get_tracker_filequery(self.query, **self.search_args)
 
     def provides(self):
         yield FileLeaf

@@ -13,6 +13,7 @@ __version__ = ""
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 from gi.repository import Gtk, Gdk
+from contextlib import suppress
 
 from kupfer.objects import Leaf, Action
 from kupfer.obj.sources import MultiSource
@@ -61,7 +62,7 @@ class _MultiSource (MultiSource):
 class SearchInside (Action):
     """Return the content source for a Leaf"""
     def __init__(self):
-        super(SearchInside, self).__init__(_("Search Contents"))
+        super().__init__(_("Search Contents"))
 
     def is_factory(self):
         return True
@@ -98,10 +99,8 @@ class CopyToClipboard (Action):
     def item_types(self):
         yield Leaf
     def valid_for_item(self, leaf):
-        try:
+        with suppress(AttributeError):
             return bool(interface.get_text_representation(leaf))
-        except AttributeError:
-            pass
     def get_description(self):
         return _("Copy to clipboard")
     def get_icon_name(self):

@@ -5,6 +5,8 @@ __description__ = _("Access trash contents")
 __version__ = "2017.2"
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
+from contextlib import suppress
+
 from gi.repository import Gio, GLib
 
 from kupfer.objects import Leaf, Action, Source, SourceLeaf, FileLeaf
@@ -57,10 +59,10 @@ class RestoreTrashedFile (Action):
         orig_gfile = Gio.File.new_for_path(orig_path)
         cur_gfile = leaf.get_gfile()
         if orig_gfile.query_exists():
-            raise OperationError("Target file exists at %s" % orig_gfile.get_path())
-        pretty.print_debug(__name__, "Move %s to %s" % (cur_gfile, orig_gfile))
+            raise OperationError(f"Target file exists at {orig_gfile.get_path()}")
+        pretty.print_debug(__name__, f"Move {cur_gfile} to {orig_gfile}")
         ret = cur_gfile.move(orig_gfile, Gio.FileCopyFlags.ALL_METADATA, None, None, None)
-        pretty.print_debug(__name__, "Move ret=%s" % (ret, ))
+        pretty.print_debug(__name__, f"Move ret={ret}")
         return FileLeaf(orig_gfile.get_path())
 
     def get_description(self):
@@ -96,14 +98,16 @@ class TrashFile (Leaf):
         if self.get_orig_path():
             yield RestoreTrashedFile()
     def get_gfile(self):
-        cur_gfile = Gio.File.new_for_uri(self._trash_uri).get_child(self.object.get_name())
+        cur_gfile = Gio.File.new_for_uri(self._trash_uri).get_child(
+            self.object.get_name())
         return cur_gfile
+
     def get_orig_path(self):
-        try:
-            orig_path = self.object.get_attribute_byte_string("trash::orig-path")
+        with suppress(AttributeError):
+            orig_path = self.object.get_attribute_byte_string(
+                "trash::orig-path")
             return orig_path
-        except AttributeError:
-            pass
+
         return None
 
     def is_valid(self):
@@ -170,8 +174,7 @@ class Trash (SpecialLocation):
         return TrashContentSource(self.object, name=str(self))
 
     def get_actions(self):
-        for action in SpecialLocation.get_actions(self):
-            yield action
+        yield from SpecialLocation.get_actions(self)
         if self.get_item_count():
             yield EmptyTrash()
 
@@ -212,4 +215,3 @@ class TrashSource (Source):
 class OpenTrash(Open):
     def activate(self, obj, ctx=None):
         utils.show_url(obj.object)
-

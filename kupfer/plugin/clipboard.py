@@ -44,7 +44,7 @@ class SelectedText (TextLeaf):
         TextLeaf.__init__(self, text, _('Selected Text'))
 
     def __repr__(self):
-        return "<%s %s>" % (__name__, self.qf_id)
+        return f"<{__name__} {self.qf_id}>"
 
 class ClipboardText (TextLeaf):
     def get_description(self):
@@ -61,7 +61,7 @@ class CurrentClipboardText (ClipboardText):
         ClipboardText.__init__(self, text, _('Clipboard Text'))
 
     def __repr__(self):
-        return "<%s %s>" % (__name__, self.qf_id)
+        return f"<{__name__} {self.qf_id}>"
 
 class CurrentClipboardFile (FileLeaf):
     "represents the *unique* current clipboard file"
@@ -71,7 +71,7 @@ class CurrentClipboardFile (FileLeaf):
         FileLeaf.__init__(self, filepath, _('Clipboard File'))
 
     def __repr__(self):
-        return "<%s %s>" % (__name__, self.qf_id)
+        return f"<{__name__} {self.qf_id}>"
 
 class CurrentClipboardFiles (MultipleLeaf):
     "represents the *unique* current clipboard if there are many files"
@@ -81,7 +81,7 @@ class CurrentClipboardFiles (MultipleLeaf):
         MultipleLeaf.__init__(self, files, _("Clipboard Files"))
 
     def __repr__(self):
-        return "<%s %s>" % (__name__, self.qf_id)
+        return f"<{__name__} {self.qf_id}>"
 
 
 class ClearClipboards(Action):

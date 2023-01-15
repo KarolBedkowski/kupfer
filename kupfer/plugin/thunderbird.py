@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 __kupfer_name__ = _("Thunderbird")
 __kupfer_sources__ = ("ContactsSource", )
 __kupfer_actions__ = ("NewMailAction", "AttachToNewMail", "NewMailWithBody", )
@@ -51,8 +48,8 @@ class NewMailAction(Action):
 
     def activate_multiple(self, objects):
         recipients = ",".join(email_from_leaf(L) for L in objects)
-        if not utils.spawn_async(['thunderbird', 'mailto:%s' % recipients]):
-            utils.spawn_async(['icedove', 'mailto:%s' % recipients])
+        if not utils.spawn_async(['thunderbird', f'mailto:{recipients}']):
+            utils.spawn_async(['icedove', f'mailto:{recipients}'])
 
     def get_icon_name(self):
         return "mail-message-new"
@@ -77,7 +74,7 @@ class AttachToNewMail(Action):
     def activate_multiple(self, objects, iobjects):
         attachments = ",".join(L.object for L in objects)
         recipients = ",".join(email_from_leaf(L) for L in iobjects)
-        args = ["-compose", "to='%s',attachment='%s'" % (recipients, attachments)]
+        args = ["-compose", f"to='{recipients}',attachment='{attachments}'"]
         if not utils.spawn_async(['thunderbird'] + args):
             utils.spawn_async(['icedove'] + args)
 
@@ -107,7 +104,7 @@ class NewMailWithBody(Action):
         super().__init__(_("Compose Email With"))
 
     def activate(self, leaf):
-        args = ["-compose", "body='%s'" % leaf.object]
+        args = ["-compose", f"body='{leaf.object}'"]
         if not utils.spawn_async(['thunderbird'] + args):
             utils.spawn_async(['icedove'] + args)
 

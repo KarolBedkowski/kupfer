@@ -1,4 +1,3 @@
-
 __kupfer_name__ = _("Calculator")
 __kupfer_actions__ = ("Calculate", )
 __description__ = _("Calculate mathematical expressions")
@@ -8,6 +7,7 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 import locale
 import cmath
 import math
+from contextlib import suppress
 
 from kupfer.objects import Action, TextLeaf
 from kupfer import pretty
@@ -29,12 +29,12 @@ class KupferSurprise (float):
         raise IgnoreResultException
 
 
-class DummyResult (object):
+class DummyResult :
     def __str__(self):
         return "<Result of last expression>"
 
 
-class Help (object):
+class Help :
     """help()
 
     Show help about the calculator
@@ -52,18 +52,17 @@ class Help (object):
                 continue
             val = environment[attr]
             if not callable(val):
-                docstrings.append("%s = %s" % (attr, val))
+                docstrings.append(f"{attr} = {val}")
                 continue
-            try:
+            with suppress(AttributeError):
                 try:
                     # use .replace() to remove unimportant '/' marker in signature
                     sig = str(inspect.signature(val)).replace(", /)", ")")
-                    doc = "%s%s\n%s" % (attr, sig, val.__doc__)
+                    doc = f"{attr}{sig}\n{val.__doc__}"
                 except ValueError:
                     doc = val.__doc__
                 docstrings.append(doc)
-            except AttributeError:
-                pass
+
         formatted = []
         maxlen = 72
         left_margin = 4
@@ -76,7 +75,7 @@ class Help (object):
             wrapped_lines = textwrap.wrap(docsplit[1].strip(),
                     maxlen - left_margin)
             wrapped = ("\n" + " " * left_margin).join(wrapped_lines)
-            formatted.append("%s\n    %s" % (docsplit[0], wrapped))
+            formatted.append(f"{docsplit[0]}\n    {wrapped}")
         uiutils.show_text_result("\n\n".join(formatted), _("Calculator"))
         raise IgnoreResultException
 
@@ -102,10 +101,10 @@ def format_result(res):
     cres = complex(res)
     parts = []
     if cres.real:
-        parts.append("%s" % cres.real)
+        parts.append(f"{cres.real}")
     if cres.imag:
-        parts.append("%s" % complex(0, cres.imag))
-    return "+".join(parts) or "%s" % res
+        parts.append(f"{complex(0, cres.imag)}")
+    return "+".join(parts) or f"{res}"
 
 
 class Calculate (Action):
@@ -151,5 +150,3 @@ class Calculate (Action):
 
     def get_description(self):
         return None
-
-

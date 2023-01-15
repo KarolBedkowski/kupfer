@@ -16,6 +16,7 @@ import os
 import shutil
 import tarfile
 import zipfile
+from pathlib import Path
 
 from kupfer.objects import Source, FileLeaf
 from kupfer.obj.sources import DirectorySource
@@ -32,7 +33,7 @@ VERY_LONG_TIME_S = 3600*24*365
 
 class UnsafeArchiveError (Exception):
     def __init__(self, path):
-        Exception.__init__(self, "Refusing to extract unsafe path: %s" % path)
+        Exception.__init__(self, f"Refusing to extract unsafe path: {path}")
 
 def is_safe_to_unarchive(path):
     "return whether @path is likely a safe path to unarchive"
@@ -56,12 +57,14 @@ class ArchiveContent (Source):
     def get_items(self):
         # always use the same destination for the same file and mtime
         basename = os.path.basename(os.path.normpath(self.path))
-        root, ext = os.path.splitext(basename)
+        root, _ext = os.path.splitext(basename)
         mtime = os.stat(self.path).st_mtime
-        fileid = hashlib.sha1(("%s%s" % (self.path, mtime)).encode("utf-8")).hexdigest()
-        pth = os.path.join("/tmp", "kupfer-%s-%s" % (root, fileid, ))
-        if not os.path.exists(pth):
-            self.output_debug("Extracting with %s" % (self.unarchiver, ))
+        fileid = hashlib.sha1(
+            (f"{self.path}{mtime}").encode()
+        ).hexdigest()
+        pth = os.path.join("/tmp", f"kupfer-{root}-{fileid}")
+        if not Path(pth).exists():
+            self.output_debug(f"Extracting with {self.unarchiver}")
             self.unarchiver(self.path, pth)
             self.unarchived_files.append(pth)
             self.end_timer.set(VERY_LONG_TIME_S, self.clean_up_unarchived_files)
@@ -82,7 +85,8 @@ class ArchiveContent (Source):
         basename = os.path.basename(leaf.object).lower()
         for extractor in cls.extractors:
             if any(basename.endswith(ext) for ext in extractor.extensions):
-                if os.path.isfile(leaf.object) and extractor.predicate(leaf.object):
+                if Path(leaf.object).is_file() \
+                        and extractor.predicate(leaf.object):
                     return cls._source_for_path(leaf, extractor)
 
 
@@ -106,7 +110,7 @@ class ArchiveContent (Source):
 
     @classmethod
     def _clean_up_error_handler(cls, func, path, exc_info):
-        pretty.print_error(__name__, "Error in %s deleting %s:" % (func, path))
+        pretty.print_error(__name__, f"Error in {func} deleting {path}:")
         pretty.print_error(__name__, exc_info)
 
     @classmethod
@@ -122,24 +126,24 @@ class ArchiveContent (Source):
 @ArchiveContent.extractor((".tar", ".tar.gz", ".tgz", ".tar.bz2"),
         tarfile.is_tarfile)
 def extract_tarfile(filepath, destpath):
-    zf = tarfile.TarFile.open(filepath, 'r')
-    try:
-        for member in zf.getnames():
-            if not is_safe_to_unarchive(member):
-                raise UnsafeArchiveError(member)
-        zf.extractall(path=destpath)
-    finally:
-        zf.close()
+    with tarfile.TarFile.open(filepath, 'r') as zf:
+        try:
+            for member in zf.getnames():
+                if not is_safe_to_unarchive(member):
+                    raise UnsafeArchiveError(member)
+            zf.extractall(path=destpath)
+        finally:
+            pass
 
 
 # ZipFile only supports extractall since Python 2.6
 @ArchiveContent.extractor((".zip", ), zipfile.is_zipfile)
 def extract_zipfile(filepath, destpath):
-    zf = zipfile.ZipFile(filepath, 'r')
-    try:
-        for member in zf.namelist():
-            if not is_safe_to_unarchive(member):
-                raise UnsafeArchiveError(member)
-        zf.extractall(path=destpath)
-    finally:
-        zf.close()
+    with zipfile.ZipFile(filepath, 'r') as zf:
+        try:
+            for member in zf.namelist():
+                if not is_safe_to_unarchive(member):
+                    raise UnsafeArchiveError(member)
+            zf.extractall(path=destpath)
+        finally:
+            pass

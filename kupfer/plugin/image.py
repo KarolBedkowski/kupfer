@@ -14,6 +14,7 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 # since "path" is a very generic name, you often forget..
 from os import path as os_path
 import subprocess
+from contextlib import suppress
 
 from kupfer.objects import Action, FileLeaf, TextLeaf, OperationError
 from kupfer import utils, pretty
@@ -42,9 +43,9 @@ class Scale (Action):
         fpath = leaf.object
         dirname = os_path.dirname(fpath)
         head, ext = os_path.splitext(os_path.basename(fpath))
-        filename = "%s_%s%s" % (head, size, ext)
+        filename = f"{head}_{size}{ext}"
         dpath = utils.get_destpath_in_directory(dirname, filename)
-        argv = ["convert", "-scale", ('%s' % size),  fpath, dpath]
+        argv = ["convert", "-scale", str(size),  fpath, dpath]
         runtimehelper.register_async_file_result(ctx, dpath)
         spawn_operation_err(argv)
         return FileLeaf(dpath)
@@ -64,19 +65,18 @@ class Scale (Action):
         yield TextLeaf
 
     @classmethod
-    def _make_size(self, text):
+    def _make_size(cls, text):
         size = None
         # Allow leading =
         text = text.strip("= ")
         try:
-            size = "%g" % float(text.strip())
+            size = str(float(text.strip()))
         except ValueError:
-            try:
+            with suppress(ValueError):
                 twoparts = text.split("x", 1)
-                size = "%gx%g" % (float(twoparts[0].strip()),
-                        float(twoparts[1].strip()))
-            except ValueError:
-                pass
+                xval = float(twoparts[0].strip())
+                yval = float(twoparts[1].strip())
+                size = f"{xval:g}x{yval:g}"
         return size
 
     def valid_object(self, obj, for_item=None):
@@ -100,10 +100,10 @@ class RotateBase (Action):
         fpath = leaf.object
         dirname = os_path.dirname(fpath)
         head, ext = os_path.splitext(os_path.basename(fpath))
-        filename = "%s_%s%s" % (head, self.rotation, ext)
+        filename = f"{head}_{self.rotation}{ext}"
         dpath = utils.get_destpath_in_directory(dirname, filename)
-        argv = ["jpegtran", "-copy", "all", "-rotate", self.rotation, "-outfile",
-                dpath, fpath]
+        argv = ["jpegtran", "-copy", "all", "-rotate", self.rotation,
+                "-outfile", dpath, fpath]
         runtimehelper.register_async_file_result(ctx, dpath)
         spawn_operation_err(argv)
         return FileLeaf(dpath)
@@ -154,7 +154,7 @@ class Autorotate (Action):
             cmdargs = ("jhead", item.object)
             proc = subprocess.Popen(cmdargs, stdout=subprocess.PIPE)
         except OSError:
-            pretty.print_debug(__name__ , "Action %s needs 'jhead'" % self)
+            pretty.print_debug(__name__ , f"Action {self} needs 'jhead'")
         else:
             out, err = proc.communicate()
             pretty.print_debug(__name__, "Running", cmdargs)
@@ -162,4 +162,3 @@ class Autorotate (Action):
 
     def get_description(self):
         return _("Rotate JPEG (in-place) according to its EXIF metadata")
-

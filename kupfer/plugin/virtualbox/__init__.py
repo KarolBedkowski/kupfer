@@ -1,11 +1,11 @@
-# -*- coding: UTF-8 -*-
-
 __kupfer_name__ = _("VirtualBox")
 __kupfer_sources__ = ("VBoxMachinesSource", )
 __description__ = _("Control VirtualBox Virtual Machines. "
                     "Supports both Sun VirtualBox and Open Source Edition.")
 __version__ = "0.4"
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
+
+from contextlib import suppress
 
 from kupfer.objects import Leaf, Action, Source
 from kupfer import pretty
@@ -30,18 +30,17 @@ def _get_vbox():
     if __kupfer_settings__['force_cli']:
         pretty.print_info(__name__, 'Using cli...')
         return ose_support
-    try:
+
+    with suppress(ImportError):
         from kupfer.plugin.virtualbox import vboxapi4_support
         pretty.print_info(__name__, 'Using vboxapi4...')
         return vboxapi4_support
-    except ImportError:
-        pass
-    try:
+
+    with suppress(ImportError):
         from kupfer.plugin.virtualbox import vboxapi_support
         pretty.print_info(__name__, 'Using vboxapi...')
         return vboxapi_support
-    except ImportError:
-        pass
+
     pretty.print_info(__name__, 'Using cli...')
     return ose_support
 

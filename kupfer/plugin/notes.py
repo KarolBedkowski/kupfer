@@ -182,7 +182,7 @@ class AppendToNote (Action):
             # NOTE: We search and replace in the XML here
             endtag = "</note-content>"
             xmltext = xml.sax.saxutils.escape(text)
-            xmlcontents = xmlcontents.replace(endtag, "\n%s%s" % (xmltext, endtag))
+            xmlcontents = xmlcontents.replace(endtag, f"\n{xmltext}{endtag}")
             notes.SetNoteCompleteXml(noteuri, xmlcontents,
                                      reply_handler=reply_noop,
                                      error_handler=make_error_handler(ctx))
@@ -231,9 +231,9 @@ def _prepare_note_text(text):
     ## if we only get the title, put in two helpful newlines
     title, body = textutils.extract_title_body(text)
     if body.lstrip():
-        return "%s\n%s" % (title, body)
-    else:
-        return "%s\n\n" % (title,)
+        return f"{title}\n{body}"
+
+    return f"{title}\n\n"
 
 class CreateNote (Action):
     def __init__(self):
@@ -356,7 +356,7 @@ class NotesSource (ApplicationSource):
         dirs = []
         for program in PROGRAM_IDS:
             notedatapaths = (os.path.join(base.xdg_data_home, program),
-                    os.path.expanduser("~/.%s" % program))
+                    os.path.expanduser(f"~/.{program}"))
             dirs.extend(notedatapaths)
         self.monitor_token = self.monitor_directories(*dirs)
 
@@ -376,7 +376,7 @@ class NotesSource (ApplicationSource):
         try:
             noteuris = notes.ListAllNotes()
         except dbus.DBusException as e:
-            self.output_error("%s: %s" % (type(e).__name__, e))
+            self.output_error(f"{type(e).__name__}: {e}")
             return
 
         templates = notes.GetAllNotesWithTag("system:template")
@@ -409,4 +409,3 @@ class NotesSource (ApplicationSource):
     @classmethod
     def appleaf_content_id(cls):
         return __kupfer_settings__["notes_application"] or PROGRAM_IDS
-

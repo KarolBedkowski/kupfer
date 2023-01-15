@@ -14,6 +14,7 @@ from gi.repository import Gio, GLib
 import os
 # since "path" is a very generic name, you often forget..
 from os import path as os_path
+from pathlib import Path
 
 from kupfer.objects import Action, FileLeaf, TextLeaf, TextSource
 from kupfer.objects import OperationError
@@ -47,7 +48,7 @@ class MoveTo (Action, pretty.OutputMixin):
         dfile = obj.get_gfile().get_child(bname)
         try:
             ret = sfile.move(dfile, Gio.FileCopyFlags.ALL_METADATA, None, None, None)
-            self.output_debug("Move %s to %s (ret: %s)" % (sfile, dfile, ret))
+            self.output_debug(f"Move {sfile} to {dfile} (ret: {ret})")
         except GLib.Error as exc:
             raise OperationError(str(exc))
         else:
@@ -111,7 +112,7 @@ class Rename (Action, pretty.OutputMixin):
         dfile = Gio.File.new_for_path(dest)
         try:
             ret = sfile.move(dfile, Gio.FileCopyFlags.ALL_METADATA, None, None, None)
-            self.output_debug("Move %s to %s (ret: %s)" % (sfile, dfile, ret))
+            self.output_debug(f"Move {sfile} to {dfile} (ret: {ret})")
         except GLib.Error as exc:
             raise OperationError(str(exc))
         else:
@@ -131,9 +132,8 @@ class Rename (Action, pretty.OutputMixin):
         yield TextLeaf
 
     def valid_object(self, obj, for_item):
-        dest = os_path.join(os_path.dirname(for_item.object), obj.object)
-        return os_path.exists(os_path.dirname(dest)) and \
-                not os_path.exists(dest)
+        dest_dir = Path(for_item.object).parent
+        return dest_dir.is_dir() and not dest_dir.joinpath(obj.object).exists()
 
     def object_source(self, for_item):
         return RenameSource(for_item)
@@ -179,10 +179,10 @@ class CopyTask(task.ThreadTask, pretty.OutputMixin):
     def thread_do(self):
         try:
             # FIXME: This should be async
-            self.output_debug("Copy %s to %s" % (self.gsource, self.gdest))
+            self.output_debug(f"Copy {self.gsource} to {self.gdest}")
             ret = self.gsource.copy(self.gdest, Gio.FileCopyFlags.ALL_METADATA,
                              None, None, None)
-            self.output_debug("Copy ret %r" % (ret, ))
+            self.output_debug(f"Copy ret {ret!r}")
         except GLib.Error as exc:
             raise OperationError(exc.message)
 

@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 '''
 virtualbox_vboxapi_support.py
 

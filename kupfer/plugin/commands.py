@@ -175,7 +175,7 @@ class Command (TextLeaf):
 
     def get_description(self):
         args = " ".join(str(self).split(None, 1)[1:])
-        return "%s %s" % (self.exepath, args)
+        return f"{self.exepath} {args}"
 
     def get_gicon(self):
         return icons.get_gicon_for_file(self.exepath)

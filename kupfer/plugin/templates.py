@@ -6,6 +6,7 @@ __version__ = ""
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 import os
+from pathlib import Path
 
 from gi.repository import Gio, GLib
 
@@ -24,8 +25,7 @@ class Template (FileLeaf):
 
     def get_actions(self):
         yield CreateDocumentIn()
-        for a in FileLeaf.get_actions(self):
-            yield a
+        yield from FileLeaf.get_actions(self)
 
     def get_gicon(self):
         file_gicon = FileLeaf.get_gicon(self)
@@ -68,7 +68,7 @@ class CreateNewDocument (Action):
         elif isinstance(iobj, NewFolder):
             filename = str(iobj)
             destpath = utils.get_destpath_in_directory(leaf.object, filename)
-            os.makedirs(destpath)
+            Path(destpath).mkdir(parents=True)
         else:
             # create new empty file
             filename = str(iobj)
@@ -125,7 +125,7 @@ class TemplatesSource (Source, FilesystemWatchMixin):
         try:
             for fname in os.listdir(tmpl_dir):
                 yield Template(os.path.join(tmpl_dir, fname))
-        except EnvironmentError as exc:
+        except OSError as exc:
             self.output_error(exc)
 
     def should_sort_lexically(self):
@@ -138,4 +138,3 @@ class TemplatesSource (Source, FilesystemWatchMixin):
 
     def provides(self):
         yield Template
-

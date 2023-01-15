@@ -10,6 +10,7 @@ import operator
 import functools
 from os import path
 import xdg.BaseDirectory as base
+from pathlib import Path
 
 from gi.repository import Gio, Gtk
 
@@ -217,7 +218,7 @@ class PlacesSource (Source):
     Source for items from gtk bookmarks
     """
     def __init__(self):
-        super(PlacesSource, self).__init__(_("Places"))
+        super().__init__(_("Places"))
         self.places_file = None
         self._version = 2
 
@@ -229,27 +230,31 @@ class PlacesSource (Source):
         gtk-bookmarks: each line has url and optional title
         file:///path/to/that.end [title]
         """
-        if not path.exists(self.places_file):
-            return ()
-        return self._get_places(self.places_file)
+        if Path(self.places_file).exists():
+            return self._get_places(self.places_file)
+
+        return ()
 
     def _get_places(self, fileloc):
-        for line in open(fileloc):
-            if not line.strip():
-                continue
-            items = line.split(None, 1)
-            uri = items[0]
-            gfile = Gio.File.new_for_uri(uri)
-            if len(items) > 1:
-                title = items[1].strip()
-            else:
-                disp = gfile.get_parse_name()
-                title = path.basename(disp)
-            locpath = gfile.get_path()
-            if locpath:
-                yield FileLeaf(locpath, title)
-            else:
-                yield UrlLeaf(gfile.get_uri(), title)
+        with open(fileloc, encoding="UTF-8") as fin:
+            for line in fin:
+                if not line.strip():
+                    continue
+
+                items = line.split(None, 1)
+                uri = items[0]
+                gfile = Gio.File.new_for_uri(uri)
+                if len(items) > 1:
+                    title = items[1].strip()
+                else:
+                    disp = gfile.get_parse_name()
+                    title = path.basename(disp)
+
+                locpath = gfile.get_path()
+                if locpath:
+                    yield FileLeaf(locpath, title)
+                else:
+                    yield UrlLeaf(gfile.get_uri(), title)
 
     def get_description(self):
         return _("Bookmarked folders")

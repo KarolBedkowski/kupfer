@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 __kupfer_name__ = _("Shorten Links")
 __kupfer_actions__ = ("ShortenLinks", )
 __description__ = _("Create short aliases of long URLs")
@@ -35,7 +34,7 @@ class _GETService(_ShortLinksService, pretty.OutputMixin):
             result = resp.read()
             return result.strip().decode("utf-8")
 
-        except (OSError, IOError, ValueError) as exc:
+        except (OSError, ValueError) as exc:
             raise ValueError(exc)
         return _('Error')
 

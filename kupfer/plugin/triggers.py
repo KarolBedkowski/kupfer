@@ -28,8 +28,7 @@ plugin_support.check_keybinding_support()
 
 class Trigger (RunnableLeaf):
     def get_actions(self):
-        for act in RunnableLeaf.get_actions(self):
-            yield act
+        yield from RunnableLeaf.get_actions(self)
         yield RemoveTrigger()
     def wants_context(self):
         return True
@@ -80,7 +79,7 @@ class Triggers (Source):
     def get_items(self):
         for target, (keystr, name, id_) in self.trigger_table.items():
             label = Gtk.accelerator_get_label(*Gtk.accelerator_parse(keystr))
-            yield Trigger(target, "%s (%s)" % (label or keystr, name))
+            yield Trigger(target, f"{label or keystr} ({name})")
 
     def should_sort_lexically(self):
         return True
@@ -97,7 +96,7 @@ class Triggers (Source):
         try:
             keystr, name, id_ = cls.instance.trigger_table[target]
         except KeyError:
-            raise OperationError("Trigger '%s' does not exist" % (target, ))
+            raise OperationError(f"Trigger '{target}' does not exist")
         obj = puid.resolve_unique_id(id_)
         if obj is None:
             return

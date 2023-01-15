@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*
-
 __kupfer_name__ = _("XFCE Session Management")
 __kupfer_sources__ = ("XfceItemsSource", )
 __description__ = _("Special items and actions for XFCE environment")

@@ -12,7 +12,8 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 import locale
 import os
 import urllib.parse
-import xml.etree.cElementTree as ElementTree
+import xml.etree.ElementTree as ElementTree
+from pathlib import Path
 
 from kupfer.objects import Action, Source, Leaf
 from kupfer.objects import TextLeaf
@@ -25,7 +26,7 @@ def _noescape_urlencode(items):
     """Assemble an url param string from @items, without
     using any url encoding.
     """
-    return "?" + "&".join("%s=%s" % (n, v) for n, v in items)
+    return "?" + "&".join(f"{n}={v}" for n, v in items)
 
 
 def _urlencode(word):
@@ -131,13 +132,13 @@ class OpenSearchSource (Source):
     @coroutine
     def _parse_opensearch(self, target):
         """This is a coroutine to parse OpenSearch files"""
-        vital_keys = set(["Url", "ShortName"])
-        keys = set(["Description", "Url", "ShortName", "InputEncoding"])
+        vital_keys = {"Url", "ShortName"}
+        keys = {"Description", "Url", "ShortName", "InputEncoding"}
         roots = ('OpenSearchDescription', 'SearchPlugin')
 
         def parse_etree(etree, name=None):
             if not gettagname(etree.getroot().tag) in roots:
-                raise OpenSearchParseError("Search %s has wrong type" % name)
+                raise OpenSearchParseError(f"Search {name} has wrong type")
             search = {}
             for child in etree.getroot():
                 tagname = gettagname(child.tag)
@@ -160,7 +161,7 @@ class OpenSearchSource (Source):
                     text = (child.text or "").strip()
                 search[tagname] = text
             if not vital_keys.issubset(list(search.keys())):
-                raise OpenSearchParseError("Search %s missing keys" % name)
+                raise OpenSearchParseError(f"Search {name} missing keys")
             return search
 
         while True:
@@ -169,7 +170,7 @@ class OpenSearchSource (Source):
                 etree = ElementTree.parse(path)
                 target.send(parse_etree(etree, name=path))
             except Exception as exc:
-                self.output_debug("%s: %s" % (type(exc).__name__, exc))
+                self.output_debug(f"{type(exc).__name__}: {exc}")
 
     def get_items(self):
         plugin_dirs = []
@@ -194,18 +195,17 @@ class OpenSearchSource (Source):
             suffixes = [cur_lang.replace("_", "-"), cur_lang[:2]] + suffixes
         for suffix in suffixes:
             addon_lang_dir = os.path.join(addon_dir, suffix)
-            if os.path.exists(addon_lang_dir):
+            if Path(addon_lang_dir).exists():
                 plugin_dirs.append(addon_lang_dir)
                 break
 
         # debian iceweasel
-        if os.path.isdir("/etc/iceweasel/searchplugins/common"):
+        if Path("/etc/iceweasel/searchplugins/common").is_dir():
             plugin_dirs.append("/etc/iceweasel/searchplugins/common")
         for suffix in suffixes:
-            addon_dir = os.path.join("/etc/iceweasel/searchplugins/locale",
-                                     suffix)
-            if os.path.isdir(addon_dir):
-                plugin_dirs.append(addon_dir)
+            addon_dir = Path("/etc/iceweasel/searchplugins/locale", suffix)
+            if addon_dir.is_dir():
+                plugin_dirs.append(str(addon_dir))
 
         # try to find all versions of firefox
         for prefix in ('/usr/lib', '/usr/share'):
@@ -247,7 +247,7 @@ class OpenSearchSource (Source):
                         continue
                     parser.send(fpath)
                     visited_files.add(f)
-            except EnvironmentError as exc:
+            except OSError as exc:
                 self.output_error(exc)
 
         for s in searches:

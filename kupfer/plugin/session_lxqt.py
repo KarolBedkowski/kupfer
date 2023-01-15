@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*
-
 __kupfer_name__ = _("LXQT Session Management")
 __kupfer_sources__ = ("LxqtItemsSource", )
 __description__ = _("Actions for LXQT desktop")

@@ -239,8 +239,7 @@ class AudaciousSource (AppLeafContentMixin, Source):
         songs_source = AudaciousSongsSource(songs)
         yield SourceLeaf(songs_source)
         if __kupfer_settings__["playlist_toplevel"]:
-            for leaf in songs_source.get_leaves():
-                yield leaf
+            yield from songs_source.get_leaves()
     def get_description(self):
         return __description__
     def get_icon_name(self):

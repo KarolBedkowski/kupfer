@@ -9,6 +9,7 @@ from contextlib import closing
 import os
 import sqlite3
 import time
+import itertools
 
 from kupfer.objects import Source
 from kupfer.objects import UrlLeaf
@@ -66,7 +67,7 @@ class BookmarksSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
                               ORDER BY visit_count DESC
                               LIMIT ?""",
                               (MAX_ITEMS, ))
-                    return [UrlLeaf(url, title) for url, title in c]
+                    return list(itertools.starmap(UrlLeaf, c))
             except sqlite3.Error as err:
                 # Something is wrong with the database
                 # wait short time and try again

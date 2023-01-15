@@ -33,15 +33,17 @@ class WikipediaSearch (Action):
     def activate(self, leaf):
         # Send in UTF-8 encoding
         lang_code = __kupfer_settings__["lang"]
-        search_url="https://%s.wikipedia.org/w/index.php?title=Special:Search&go=Go" % lang_code
+        search_url=f"https://{lang_code}.wikipedia.org/w/index.php?title=Special:Search&go=Go&"
         # will encode search=text, where `text` is escaped
-        query_url = search_url + "&" + urllib.parse.urlencode({"search": leaf.object})
+        query_url = search_url + urllib.parse.urlencode({"search": leaf.object})
         utils.show_url(query_url)
+
     def item_types(self):
         yield TextLeaf
+
     def get_description(self):
         lang_code = __kupfer_settings__["lang"]
         return _("Search for this term in %s.wikipedia.org") % lang_code
+
     def get_icon_name(self):
         return "edit-find"
-

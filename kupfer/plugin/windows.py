@@ -233,7 +233,7 @@ class WindowAction (Action):
 
     def get_icon_name(self):
         if not self.icon_name:
-            return super(WindowAction, self).get_icon_name()
+            return super().get_icon_name()
         return self.icon_name
 
 class ToggleAction (WindowAction):
@@ -289,7 +289,7 @@ class WindowsSource (Source):
             if not win.is_skip_tasklist():
                 name, app = (win.get_name(), win.get_application().get_name())
                 if name != app and app not in name:
-                    name = "%s (%s)" % (name, app)
+                    name = f"{name} ({app})"
                 yield WindowLeaf(win.get_xid(), name)
 
     def get_description(self):
@@ -318,9 +318,9 @@ class Workspace (Leaf):
 
             active_wspc = screen.get_active_workspace()
             if active_wspc.get_number() == self.object:
-                return _("Active workspace") + " (%s)" % w_msg
+                return _("Active workspace") + f" ({w_msg})"
             if n_windows:
-                return "(%s)" % w_msg
+                return f"({w_msg})"
         return None
 
 class ActivateWorkspace (Action):

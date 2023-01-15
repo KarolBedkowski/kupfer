@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 __kupfer_name__ = _("SSH Hosts")
 __description__ = _("Adds the SSH hosts found in ~/.ssh/config.")
 __version__ = "2010-04-12"
@@ -91,7 +90,7 @@ class SSHSource (ToplevelGroupingSource, FilesystemWatchMixin):
                         if "*" in word:
                             continue
                         yield SSHLeaf(word)
-        except EnvironmentError as exc:
+        except OSError as exc:
             self.output_error(exc)
         except UnicodeError as exc:
             self.output_error("File %s not in expected encoding (UTF-8)" %

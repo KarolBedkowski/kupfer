@@ -1,4 +1,3 @@
-
 __kupfer_name__ = _("Send Keys")
 __kupfer_actions__ = (
     "CopyAndPaste",
@@ -10,6 +9,7 @@ __description__ = _("Send synthetic keyboard events using "
 __version__ = ""
 __author__ = ""
 
+from contextlib import suppress
 from gi.repository import Gtk, Gdk
 
 from kupfer.objects import Leaf, Action, TextLeaf
@@ -37,11 +37,11 @@ class CopyAndPaste (Action):
             raise OperationError(exc)
     def item_types(self):
         yield Leaf
+
     def valid_for_item(self, leaf):
-        try:
+        with suppress(AttributeError):
             return bool(interface.get_text_representation(leaf))
-        except AttributeError:
-            pass
+
     def get_description(self):
         return _("Copy to clipboard and send Ctrl+V to foreground window")
     def get_icon_name(self):
@@ -86,7 +86,7 @@ class SendKeys (Action):
         if mods != 0:
             raise OperationError("Keys not yet implemented: %s" %
                     Gtk.accelerator_get_label(keys, orig_mods))
-        key_arg = 'key %s' % (Gdk.keyval_name(keys), )
+        key_arg = f'key {Gdk.keyval_name(keys)}'
         mods_down = ['keydown ' + n for n in mod_names]
         mods_up = ['keyup ' + n for n in reversed(mod_names)]
         return mods_down + [key_arg] + mods_up
@@ -101,7 +101,7 @@ class SendKeys (Action):
         return _("Send keys to foreground window")
 
 class TypeText (Action):
-    rank_adjust = -2 
+    rank_adjust = -2
     def __init__(self):
         Action.__init__(self, _("Type Text"))
     def activate(self, leaf):
@@ -118,11 +118,10 @@ class TypeText (Action):
             raise OperationError(exc)
     def item_types(self):
         yield Leaf
+
     def valid_for_item(self, leaf):
-        try:
+        with suppress(AttributeError):
             return bool(interface.get_text_representation(leaf))
-        except AttributeError:
-            pass
+
     def get_description(self):
         return _("Type the text to foreground window")
-

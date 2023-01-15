@@ -8,6 +8,7 @@ from contextlib import closing
 import os
 import sqlite3
 import time
+import itertools
 
 from kupfer import plugin_support
 from kupfer.objects import Source, Leaf, UrlLeaf
@@ -76,7 +77,7 @@ class TagsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
                         "SELECT id, title FROM moz_bookmarks mb "
                         "WHERE mb.parent = 4 AND mb.fk IS NULL"
                     )
-                    return [FirefoxTag(tagid, title) for tagid, title in cur]
+                    return list(itertools.starmap(FirefoxTag, cur))
             except sqlite3.Error as err:
                 self.output_debug("Read bookmarks error:", str(err))
                 # Something is wrong with the database
@@ -134,7 +135,7 @@ ORDER BY visit_count DESC
 LIMIT ?""",
                         (self.tag_id, MAX_ITEMS),
                     )
-                    return [UrlLeaf(url, title) for url, title in cur]
+                    return list(itertools.starmap(UrlLeaf, cur))
             except sqlite3.Error as err:
                 # Something is wrong with the database
                 # wait short time and try again

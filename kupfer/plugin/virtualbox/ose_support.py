@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 '''
 virtualbox_ose_support.py
 
@@ -42,7 +41,7 @@ def get_machine_state(vm_uuid):
     state = vbox_const.VM_STATE_POWEROFF
     try:
         str_state = 'poweroff'
-        with os.popen('VBoxManage showvminfo %s --machinereadable' % vm_uuid) \
+        with os.popen(f'VBoxManage showvminfo {vm_uuid} --machinereadable') \
                 as pinfo:
             for line in pinfo:
                 if line.startswith('VMState="'):
@@ -54,7 +53,7 @@ def get_machine_state(vm_uuid):
             state = vbox_const.VM_STATE_POWERON
         elif str_state == 'saved':
             state = vbox_const.VM_STATE_SAVED
-    except IOError as err:
+    except OSError as err:
         pretty.print_error(__name__, 'get_machine_state', vm_uuid,
                            'error', err)
         state = vbox_const.VM_STATE_POWEROFF

@@ -15,7 +15,7 @@ class SaveToInstapaper(Action):
         Action.__init__(self, _('Save to Instapaper'))
 
     def activate(self, leaf):
-        utils.show_url("https://www.instapaper.com/edit?url=%s" % leaf.object)
+        utils.show_url(f"https://www.instapaper.com/edit?url={leaf.object}")
 
     def item_types(self):
         yield UrlLeaf

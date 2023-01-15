@@ -5,6 +5,7 @@ __version__ = ""
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 import os
+from pathlib import Path
 
 from kupfer.objects import Action, Source, Leaf, FileLeaf, TextLeaf
 from kupfer import kupferui
@@ -46,10 +47,10 @@ class ShowSource (Action):
         if not filename:
             return leaf
         root, ext = os.path.splitext(filename)
-        if ext.lower() == ".pyc" and os.path.exists(root + ".py"):
+        if ext.lower() == ".pyc" and Path(root + ".py").exists():
             return FileLeaf(root + ".py")
 
-        if not os.path.exists(filename):
+        if not Path(filename).exists():
             # handle modules in zip or eggs
             import pkgutil
             pfull = "kupfer.plugin." + plugin_id
@@ -76,8 +77,9 @@ class Plugin (Leaf):
     def get_description(self):
         setctl = settings.GetSettingsController()
         enabled = setctl.get_plugin_enabled(self.object["name"])
-        return "%s (%s)" % (self.object["description"],
-                _("enabled") if enabled else _("disabled"))
+        enabled_str = _("enabled") if enabled else _("disabled")
+        return f"{self.object['description']} ({enabled_str})"
+
     def get_icon_name(self):
         return "package-x-generic"
 
@@ -120,4 +122,3 @@ class KupferPlugins (Source):
         for obj in self.get_leaves():
             if self.is_self_plugin(obj):
                 return obj
-

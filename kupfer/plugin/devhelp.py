@@ -14,7 +14,7 @@ class LookUp (Action):
     def activate(self, leaf):
         text = leaf.object
         try:
-            utils.spawn_async_raise(['devhelp', '--search=%s' % text])
+            utils.spawn_async_raise(['devhelp', f'--search={text}'])
         except utils.SpawnError as exc:
             raise OperationError(exc)
     def item_types(self):

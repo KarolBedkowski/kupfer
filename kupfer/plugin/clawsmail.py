@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 __kupfer_name__ = _("Claws Mail")
 __kupfer_sources__ = ("ClawsContactsSource", )
 __kupfer_actions__ = ("NewMailAction", "SendFileByMail")
@@ -6,9 +5,9 @@ __description__ = _("Claws Mail Contacts and Actions")
 __version__ = "2018-10-07"
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
 
-import os
 from xml.dom import minidom
 import xml
+from pathlib import Path
 
 from kupfer.objects import Action
 from kupfer.objects import TextLeaf, UrlLeaf, RunnableLeaf, FileLeaf
@@ -24,7 +23,7 @@ class ComposeMail(RunnableLeaf):
     def __init__(self):
         RunnableLeaf.__init__(self, name=_("Compose New Email"))
 
-    def run(self):
+    def run(self, ctx=None):
         utils.spawn_async(['claws-mail', '--compose'])
 
     def get_description(self):
@@ -39,7 +38,7 @@ class ReceiveMail(RunnableLeaf):
     def __init__(self):
         RunnableLeaf.__init__(self, name=_("Receive All Email"))
 
-    def run(self):
+    def run(self, ctx=None):
         utils.spawn_async(['claws-mail', '--receive-all'])
 
     def get_description(self):
@@ -117,18 +116,19 @@ class ClawsContactsSource(AppLeafContentMixin, ToplevelGroupingSource,
     appleaf_content_id = 'claws-mail'
 
     def __init__(self, name=_("Claws Mail Address Book")):
-        super(ClawsContactsSource, self).__init__(name, "Contacts")
-        self._claws_addrbook_dir = os.path.expanduser('~/.claws-mail/addrbook')
-        self._claws_addrbook_index = os.path.join(self._claws_addrbook_dir,
-                                                  "addrbook--index.xml")
-        self._version = 4
+        super().__init__(name, "Contacts")
+        self._claws_addrbook_dir = Path('~/.claws-mail/addrbook').expanduser()
+        self._claws_addrbook_index = self._claws_addrbook_dir.joinpath(
+            "addrbook--index.xml")
+        self._version = 5
 
     def initialize(self):
         ToplevelGroupingSource.initialize(self)
-        if not os.path.isdir(self._claws_addrbook_dir):
+        if not self._claws_addrbook_dir.is_dir():
             return
 
-        self.monitor_token = self.monitor_directories(self._claws_addrbook_dir)
+        self.monitor_token = self.monitor_directories(
+            str(self._claws_addrbook_dir))
 
     def monitor_include_file(self, gfile):
         # monitor only addrbook-*.xml files
@@ -136,22 +136,23 @@ class ClawsContactsSource(AppLeafContentMixin, ToplevelGroupingSource,
                 gfile.get_basename().startswith("addrbook-")
 
     def get_items(self):
-        if os.path.isfile(self._claws_addrbook_index):
+        if self._claws_addrbook_index.is_file():
             for addrbook_file in self._load_address_books():
-                addrbook_filepath = os.path.join(self._claws_addrbook_dir,
-                                                 addrbook_file)
-                if not os.path.exists(addrbook_filepath):
+                addrbook_filepath = self._claws_addrbook_dir.joinpath(
+                                         addrbook_file)
+                if not addrbook_filepath.exists():
                     continue
 
                 try:
-                    dtree = minidom.parse(addrbook_filepath)
+                    dtree = minidom.parse(str(addrbook_filepath))
                     persons = dtree.getElementsByTagName('person')
                     for person in persons:
-                        cn = person.getAttribute('cn')
+                        commonname = person.getAttribute('cn')
                         addresses = person.getElementsByTagName('address')
                         for address in addresses:
                             email = address.getAttribute('email')
-                            yield EmailContact(email, cn)
+                            yield EmailContact(email, commonname)
+
                 except (Exception, xml.parsers.expat.ExpatError) as err:
                     self.output_error(err)
 
@@ -176,8 +177,9 @@ class ClawsContactsSource(AppLeafContentMixin, ToplevelGroupingSource,
     def _load_address_books(self):
         ''' load list of address-book files '''
         try:
-            dtree = minidom.parse(self._claws_addrbook_index)
+            dtree = minidom.parse(str(self._claws_addrbook_index))
             for book in dtree.getElementsByTagName('book'):
                 yield book.getAttribute('file')
+
         except (Exception, xml.parsers.expat.ExpatError) as err:
             self.output_error(err)

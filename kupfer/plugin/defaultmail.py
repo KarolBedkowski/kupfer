@@ -18,7 +18,7 @@ class NewMailAction(Action):
 
     def activate(self, leaf):
         email = email_from_leaf(leaf)
-        utils.show_url("mailto:%s" % email)
+        utils.show_url(f"mailto:{email}")
 
     def activate_multiple(self, objects):
         recipients = ",".join(email_from_leaf(L) for L in objects)

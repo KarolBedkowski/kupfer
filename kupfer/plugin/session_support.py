@@ -57,7 +57,7 @@ class LockScreen (CommandLeaf):
 
 class CommonSource (Source):
     def __init__(self, name):
-        super(CommonSource, self).__init__(name)
+        super().__init__(name)
     def is_dynamic(self):
         return True
     def get_icon_name(self):

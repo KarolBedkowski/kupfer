@@ -23,7 +23,7 @@ class Volume (FileLeaf):
         self.volume = volume
         fil = self.volume.get_root()
         path = fil.get_path()
-        super(Volume, self).__init__(obj=path, name=volume.get_name())
+        super().__init__(obj=path, name=volume.get_name())
         self.kupfer_add_alias(fil.get_basename())
 
     def get_actions(self):
@@ -50,7 +50,7 @@ class Volume (FileLeaf):
 
 class Unmount (Action):
     def __init__(self, name=None):
-        super(Unmount, self).__init__(name or _("Unmount"))
+        super().__init__(name or _("Unmount"))
 
     def eject_callback(self, mount, async_result, ctx):
         try:
@@ -102,7 +102,7 @@ class Unmount (Action):
 
 class Eject (Unmount):
     def __init__(self):
-        super(Eject, self).__init__(_("Eject"))
+        super().__init__(_("Eject"))
 
     def get_description(self):
         return _("Unmount and eject this media")

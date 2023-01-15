@@ -2,7 +2,7 @@
 Stub implementation of HTTPS connections.
 """
 
-class VerifiedHTTPSConnection (object):
+class VerifiedHTTPSConnection :
     "implementation stub"
     def __init__(self, host, *args, **kwargs):
         pass

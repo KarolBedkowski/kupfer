@@ -41,7 +41,7 @@ class Quit (RunnableLeaf):
     qf_id = "quit"
     def __init__(self, name=None):
         if not name: name = _("Quit")
-        super(Quit, self).__init__(name=name)
+        super().__init__(name=name)
     def run(self):
         Gtk.main_quit()
     def get_description(self):
@@ -52,7 +52,7 @@ class Quit (RunnableLeaf):
 class About (RunnableLeaf):
     def __init__(self, name=None):
         if not name: name = _("About Kupfer")
-        super(About, self).__init__(name=name)
+        super().__init__(name=name)
     def wants_context(self):
         return True
     def run(self, ctx):
@@ -65,7 +65,7 @@ class About (RunnableLeaf):
 class Help (RunnableLeaf):
     def __init__(self, name=None):
         if not name: name = _("Kupfer Help")
-        super(Help, self).__init__(name=name)
+        super().__init__(name=name)
     def wants_context(self):
         return True
     def run(self, ctx):
@@ -78,7 +78,7 @@ class Help (RunnableLeaf):
 class Preferences (RunnableLeaf):
     def __init__(self, name=None):
         if not name: name = _("Kupfer Preferences")
-        super(Preferences, self).__init__(name=name)
+        super().__init__(name=name)
     def wants_context(self):
         return True
     def run(self, ctx):

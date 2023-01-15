@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Module provide function to read Thunderbird's address book.
 
@@ -116,7 +115,7 @@ def _unescape_data(instr):
 def _read_mork(filename):
     """Read mork file, return tables from file"""
     data = []
-    with open(filename, "rt") as mfile:
+    with open(filename) as mfile:
         header = mfile.readline().strip()
         # check header
         if not RE_HEADER.match(header):
@@ -413,7 +412,7 @@ def get_contacts():
         else:
             try:
                 tables = _read_mork(abook)
-            except IOError as err:
+            except OSError as err:
                 pretty.print_error(__name__, "get_contacts error", abook, err)
             else:
                 yield from _mork2contacts(tables)

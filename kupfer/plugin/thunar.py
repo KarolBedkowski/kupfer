@@ -13,6 +13,8 @@ __version__ = ""
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 import os
+from contextlib import suppress
+from pathlib import Path
 
 import dbus
 from gi.repository import Gio
@@ -147,7 +149,7 @@ class SendTo (Action):
 
 def _good_destination(dpath, spath):
     """If directory path @dpath is a valid destination for file @spath
-    to be copied or moved to. 
+    to be copied or moved to.
     """
     if not os.path.isdir(dpath):
         return False
@@ -348,13 +350,13 @@ class _SendToAppsSource (Source):
             for filename in os.listdir(data_dir):
                 if not filename.endswith('.desktop'):
                     continue
-                file_path = os.path.join(data_dir, filename)
-                if not os.path.isfile(file_path):
+
+                file_path = Path(data_dir, filename)
+                if not file_path.is_file():
                     continue
-                try:
-                    yield AppLeaf(init_path=file_path, require_x=False)
-                except InvalidDataError:
-                    pass
+
+                with suppress(InvalidDataError):
+                    yield AppLeaf(init_path=str(file_path), require_x=False)
 
     def get_icon_name(self):
         return "Thunar"

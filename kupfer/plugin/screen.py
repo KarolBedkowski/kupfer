@@ -5,6 +5,7 @@ __version__ = ""
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 import os
+from pathlib import Path
 
 from kupfer.objects import Leaf, Action, Source
 from kupfer.obj.helplib import FilesystemWatchMixin
@@ -51,7 +52,7 @@ class ScreenSession (Leaf):
             if self.object == pid:
                 break
         else:
-            return "%s (%s)" % (self.name, self.object)
+            return f"{self.name} ({self.object})"
         # Handle localization of status
         status_dict = {
             "Attached": _("Attached"),
@@ -67,22 +68,24 @@ class ScreenSession (Leaf):
 class ScreenSessionsSource (Source, FilesystemWatchMixin):
     """Source for GNU Screen sessions"""
     def __init__(self):
-        super(ScreenSessionsSource, self).__init__(_("Screen Sessions"))
+        super().__init__(_("Screen Sessions"))
 
     def initialize(self):
         ## the screen dir might not exist when we start
         ## luckily, gio can monitor directories before they exist
         self.screen_dir = (os.getenv("SCREENDIR") or
-                "/var/run/screen/S-%s" % get_username())
-        if not os.path.exists(self.screen_dir):
+                f"/var/run/screen/S-{get_username()}")
+        if not Path(self.screen_dir).exists():
             self.output_debug("Screen socket dir or SCREENDIR not found")
+
         self.monitor_token = self.monitor_directories(self.screen_dir,
                                                       force=True)
 
     def get_items(self):
-        if not os.path.exists(self.screen_dir):
+        if not Path(self.screen_dir).exists():
             return
-        for pid, name, time, status in screen_sessions_infos():
+
+        for pid, name, _time, _status in screen_sessions_infos():
             yield ScreenSession(pid, name)
 
     def get_description(self):
@@ -97,9 +100,8 @@ class AttachScreen (Action):
     """
     def __init__(self):
         name = _("Attach")
-        super(AttachScreen, self).__init__(name)
+        super().__init__(name)
     def activate(self, leaf):
         pid = leaf.object
-        action_argv = ['screen', '-x', '-R', ('%s' % pid)]
+        action_argv = ['screen', '-x', '-R', str(pid)]
         utils.spawn_in_terminal(action_argv)
-

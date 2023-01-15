@@ -43,9 +43,7 @@ class LargeType (Action):
         return self.activate_multiple((leaf, ), ctx)
 
     def activate_multiple(self, objects, ctx):
-        all_texts = []
-        for obj in objects:
-            all_texts.append(obj.get_text_representation())
+        all_texts = [obj.get_text_representation() for obj in objects]
         uiutils.show_large_type("\n".join(all_texts), ctx)
 
     def item_types(self):
@@ -78,4 +76,3 @@ class ShowNotification (Action):
 
     def get_icon_name(self):
         return "format-text-bold"
-

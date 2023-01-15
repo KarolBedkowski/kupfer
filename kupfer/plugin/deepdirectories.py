@@ -1,5 +1,3 @@
-# -*- coding: UTF-8 -*-
-
 __kupfer_name__ = _("Deep Directories")
 __kupfer_sources__ = ("DeepDirSource",)
 __description__ = _("Recursive index directories")

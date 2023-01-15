@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 '''
 virtualbox_vboxapi_support.py
 
@@ -8,6 +7,7 @@ Only (?) Sun VirtualBox (no OSE).
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
 __version__ = "2018-09-07"
 
+from contextlib import suppress
 
 from kupfer import pretty
 
@@ -81,11 +81,10 @@ def get_machine_state(machine_id):
         # silently set state to off
         state = vbox_const.VM_STATE_POWEROFF
         pretty.print_debug(__name__, 'get_machine_state error', err)
-    try:
+    with suppress(Exception):
         if vbox_sess.state == vbox.constants.SessionState_Open:
             vbox_sess.close()
-    except Exception:  # varoius errors (xpcom.Exception)
-        pass
+
     pretty.print_debug(__name__, 'get_machine_state finish', machine_id, state)
     return state
 
@@ -104,11 +103,10 @@ def _machine_start(vm_uuid, mode):
         except Exception as err:
             pretty.print_error(__name__, "StartVM:", vm_uuid, "Mode ", mode,
                     "error", err)
-        try:
+
+        with suppress(Exception): # varoius errors (xpcom.Exception)
             if session.state == vbox.constants.SessionState_Open:
                 session.close()
-        except Exception:  # varoius errors (xpcom.Exception)
-            pass
 
 
 def _execute_machine_action(vm_uuid, action):
@@ -122,11 +120,10 @@ def _execute_machine_action(vm_uuid, action):
     except Exception as err:
         pretty.print_error(__name__, "_execute_machine_action:", repr(action),
                 " vm:", vm_uuid, "error", err)
-    try:
+
+    with suppress(Exception): # varoius errors (xpcom.Exception)
         if session.state == vbox.constants.SessionState_Open:
             session.close()
-    except Exception:  # varoius errors (xpcom.Exception)
-        pass
 
 
 def vm_action(action, vm_uuid):

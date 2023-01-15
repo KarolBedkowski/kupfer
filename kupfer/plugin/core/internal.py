@@ -1,4 +1,3 @@
-
 from kupfer.objects import Source, Leaf
 from kupfer.objects import RunnableLeaf
 from kupfer.core import commandexec
@@ -70,8 +69,7 @@ class CommandResults (Source):
 
     def get_items(self):
         ctx = commandexec.DefaultActionExecutionContext()
-        for x in reversed(ctx.last_results):
-            yield x
+        yield from reversed(ctx.last_results)
         try:
             leaf = ctx.last_results[-1]
         except IndexError:

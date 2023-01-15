@@ -30,7 +30,7 @@ def load_image_max_size(filename, w, h):
         with open(filename, "rb") as f:
             shutil.copyfileobj(f, pl)
         pl.close()
-    except (GLib.GError, EnvironmentError) as exc:
+    except (GLib.GError, OSError) as exc:
         raise OperationError(exc)
     return pl.get_pixbuf()
 

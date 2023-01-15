@@ -339,7 +339,7 @@ class AlbumLeaf (TrackCollection):
         hspace = "7215ee9c7d9dc229d2921a40e899ec5f"
         htitle = md5(_toutf8_lossy(ltitle)).hexdigest()
         hartist = hspace
-        cache_name = "album-%s-%s.jpeg" % (hartist, htitle)
+        cache_name = f"album-{hartist}-{htitle}.jpeg"
         return config.get_cache_file(("media-art", cache_name))
 
 
@@ -487,14 +487,11 @@ class RhythmboxSource (AppLeafContentMixin, Source, PicklingHelperMixin):
         yield SourceLeaf(songs_source)
         # we use get_leaves here to get sorting etc right
         if __kupfer_settings__["toplevel_artists"]:
-            for leaf in artist_source.get_leaves():
-                yield leaf
+            yield from artist_source.get_leaves()
         if __kupfer_settings__["toplevel_albums"]:
-            for leaf in album_source.get_leaves():
-                yield leaf
+            yield from album_source.get_leaves()
         if __kupfer_settings__["toplevel_songs"]:
-            for leaf in songs_source.get_leaves():
-                yield leaf
+            yield from songs_source.get_leaves()
 
     def get_description(self):
         return _("Play and enqueue tracks and browse the music library")

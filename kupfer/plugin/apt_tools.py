@@ -30,7 +30,7 @@ __kupfer_settings__ = plugin_support.PluginSettings(
 
 class InfoTask(task.Task):
     def __init__(self, text):
-        super(InfoTask, self).__init__()
+        super().__init__()
         self.text = text
         self.aptitude = None
         self.apt_cache = None

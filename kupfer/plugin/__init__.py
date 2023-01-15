@@ -1,4 +1,3 @@
-
 def _extend_path():
     # Inside a function to not leak variables to module namespace
     import os
@@ -12,7 +11,7 @@ def _extend_path():
     __path__.extend(config.get_data_dirs("plugins"))
 
     # Add .zip files in plugins directories
-    for directory in list(__path__):
+    for directory in __path__.copy():
         try:
             filenames = os.listdir(directory)
         except OSError as error:
@@ -24,4 +23,3 @@ def _extend_path():
         __path__.extend(os.path.join(directory, z) for z in zipnames)
 
 _extend_path()
-

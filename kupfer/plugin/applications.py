@@ -1,4 +1,3 @@
-
 __kupfer_name__ = _("Applications")
 __kupfer_sources__ = ("AppSource", )
 __kupfer_actions__ = (
@@ -94,8 +93,7 @@ class AppSource (Source, FilesystemWatchMixin):
             return True
         if desktop_type == "":
             return app_info.should_show()
-        else:
-            return app_info.get_show_in(desktop_type)
+        return app_info.get_show_in(desktop_type)
 
     def get_items(self):
         use_filter = __kupfer_settings__["desktop_filter"]
@@ -239,4 +237,3 @@ class ResetAssociations (Action):
 
     def get_description(self):
         return _("Reset program associations for files of this type.")
-

@@ -49,7 +49,8 @@ class PathTextSource (TextSource):
         # Recognize file:/// or file://localhost/ or file://<local_hostname>/ URLs
         if url.startswith("file:"):
             hostname = self._get_hostname()
-            for prefix in ['file:///', 'file://localhost/', 'file://%s/' % hostname]:
+            for prefix in ('file:///', 'file://localhost/',
+                           f'file://{hostname}/'):
                 if url.startswith(prefix):
                     return True
         return False

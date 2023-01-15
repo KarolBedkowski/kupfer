@@ -42,11 +42,11 @@ __kupfer_settings__ = plugin_support.PluginSettings(
 class UnpackHere (Action):
     def __init__(self):
         Action.__init__(self, _("Extract Here"))
-        self.extensions_set = set((
+        self.extensions_set = {
             ".rar", ".7z", ".zip", ".gz", ".tgz", ".tar", ".lzma", ".bz2",
             ".tbz2", ".tzo", ".lzo", ".xz", ".ar", ".cbz", ".Z", ".taz",
             ".lz", ".bz", ".tbz", ".lzh",
-            ))
+            }
     def activate(self, leaf):
         utils.spawn_async_notify_as("file-roller.desktop",
                 ["file-roller", "--extract-here", leaf.object])
@@ -96,7 +96,7 @@ class CreateArchiveIn (Action):
         archive_type = __kupfer_settings__["archive_type"]
         archive_path = \
             utils.get_destpath_in_directory(dirpath, basename, archive_type)
-        cmd = ["file-roller", "--add-to=%s" % (archive_path, )]
+        cmd = ["file-roller", f"--add-to={archive_path}"]
         cmd.extend(filepaths)
         runtimehelper.register_async_file_result(ctx, archive_path)
         utils.spawn_async_notify_as("file-roller.desktop", cmd)

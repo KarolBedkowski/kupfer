@@ -44,8 +44,8 @@ def _url_domain(text):
 
 class Keyword(Leaf):
     def __init__(self, title, kw, url):
-        title = title if title else _url_domain(url)
-        name = "%s (%s)" % (kw, title)
+        title = title or _url_domain(url)
+        name = f"{kw} ({title})"
         super().__init__(url, name)
         self.keyword = kw
 

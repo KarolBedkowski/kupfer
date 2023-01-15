@@ -160,7 +160,7 @@ class PidginContact(ContactLeaf):
                 }
 
         if status_message:
-            self._description += "\n%s" % status_message
+            self._description += f"\n{status_message}"
 
         self.account = account
         self.jid = jid
@@ -169,7 +169,7 @@ class PidginContact(ContactLeaf):
 
     def repr_key(self):
         # the repr key should be persistent and hopefully unique
-        return "%s, %s" % (self.protocol, self.object[PIDGIN_JID])
+        return f"{self.protocol}, {self.object[PIDGIN_JID]}"
 
     def get_description(self):
         return self._description
@@ -254,7 +254,7 @@ class ContactsSource(AppLeafContentMixin, ToplevelGroupingSource):
             self.all_buddies = {}
             return
         is_disconnected = interface.PurpleAccountIsDisconnected
-        conn_accounts = set(a for a in accounts if not is_disconnected(a))
+        conn_accounts = {a for a in accounts if not is_disconnected(a)}
         for buddy, pcontact in list(self.all_buddies.items()):
             if pcontact.account not in conn_accounts:
                 del self.all_buddies[buddy]
