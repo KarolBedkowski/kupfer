@@ -1,10 +1,9 @@
-
 from gi.repository import Gtk, Gdk
 
 from kupfer import version, config
 
 
-class GetKeyDialogController(object):
+class GetKeyDialogController:
     def __init__(self, check_callback=None, previous_key=None,
                  screen=None, parent=None,
                  show_clear=True):

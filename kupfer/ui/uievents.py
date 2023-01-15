@@ -17,7 +17,7 @@ def gui_context_from_keyevent(timestamp, display):
     screen, x, y, modifiers = new_display.get_pointer()
     return GUIEnvironmentContext(timestamp, screen)
 
-class GUIEnvironmentContext (object):
+class GUIEnvironmentContext :
     """
     Context object for action execution
     in the current GUI context
@@ -29,10 +29,8 @@ class GUIEnvironmentContext (object):
         self._screen = screen or Gdk.Screen.get_default()
 
     def __repr__(self):
-        return "<%s time=%r screen=%r>" % (
-                type(self).__name__,
-                self._timestamp,
-                self._screen)
+        return (f"<{type(self).__name__} "
+            f"time={self._timestamp!r} screen={self._screen!r}>")
 
     @classmethod
     def ensure_display_open(cls, display):
@@ -126,7 +124,7 @@ class GUIEnvironmentContext (object):
         window.set_screen(self.get_screen())
         window.present_with_time(self.get_timestamp())
 
-class _internal_data (object):
+class _internal_data :
     seq = 0
     current_event_time = 0
 
@@ -136,7 +134,7 @@ class _internal_data (object):
 
 def _make_startup_notification_id(time):
     _internal_data.inc_seq()
-    return "%s-%d-%s_TIME%d" % ("kupfer", os.getpid(), _internal_data.seq, time)
+    return f"kupfer-%{os.getpid()}-{_internal_data.seq}_TIME{time}"
 
 def current_event_time():
     return (Gtk.get_current_event_time() or
@@ -150,10 +148,9 @@ def _parse_notify_id(startup_notification_id):
     time = 0
     if "_TIME" in startup_notification_id:
         _ign, bstime = startup_notification_id.split("_TIME", 1)
-        try:
+        with contextlib.suppress(ValueError):
             time = abs(int(bstime))
-        except ValueError:
-            pass
+
     return time
 
 @contextlib.contextmanager
@@ -163,7 +160,7 @@ def using_startup_notify_id(notify_id):
 
     with using_startup_notify_id(...) as time:
         pass
-    
+
     The yelt object is the parsed timestamp
     """
     timestamp = _parse_notify_id(notify_id)
@@ -175,4 +172,3 @@ def using_startup_notify_id(notify_id):
         yield timestamp
     finally:
         _internal_data.current_event_time = Gdk.CURRENT_TIME
-

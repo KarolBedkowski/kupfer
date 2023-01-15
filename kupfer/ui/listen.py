@@ -51,7 +51,7 @@ class Service (ExportedGObject):
         if session_bus.name_has_owner(server_name):
             raise AlreadyRunningError
         bus_name = dbus.service.BusName(server_name, bus=session_bus)
-        super(Service, self).__init__(conn=session_bus, object_path=object_name,
+        super().__init__(conn=session_bus, object_path=object_name,
                 bus_name=bus_name)
 
     def unregister(self):

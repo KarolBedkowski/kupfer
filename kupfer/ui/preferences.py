@@ -1,5 +1,7 @@
 import os
 import re
+from pathlib import Path
+from contextlib import suppress
 
 import gi
 
@@ -139,7 +141,7 @@ class PreferencesWindowController (pretty.OutputMixin):
         radio_actionaccelalt.set_active(setctl.get_action_accelerator_modifer() != 'ctrl')
         radio_actionaccelctrl.set_active(setctl.get_action_accelerator_modifer() == 'ctrl')
 
-        # List store with columns (Name, ID) 
+        # List store with columns (Name, ID)
         # Make alternative comboboxes
         terminal_combobox = builder.get_object("terminal_combobox")
         icons_combobox = builder.get_object("icons_combobox")
@@ -206,7 +208,7 @@ class PreferencesWindowController (pretty.OutputMixin):
         self.plugin_info = utils.locale_sort(plugins.get_plugin_info(),
                 key= lambda rec: rec["localized_name"])
         self._refresh_plugin_list()
-        self.output_debug("Standard Plugins: %d" % len(self.store))
+        self.output_debug(f"Standard Plugins: {len(self.store)}")
         self.table.show()
         self.pluglist_parent.add(self.table)
 
@@ -241,17 +243,15 @@ class PreferencesWindowController (pretty.OutputMixin):
         self.keybind_table.set_sensitive(keybindings.is_available())
 
 
-        # kupfer interface (accelerators) keybindings list 
+        # kupfer interface (accelerators) keybindings list
         self.gkeybind_table, self.gkeybind_store = _create_conf_keys_list()
         self.gkeybindings_list_parent.add(self.gkeybind_table)
         self.gkeybind_table.connect("row-activated",
                 self.on_gkeybindings_row_activate)
 
         # Requires GTK 3.22
-        try:
+        with suppress(AttributeError):
             self.gkeybindings_list_parent.set_propagate_natural_height(True)
-        except AttributeError:
-            pass
 
         self._show_keybindings(setctl)
         self._show_gkeybindings(setctl)
@@ -323,11 +323,11 @@ class PreferencesWindowController (pretty.OutputMixin):
         AUTOSTART_KEY = "X-GNOME-Autostart-enabled"
         HIDDEN_KEY = "Hidden"
         autostart_dir = base.save_config_path("autostart")
-        autostart_file = os.path.join(autostart_dir, KUPFER_DESKTOP)
-        if not os.path.exists(autostart_file):
+        autostart_file = Path(autostart_dir, KUPFER_DESKTOP)
+        if not autostart_file.exists():
             return False
         try:
-            dfile = desktop.DesktopEntry(autostart_file)
+            dfile = desktop.DesktopEntry(str(autostart_file))
         except xdg_e.ParsingError as exception:
             pretty.print_error(__name__, exception)
             return False
@@ -341,13 +341,14 @@ class PreferencesWindowController (pretty.OutputMixin):
         AUTOSTART_KEY = "X-GNOME-Autostart-enabled"
         HIDDEN_KEY = "Hidden"
         autostart_dir = base.save_config_path("autostart")
-        autostart_file = os.path.join(autostart_dir, KUPFER_DESKTOP)
-        if not os.path.exists(autostart_file):
+        autostart_file = Path(autostart_dir, KUPFER_DESKTOP)
+        if not autostart_file.exists():
             desktop_files = list(base.load_data_paths("applications",
                 KUPFER_DESKTOP))
             if not desktop_files:
                 self.output_error("Installed kupfer desktop file not found!")
                 return
+
             desktop_file_path = desktop_files[0]
             # Read installed file and modify it
             try:
@@ -355,6 +356,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             except xdg_e.ParsingError as exception:
                 pretty.print_error(__name__, exception)
                 return
+
             executable = dfile.getExec()
             ## append no-splash
             if "--no-splash" not in executable:
@@ -362,10 +364,11 @@ class PreferencesWindowController (pretty.OutputMixin):
             dfile.set("Exec", executable)
         else:
             try:
-                dfile = desktop.DesktopEntry(autostart_file)
+                dfile = desktop.DesktopEntry(str(autostart_file))
             except xdg_e.ParsingError as exception:
                 pretty.print_error(__name__, exception)
                 return
+
         activestr = str(bool(widget.get_active())).lower()
         not_activestr = str(not bool(widget.get_active())).lower()
         self.output_debug("Setting autostart to", activestr)
@@ -414,7 +417,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             name = info["localized_name"]
             folded_name = kupferstring.tofolded(name)
             desc = info["description"]
-            text = "%s" % name
+            text = str(name)
 
             if us_filter:
                 name_score = relevance.score(name, us_filter)
@@ -458,7 +461,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             plugin_id = row[id_col]
             if plugin_id == id_:
                 return row.path
-        raise ValueError("No such plugin %s" % id_)
+        raise ValueError(f"No such plugin {id_}")
 
 
     def _plugin_info_for_id(self, plugin_id):
@@ -481,7 +484,7 @@ class PreferencesWindowController (pretty.OutputMixin):
         info = self._plugin_info_for_id(plugin_id)
         title_label = Gtk.Label()
         m_localized_name = GLib.markup_escape_text(info["localized_name"])
-        title_label.set_markup("<b><big>%s</big></b>" % m_localized_name)
+        title_label.set_markup(f"<b><big>{m_localized_name}</big></b>")
         version, description, author = plugins.get_plugin_attributes(plugin_id,
                 ( "__version__", "__description__", "__author__", ))
         about.pack_start(title_label, False, True, 0)
@@ -494,18 +497,18 @@ class PreferencesWindowController (pretty.OutputMixin):
                 continue
             label = Gtk.Label()
             label.set_alignment(0, 0)
-            label.set_markup("<b>%s</b>" % field)
+            label.set_markup(f"<b>{field}</b>")
             infobox.pack_start(label, False, True, 0)
             label = wrapped_label()
             label.set_alignment(0, 0)
-            label.set_markup("%s" % GLib.markup_escape_text(val))
+            label.set_markup(f"{GLib.markup_escape_text(val)}")
             label.set_selectable(True)
             infobox.pack_start(label, False, True, 0)
         if version:
             label = wrapped_label()
             label.set_alignment(0, 0)
             m_version = GLib.markup_escape_text(version)
-            label.set_markup("<b>%s:</b> %s" % (_("Version"), m_version))
+            label.set_markup(f"<b>{_('Version')}:</b> {m_version}")
             label.set_selectable(True)
             infobox.pack_start(label, False, True, 0)
         about.pack_start(infobox, False, True, 0)
@@ -516,7 +519,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             etype, error, tb = exc_info
             # TRANS: Error message when Plugin needs a Python module to load
             import_error_localized = _("Python module '%s' is needed") % "\\1"
-            import_error_pat = "No module named ([^\s]+)"
+            import_error_pat = r"No module named ([^\s]+)"
             errmsg = str(error)
             if re.match(import_error_pat, errmsg):
                 errstr = re.sub(import_error_pat,
@@ -530,7 +533,7 @@ class PreferencesWindowController (pretty.OutputMixin):
 
             label = wrapped_label()
             label.set_alignment(0, 0)
-            label.set_markup("<b>%s</b>\n\n%s" % (
+            label.set_markup("<b>{}</b>\n\n{}".format(
                 _("Plugin could not be read due to an error:"),
                 GLib.markup_escape_text(errstr),
                 ))
@@ -539,7 +542,7 @@ class PreferencesWindowController (pretty.OutputMixin):
         elif not plugins.is_plugin_loaded(plugin_id):
             label = Gtk.Label()
             label.set_alignment(0, 0)
-            label.set_text("(%s)" % _("disabled"))
+            label.set_text(f"({_('disabled')})")
             about.pack_start(label, False, True, 0)
 
         wid = self._make_plugin_info_widget(plugin_id)
@@ -571,8 +574,7 @@ class PreferencesWindowController (pretty.OutputMixin):
 
         def make_objects_frame(objs, title):
             frame_label = Gtk.Label()
-            frame_label.set_markup("<b>%s</b>" %
-                                   GLib.markup_escape_text(title))
+            frame_label.set_markup(f"<b>{GLib.markup_escape_text(title)}</b>")
             frame_label.set_alignment(0, 0)
             objvbox = Gtk.VBox()
             objvbox.pack_start(frame_label, False, True, 0)
@@ -594,8 +596,8 @@ class PreferencesWindowController (pretty.OutputMixin):
                 m_name = GLib.markup_escape_text(name)
                 m_desc = GLib.markup_escape_text(desc)
                 name_label = \
-                    "%s\n<small>%s</small>" % (m_name, m_desc) if m_desc else \
-                    "%s" % (m_name, )
+                    f"{m_name}\n<small>{m_desc}</small>" if m_desc else \
+                    str(m_name)
                 label = wrapped_label()
                 label.set_markup(name_label)
                 label.set_xalign(0.)
@@ -671,7 +673,7 @@ class PreferencesWindowController (pretty.OutputMixin):
 
         title_label = Gtk.Label()
         # TRANS: Plugin-specific configuration (header)
-        title_label.set_markup("<b>%s</b>" % _("Configuration"))
+        title_label.set_markup(f"<b>{_('Configuration')}</b>")
         title_label.set_alignment(0, 0)
 
         vbox = Gtk.VBox()
@@ -986,7 +988,7 @@ def GetPreferencesWindowController():
         _preferences_window = PreferencesWindowController()
     return _preferences_window
 
-class SourceListController (object):
+class SourceListController :
     def __init__(self, parent_widget):
         columns = [
             {"key": "source", "type": GObject.TYPE_PYOBJECT },
@@ -1076,4 +1078,3 @@ def supports_app_indicator():
         return False
     else:
         return True
-

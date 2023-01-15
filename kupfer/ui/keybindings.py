@@ -40,7 +40,7 @@ class KeyboundObject (GObject.GObject):
     """
     __gtype_name__ = "KeyboundObject"
     def __init__(self):
-        super(KeyboundObject, self).__init__()
+        super().__init__()
     def _keybinding(self, target):
         time = Keybinder.get_current_event_time()
         self.emit("keybinding", target, "", time)
@@ -132,6 +132,6 @@ def _is_sane_keybinding(keystr):
         return True
     if len(keystr) == 1 and keystr.isalnum():
         return False
-    if keystr in set(["Return", "space", "BackSpace", "Escape"]):
+    if keystr in {"Return", "space", "BackSpace", "Escape"}:
         return False
     return True

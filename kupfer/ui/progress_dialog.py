@@ -14,7 +14,7 @@ def idle_call(func):
 
 _HEADER_MARKUP = '<span weight="bold" size="larger">%s</span>'
 
-class ProgressDialogController (object):
+class ProgressDialogController :
     def __init__(self, title, header=None, max_value=100):
         """Create a new progress dialog
 

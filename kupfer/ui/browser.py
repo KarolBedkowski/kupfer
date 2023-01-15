@@ -1,10 +1,10 @@
-# -*- coding: UTF-8 -*-
-
 import io
 import itertools
 import signal
 import sys
 import textwrap
+import math
+from contextlib import suppress
 
 import gi
 from gi.repository import Gtk, Gdk, GObject
@@ -64,7 +64,7 @@ def make_rounded_rect(cr,x,y,width,height,radius):
     """
     Draws a rounded rectangle with corners of @radius
     """
-    MPI = 3.1415926535897931
+    MPI = math.pi
     cr.save()
 
     w,h = width, height
@@ -120,10 +120,10 @@ def get_glyph_pixbuf(text, sz, center_vert=True, color=None):
 
 
 # State Constants
-class State (object):
+class State :
     Wait, Match, NoMatch = (1,2,3)
 
-class LeafModel (object):
+class LeafModel :
     """A base for a tree view
     With a magic load-on-demand feature.
 
@@ -262,17 +262,17 @@ class LeafModel (object):
         name = escape_markup_str(str(leaf))
         desc = escape_markup_str(leaf.get_description() or "")
         if desc:
-            text = '%s\n<small>%s</small>' % (name, desc, )
+            text = f'{name}\n<small>{desc}</small>'
         else:
-            text = '%s' % (name, )
+            text = f'{name}'
         return text
 
     def get_fav(self, leaf):
         # fav: display star if it's a favourite
         if learn.is_favorite(leaf):
             return "\N{BLACK STAR}"
-        else:
-            return ""
+
+        return ""
 
     def get_aux_info(self, leaf):
         # For objects: Show arrow if it has content
@@ -319,7 +319,7 @@ class MatchViewOwner(pretty.OutputMixin):
         setctl.connect("value-changed::appearance.icon_large_size",
                        self._icon_size_changed)
         self._icon_size_changed(setctl, None, None, None)
-        
+
     def build_widget(self):
         """
         Core initalization method that builds the widget
@@ -426,7 +426,7 @@ class MatchViewOwner(pretty.OutputMixin):
         text = str(self.cur_text)
         key = str(self.cur_match).lower()
 
-        format_match=(lambda m: "<u><b>%s</b></u>" % escape_markup_str(m))
+        format_match=(lambda m: f"<u><b>{escape_markup_str(m)}</b></u>")
         markup = relevance.formatCommonSubstrings(text, key,
                 format_clean=escape_markup_str,
                 format_match=format_match)
@@ -916,13 +916,13 @@ class LeafSearch (Search):
                     get_pbuf(self.source))
         elif self.source:
             return (_('No matches in %(src)s for "%(query)s"') % {
-                "src": "<i>%s</i>" % escape_markup_str(str(self.source)),
+                "src": f"<i>{escape_markup_str(str(self.source))}</i>",
                 "query": escape_markup_str(self.text),
                 },
                 get_pbuf(self.source))
-        else:
-            return _("No matches"), icons.get_icon_for_name("kupfer-object",
-                    self.icon_size)
+
+        return _("No matches"), icons.get_icon_for_name("kupfer-object",
+                                                        self.icon_size)
 
     def setup_empty(self):
         icon = None
@@ -978,8 +978,8 @@ class ActionSearch (Search):
             if mods != 0:
                 self.output_error("Ignoring action accelerator mod", mods)
             return Gtk.accelerator_get_label(keyv, self.accel_modifier)
-        else:
-            return ""
+
+        return ""
 
     def get_nomatch_name_icon(self, empty=False):
         # don't look up icons too early
@@ -1138,7 +1138,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
             "space", 'Page_Up', 'Page_Down', 'Home', 'End',
             "Return",
             )
-        self.key_book = dict((k, Gdk.keyval_from_name(k)) for k in keys)
+        self.key_book = {k: Gdk.keyval_from_name(k) for k in keys}
         if not text_direction_is_ltr():
             # for RTL languages, simply swap the meaning of Left and Right
             # (for keybindings!)
@@ -1169,7 +1169,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         self.third.hide()
         self._widget = vbox
         return vbox
-    
+
     def lazy_setup(self):
         def validate(keystr):
             keyv, mod = Gtk.accelerator_parse(keystr)
@@ -1233,7 +1233,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
             if akeyv == keyv and (amodf == (event.get_state() & modifiers)):
                 action_method = getattr(self, action, None)
                 if not action_method:
-                    pretty.print_error(__name__, "Action invalid '%s'" % action)
+                    pretty.print_error(__name__, f"Action invalid '{action}'")
                 else:
                     action_method()
                 return True
@@ -1673,8 +1673,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
 
         def is_good_keystr(k):
             keyv, mods = Gtk.accelerator_parse(k)
-            return keyv != 0 and (mods == 0
-                    or mods == self.action.accel_modifier)
+            return keyv != 0 and mods in (0, self.action.accel_modifier)
 
         w = self.get_widget()
         keystr = getkey_dialog.ask_for_key(is_good_keystr,
@@ -1698,7 +1697,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         def get_accel(key):
             """ Return name, method pair for @key"""
             if key not in accelerators.ACCELERATOR_NAMES:
-                raise RuntimeError("Missing accelerator: %s" % key)
+                raise RuntimeError(f"Missing accelerator: {key}")
             return (accelerators.ACCELERATOR_NAMES[key], getattr(self, key))
         def trunc(ustr):
             "truncate long object names"
@@ -1905,7 +1904,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         match = self.current.get_current()
         # Use invisible WORD JOINER instead of empty, to maintain vertical size
         desc = match and match.get_description() or "\N{WORD JOINER}"
-        markup = "<small>%s</small>" % (escape_markup_str(desc), )
+        markup = f"<small>{escape_markup_str(desc)}</small>"
         self.label.set_markup(markup)
 
     def put_text(self, text):
@@ -2103,10 +2102,9 @@ class WindowController (pretty.OutputMixin):
     def show_statusicon(self):
         if not self._statusicon:
             self._statusicon = self._setup_gtk_status_icon(self._setup_menu())
-        try:
+
+        with suppress(AttributeError):
             self._statusicon.set_visible(True)
-        except AttributeError:
-            pass
 
     def hide_statusicon(self):
         if self._statusicon:
@@ -2228,7 +2226,7 @@ class WindowController (pretty.OutputMixin):
         button = Gtk.Label.new("")
         l_programname = version.PROGRAM_NAME.lower()
         # The text on the general+context menu button
-        btext = "<b>%s \N{GEAR}</b>" % (l_programname, )
+        btext = f"<b>{l_programname} ⚙</b>"
         button.set_markup(btext)
         button_box = Gtk.EventBox()
         button_box.set_visible_window(False)

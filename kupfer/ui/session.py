@@ -62,7 +62,7 @@ class SessionClient (GObject.GObject, pretty.OutputMixin):
         iface_name = service_name
 
         if not dbus_iface.NameHasOwner(service_name):
-            self.output_debug("D-Bus name %s not found" % service_name)
+            self.output_debug(f"D-Bus name {service_name} not found")
             return False
 
         try:
@@ -97,7 +97,7 @@ class SessionClient (GObject.GObject, pretty.OutputMixin):
         obj_name = "/org/xfce/SessionManager"
 
         if not dbus_iface.NameHasOwner(service_name):
-            self.output_debug("D-Bus name %s not found" % service_name)
+            self.output_debug(f"D-Bus name {service_name} not found")
             return False
 
         try:
