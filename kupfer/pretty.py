@@ -1,18 +1,16 @@
-
-
 debug = False
 
 import sys
 import traceback
 from time import time as timestamp
 
-class OutputMixin (object):
+class OutputMixin :
     """
     A mixin class providing prefixed output
     standard output and debug output
     """
     def _output_category(self):
-        return "[%s] %s:" % (type(self).__module__, type(self).__name__)
+        return f"[{type(self).__module__}] {type(self).__name__}:"
 
     def _output_core(self, prefix, sep, end, stream, *items):
         category = self._output_category()
@@ -34,7 +32,7 @@ class OutputMixin (object):
             self._output_core("Exception in ", "", "\n", sys.stderr)
             traceback.print_exception(etype, value, tb, file=sys.stderr)
         else:
-            msg = "%s: %s" % (etype.__name__, value)
+            msg = f"{etype.__name__}: {value}"
             self._output_core("Exception in ", " ", "\n", sys.stderr, msg)
 
     def output_debug(self, *items, **kwargs):
@@ -51,7 +49,7 @@ class OutputMixin (object):
 class _StaticOutput (OutputMixin):
     current_calling_module = None
     def _output_category(self):
-        return "[%s]:" % (self.current_calling_module, )
+        return f"[{self.current_calling_module}]:"
 
     def print_info(self, modulename, *args, **kwargs):
         self.current_calling_module = modulename
@@ -80,11 +78,11 @@ print_exc = _StaticOutput.print_exc
 def timing_start():
     if debug:
         return [timestamp()]
-    else:
-        return None
+
+    return None
 
 def timing_step(modulename, start, label):
     if debug:
         t = timestamp()
-        print_debug(modulename, label, "in %.6f s" % (t - start[0], ))
+        print_debug(modulename, label, f"in {t - start[0]:.6f} s")
         start[0] = t

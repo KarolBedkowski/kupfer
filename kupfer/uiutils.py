@@ -35,7 +35,7 @@ def builder_get_objects_from_file(fname, attrs, autoconnect_to=None):
 
     ui_file = config.get_data_file(fname)
     builder.add_from_file(ui_file)
-    class Namespace (object):
+    class Namespace :
         pass
     names = Namespace()
     for attr in attrs:
@@ -52,7 +52,7 @@ def show_text_result(text, title=None, ctx=None):
 
     Use @title to set a window title
     """
-    class ResultWindowBehavior (object):
+    class ResultWindowBehavior :
         def __init__(self):
             self.names = None
 

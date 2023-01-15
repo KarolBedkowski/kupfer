@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 VERSION = "development version"
 PACKAGE_NAME = "kupfer"
 

@@ -1,5 +1,3 @@
-# -*- encoding: UTF-8 -*-
-
 import locale
 from unicodedata import normalize, category
 

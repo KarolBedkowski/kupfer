@@ -49,13 +49,13 @@ class PluginSettings (GObject.GObject, pretty.OutputMixin):
         self.setting_descriptions = {}
         self.setting_key_order = []
         self.signal_connection = -1
-        req_keys = set(("key", "value", "type", "label"))
+        req_keys = {"key", "value", "type", "label"}
         for desc in setdescs:
             if not req_keys.issubset(list(desc.keys())):
                 missing = req_keys.difference(list(desc.keys()))
-                raise KeyError("Plugin setting missing keys: %s" % missing)
+                raise KeyError(f"Plugin setting missing keys: {missing}")
             if _is_core_setting(desc["key"]):
-                raise KeyError("Reserved plugin setting key: %r" % (desc["key"], ))
+                raise KeyError(f"Reserved plugin setting key: {desc['key']!r}")
             self.setting_descriptions[desc["key"]] = dict(desc)
             self.setting_key_order.append(desc["key"])
 
@@ -145,7 +145,7 @@ def check_dbus_connection():
     if not _has_dbus_connection:
         raise ImportError(_("No D-Bus connection to desktop session"))
 
-class UserNamePassword (object):
+class UserNamePassword :
     pass
 
 def check_keyring_support():
@@ -216,7 +216,7 @@ def register_alternative(caller, category_key, id_, **kwargs):
 
     if category_key not in _available_alternatives:
         _plugin_configuration_error(caller,
-                "Category '%s' does not exist" % category_key)
+                f"Category '{category_key}' does not exist")
         return
     alt = _available_alternatives[category_key]
     id_ = caller + "." + id_
@@ -224,13 +224,12 @@ def register_alternative(caller, category_key, id_, **kwargs):
     req_set = set(alt["required_keys"])
     if not req_set.issubset(kw_set):
         _plugin_configuration_error(caller,
-            "Configuration error for alternative '%s':" % category_key)
-        _plugin_configuration_error(caller, "Missing keys: %s" %
-                (req_set - kw_set))
+            f"Configuration error for alternative '{category_key}':")
+        _plugin_configuration_error(caller, f"Missing keys: {req_set - kw_set}")
         return
     _alternatives[category_key][id_] = kwargs
     pretty.print_debug(__name__,
-        "Registered alternative %s: %s" % (category_key, id_))
+        f"Registered alternative {category_key}: {id_}")
     setctl = settings.GetSettingsController()
     setctl._update_alternatives(category_key, _alternatives[category_key],
                                 alt["filter"])
@@ -249,7 +248,7 @@ def _unregister_alternative(caller, category_key, full_id_):
     """
     if category_key not in _available_alternatives:
         _plugin_configuration_error(caller,
-                "Category '%s' does not exist" % category_key)
+                f"Category '{category_key}' does not exist")
         return
     alt = _available_alternatives[category_key]
     id_ = full_id_
@@ -257,10 +256,10 @@ def _unregister_alternative(caller, category_key, full_id_):
         del _alternatives[category_key][id_]
     except KeyError:
         _plugin_configuration_error(caller,
-                "Alternative '%s' does not exist" % (id_, ))
+                f"Alternative '{id_}' does not exist")
         return
     pretty.print_debug(__name__,
-        "Unregistered alternative %s: %s" % (category_key, id_))
+        f"Unregistered alternative {category_key}: {id_}")
     setctl = settings.GetSettingsController()
     setctl._update_alternatives(category_key, _alternatives[category_key],
                                 alt["filter"])

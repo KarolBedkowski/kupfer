@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 from gi.repository import Gio, GdkPixbuf, Gtk
 from gi.repository.GLib import GError
 from gi.repository.Gio import Icon, ThemedIcon, FileIcon, File
@@ -108,7 +110,7 @@ def store_icon(key, icon_size, icon):
     """
     Store an icon in cache. It must not have been stored before
     """
-    assert icon, "icon %s may not be %s" % (key, icon)
+    assert icon, f"icon {key} may not be {icon}"
     icon_rec = icon
     if icon_size not in icon_cache:
         icon_cache[icon_size] = datatools.LruCache(ICON_CACHE_SIZE)
@@ -124,7 +126,7 @@ def _get_icon_dwim(icon, icon_size):
         return get_icon_for_name(icon, icon_size)
     return None
 
-class ComposedIcon (object):
+class ComposedIcon :
     """
     A composed icon, which kupfer will render to pixbuf as
     background icon with the decorating icon as emblem
@@ -271,25 +273,21 @@ def _icon_render_change(setctl, *arguments):
 scheduler.GetScheduler().connect("loaded", _setup_icon_renderer)
 
 
-class IconRenderer (object):
+class IconRenderer :
     """
     Default GTK+ implementation
     """
     @classmethod
     def pixbuf_for_name(cls, icon_name, icon_size):
         if icon_name in kupfer_locally_installed_names:
-            try:
+            with suppress(GError):
                 return _local_theme.load_icon(icon_name, icon_size,
                                               Gtk.IconLookupFlags.USE_BUILTIN |
                                               Gtk.IconLookupFlags.FORCE_SIZE)
-            except GError:
-                pass
-        try:
+        with suppress(GError):
             return _default_theme.load_icon(icon_name, icon_size,
                                             Gtk.IconLookupFlags.USE_BUILTIN |
                                             Gtk.IconLookupFlags.FORCE_SIZE)
-        except GError:
-            pass
 
     @classmethod
     def pixbuf_for_file(cls, file_path, icon_size):
@@ -392,4 +390,3 @@ def get_pixbuf_from_data(data, width=None, height=None):
     ploader.write(data)
     ploader.close()
     return ploader.get_pixbuf()
-

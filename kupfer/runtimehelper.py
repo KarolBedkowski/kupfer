@@ -9,7 +9,7 @@ def register_async_file_result(ctx, filepath):
     """
     return AsyncFileResult(ctx, filepath)
 
-class AsyncFileResult (object):
+class AsyncFileResult :
     """Expect a given file path to be created, and when (probably) done,
     post the file as a late result.
     """

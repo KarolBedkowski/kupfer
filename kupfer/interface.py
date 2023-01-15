@@ -1,6 +1,6 @@
 from gi.repository import Gtk, Gdk
 
-class TextRepresentation (object):
+class TextRepresentation :
     """
     Kupfer Objects that implement this interface have a plain text
     representation that can be used for Copy & Paste etc
@@ -9,7 +9,7 @@ class TextRepresentation (object):
         """The default implementation returns the represented object"""
         return self.object
 
-class UriListRepresentation (object):
+class UriListRepresentation :
     """
     Kupfer Objects that implement this interface have a uri-list
     representation that can be used for Copy & Paste etc

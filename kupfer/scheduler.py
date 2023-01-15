@@ -1,4 +1,3 @@
-
 from gi.repository import GLib, GObject
 
 
@@ -17,7 +16,7 @@ def GetScheduler():
 class Scheduler (GObject.GObject, pretty.OutputMixin):
     __gtype_name__ = "Scheduler"
     def __init__(self):
-        super(Scheduler, self).__init__()
+        super().__init__()
         self._finished = False
 
     def load(self):
@@ -53,7 +52,7 @@ GObject.signal_new("after-display", Scheduler, GObject.SignalFlags.RUN_LAST,
 GObject.signal_new("finish", Scheduler, GObject.SignalFlags.RUN_LAST,
         GObject.TYPE_BOOLEAN, ())
 
-class Timer (object):
+class Timer :
     def __init__(self, call_at_finish=False):
         self._current_timer = -1
         self._call_at_finish = call_at_finish

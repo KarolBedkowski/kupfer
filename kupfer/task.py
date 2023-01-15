@@ -5,7 +5,7 @@ from gi.repository import GLib
 
 from kupfer import scheduler, pretty
 
-class Task (object):
+class Task :
     """Represent a task that can be done in the background
 
     The finish_callback received in Task.start(..) must be stored,
@@ -21,9 +21,8 @@ class Task (object):
         self.name = name
 
     def __repr__(self):
-        return "<%s.%s name=%r>" % (type(self).__module__,
-                                    type(self).__name__,
-                                    getattr(self, 'name', None))
+        name = repr(getattr(self, 'name', None))
+        return f"<{type(self).__module__}.{type(self).__name__} name={name}>"
 
     def start(self, finish_callback):
         raise NotImplementedError

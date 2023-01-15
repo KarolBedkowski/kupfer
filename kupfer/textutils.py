@@ -1,5 +1,3 @@
-# encoding: utf-8
-
 def _unicode_truncate(ustr, length, encoding="UTF-8"):
     "Truncate @ustr to specific encoded byte length"
     bstr = ustr.encode(encoding)[:length]
@@ -55,6 +53,7 @@ def extract_title_body(text, maxtitlelen=60):
             first_words = " ".join(words[:-1])
             if text.startswith(first_words):
                 first_text = first_words
+
         rest_text = text[len(first_text):]
         return first_text, rest_text
 
@@ -63,10 +62,11 @@ def extract_title_body(text, maxtitlelen=60):
         firstline, rest = split_first_words(text, maxtitlelen)
     else:
         return firstline, rest
+
     if rest.strip():
         return firstline, text
-    else:
-        return text, ""
+
+    return text, ""
 
 if __name__ == '__main__':
     import doctest

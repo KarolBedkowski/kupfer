@@ -4,6 +4,8 @@ from os import path as os_path
 import locale
 import signal
 import sys
+from contextlib import suppress
+from pathlib import Path
 
 from gi.repository import GLib, Gtk, Gio, Gdk
 
@@ -31,28 +33,31 @@ def get_dirlist(folder, depth=0, include=None, exclude=None):
     paths = []
     def include_file(file):
         return (not include or include(file)) and (not exclude or not exclude(file))
-        
+
     for dirname, dirnames, fnames in walk(folder):
         # skip deep directories
         head, dp = dirname, 0
         while not os_path.samefile(head, folder):
             head, tail = os_path.split(head)
             dp += 1
+
         if dp > depth:
-            del dirnames[:]
+            dirnames.clear()
             continue
-        
+
         excl_dir = []
         for dir in dirnames:
             if not include_file(dir):
                 excl_dir.append(dir)
                 continue
+
             abspath = os_path.join(dirname, dir)
             paths.append(abspath)
-        
+
         for file in fnames:
             if not include_file(file):
                 continue
+
             abspath = os_path.join(dirname, file)
             paths.append(abspath)
 
@@ -147,10 +152,8 @@ class AsyncCommand (pretty.OutputMixin):
 
     def _split_string(self, s, length):
         """Split @s in pieces of @length"""
-        L = []
-        for i in range(0, len(s)//length + 1):
-            L.append(s[i*length:(i+1)*length])
-        return L
+        return [s[i * length : (i + 1) * length]
+             for i in range(0, len(s) // length + 1)]
 
     def _io_callback(self, sourcefd, condition, databuf):
         if condition & GLib.IO_IN:
@@ -304,15 +307,13 @@ def _try_register_pr_pdeathsig():
     SIGHUP=1
     if sys.platform != 'linux2':
         return
-    try:
+
+    with suppress(ImportError):
         import ctypes
-    except ImportError:
-        return
-    try:
+
+    with suppress(AttributeError, OSError):
         libc = ctypes.CDLL("libc.so.6")
         libc.prctl(PR_SET_PDEATHSIG, SIGHUP)
-    except (AttributeError, OSError):
-        pass
 
 def spawn_child(argv, respawn=True, display=None):
     """
@@ -351,7 +352,7 @@ def start_plugin_helper(name, respawn, display=None):
     """
     argv = [sys.executable]
     argv.extend(sys.argv)
-    argv.append('--exec-helper=%s' % name)
+    argv.append(f'--exec-helper={name}')
     pretty.print_debug(__name__, "Spawning", argv)
     return spawn_child(argv, respawn, display=display)
 
@@ -368,33 +369,37 @@ def show_help_url(url):
     help_viewer_id = "yelp.desktop"
     if not default:
         return False
+
     try:
         yelp = Gio.DesktopAppInfo.new(help_viewer_id)
     except (TypeError, RuntimeError):
         return show_url(url)
+
     cmd_path = lookup_exec_path(default.get_executable())
     yelp_path = lookup_exec_path(yelp.get_executable())
     if cmd_path and yelp_path and os.path.samefile(cmd_path, yelp_path):
-        try:
+        with suppress(SpawnError):
             spawn_async_notify_as(help_viewer_id, [cmd_path, url])
             return True
-        except SpawnError:
-            pass
+
     return show_url(url)
 
 def lookup_exec_path(exename):
     "Return path for @exename in $PATH or None"
-    PATH = os.environ.get("PATH") or os.defpath
-    for execdir in PATH.split(os.pathsep):
-        exepath = os.path.join(execdir, exename)
-        if os.access(exepath, os.R_OK|os.X_OK) and os.path.isfile(exepath):
-            return exepath
+    env_path = os.environ.get("PATH") or os.defpath
+    for execdir in env_path.split(os.pathsep):
+        exepath = Path(execdir, exename)
+        if os.access(exepath, os.R_OK|os.X_OK) and exepath.is_file():
+            return str(exepath)
+
+    return None
 
 def is_directory_writable(dpath):
     """If directory path @dpath is a valid destination to write new files?
     """
-    if not os_path.isdir(dpath):
+    if not Path(dpath).is_dir():
         return False
+
     return os.access(dpath, os.R_OK | os.W_OK | os.X_OK)
 
 def get_destpath_in_directory(directory, filename, extension=None):
@@ -406,19 +411,20 @@ def get_destpath_in_directory(directory, filename, extension=None):
     the last extension is used
     """
     # find a nonexisting destname
+    if extension:
+        basename = filename + extension
+        root, ext = filename, extension
+    else:
+        basename = filename
+        root, ext = os_path.splitext(filename)
+
     ctr = itertools.count(1)
-    basename = filename + (extension or "")
-    destpath = os_path.join(directory, basename)
-    while True:
-        if not os_path.exists(destpath):
-            break
-        if extension:
-            root, ext = filename, extension
-        else:
-            root, ext = os_path.splitext(filename)
-        basename = "%s-%s%s" % (root, next(ctr), ext)
-        destpath = os_path.join(directory, basename)
-    return destpath
+    destpath = Path(directory, basename)
+    while destpath.exists():
+        basename = f"{root}-{next(ctr)}{ext}"
+        destpath = Path(directory, basename)
+
+    return str(destpath)
 
 def get_destfile_in_directory(directory, filename, extension=None):
     """Find a good destination for a file named @filename in path @directory.
@@ -473,10 +479,8 @@ def parse_time_interval(tstr):
         "m": 60, "min": 60,
         "h": 3600, "hours": 3600,
     }
-    try:
+    with suppress(ValueError):
         return int(tstr)
-    except ValueError:
-        pass
 
     total = 0
     amount = 0

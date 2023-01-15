@@ -2,7 +2,7 @@ import itertools
 
 from collections import OrderedDict
 
-class SavedIterable (object):
+class SavedIterable :
     """Wrap an iterable and cache it.
 
     The SavedIterable can be accessed streamingly, while still being
@@ -96,7 +96,7 @@ def UniqueIterator(seq, key=None):
                 coll.add(K)
 
 
-class LruCache (object):
+class LruCache :
     """
     Least-recently-used cache mapping of
     size @maxsiz

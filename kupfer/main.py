@@ -1,6 +1,7 @@
 import gettext
 import locale
 import sys
+from contextlib import suppress
 
 _debug = False
 
@@ -60,10 +61,9 @@ def get_options():
         usage_string = _("Usage: kupfer [ OPTIONS | FILE ... ]")
         def format_options(opts):
             return "\n".join("  --%-15s  %s" % (o,h) for o,h in opts)
-
-        options_string = "%s\n\n%s\n\n%s\n" % (usage_string,
-                format_options(program_options), format_options(misc_options))
-
+        popts = format_options(program_options)
+        mopts = format_options(misc_options)
+        options_string = f"{usage_string}\n\n{popts}\n\n{mopts}\n"
         return options_string
 
     def make_plugin_list():
@@ -165,14 +165,12 @@ def main():
     if _debug:
         pretty.debug = _debug
         pretty.print_debug(__name__, "Version:", version.PACKAGE_NAME, version.VERSION)
-        try:
+        with suppress(ImportError):
             import debug
             debug.install()
-        except ImportError:
-            pass
+
     sys.excepthook = sys.__excepthook__
     _set_process_title()
 
     quiet = ("--no-splash" in cli_opts)
     gtkmain(browser_start, quiet)
-

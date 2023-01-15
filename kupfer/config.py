@@ -1,9 +1,10 @@
 """
 Module for confiugration and misc things
 """
+import os
+from pathlib import Path
 
 import xdg.BaseDirectory as base
-import os
 
 PACKAGE_NAME="kupfer"
 
@@ -11,10 +12,10 @@ class ResourceLookupError (Exception):
     pass
 
 def has_capability(cap):
-    return not bool(os.getenv("KUPFER_NO_%s" % cap, False))
+    return not bool(os.getenv(f"KUPFER_NO_{cap}", False))
 
 def get_kupfer_env(name, default=""):
-    return os.getenv("KUPFER_%s" % name, default)
+    return os.getenv(f"KUPFER_{name}", default)
 
 def get_cache_home():
     """
@@ -22,21 +23,23 @@ def get_cache_home():
     Guaranteed to exist
     """
     cache_home = base.xdg_cache_home or os.path.expanduser("~/.cache")
-    cache_dir = os.path.join(cache_home, PACKAGE_NAME)
-    if not os.path.exists(cache_dir):
+    cache_dir = Path(cache_home, PACKAGE_NAME)
+    if not cache_dir.exists():
         try:
-            os.makedirs(cache_dir, mode=0o700)
+            cache_dir.mkdir(mode=0o700)
         except OSError as e:
             print(e)
             return None
-    return cache_dir
+
+    return str(cache_dir)
 
 def get_cache_file(path=()):
     cache_home = base.xdg_cache_home or os.path.expanduser("~/.cache")
-    cache_dir = os.path.join(cache_home, *path)
-    if not os.path.exists(cache_dir):
+    cache_dir = Path(cache_home, *path)
+    if not cache_dir.exists():
         return None
-    return cache_dir
+
+    return str(cache_dir)
 
 def get_data_file(filename, package=PACKAGE_NAME):
     """
@@ -57,14 +60,14 @@ def get_data_file(filename, package=PACKAGE_NAME):
             data_paths.append(data_path)
 
     for direc in data_paths:
-        file_path = os.path.join(direc, filename)
-        if os.path.exists(file_path):
-            return file_path
+        file_path = Path(direc, filename)
+        if file_path.exists():
+            return str(file_path)
+
     if package == PACKAGE_NAME:
-        raise ResourceLookupError("Resource %s not found" % filename)
-    else:
-        raise ResourceLookupError("Resource %s in package %s not found" %
-            (filename, package))
+        raise ResourceLookupError(f"Resource {filename} not found")
+
+    raise ResourceLookupError(f"Resource {filename} in package {package} not found")
 
 def save_data_file(filename):
     """

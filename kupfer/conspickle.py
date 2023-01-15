@@ -3,7 +3,7 @@ import io
 import pickle
 import sys
 
-class universalset (object):
+class universalset :
     def __contains__(self, item):
         return True
 
@@ -31,8 +31,8 @@ class ConservativeUnpickler (pickle.Unpickler):
     UnpicklingError: Refusing to load module kupfer.obj.base
     """
     safe_modules = {
-        "builtins" : set(["set", "sum", "object"]),
-        "copy_reg" : set(["_reconstructor"]),
+        "builtins" : {"set", "sum", "object"},
+        "copy_reg" : {"_reconstructor"},
         "kupfer.*" : universalset(),
     }
     @classmethod
@@ -44,9 +44,9 @@ class ConservativeUnpickler (pickle.Unpickler):
 
     def find_class(self, module, name):
         if module not in sys.modules:
-            raise pickle.UnpicklingError("Refusing to load module %s" % module)
+            raise pickle.UnpicklingError(f"Refusing to load module {module}")
         if not self.is_safe_symbol(module, name):
-            raise pickle.UnpicklingError("Refusing unsafe %s.%s" % (module, name))
+            raise pickle.UnpicklingError(f"Refusing unsafe {module}.{name}")
         return pickle.Unpickler.find_class(self, module, name)
 
     @classmethod
@@ -67,9 +67,9 @@ class BasicUnpickler (ConservativeUnpickler):
     """
 
     safe_modules = {
-        "__builtin__" : set(["object"]),
-        "copy_reg" : set(["_reconstructor"]),
-        "kupfer.puid" : set(["SerializedObject"]),
+        "__builtin__" : {"object"},
+        "copy_reg" : {"_reconstructor"},
+        "kupfer.puid" : {"SerializedObject"},
     }
 
 if __name__ == '__main__':

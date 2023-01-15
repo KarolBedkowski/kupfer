@@ -50,7 +50,7 @@ def launch_application(app_info, files=(), uris=(), paths=(), track=True,
     """
     Launch @app_rec correctly, using a startup notification
 
-    you may pass in either a list of Gio.Files in @files, or 
+    you may pass in either a list of Gio.Files in @files, or
     a list of @uris or @paths
 
     if @track, it is a user-level application
@@ -129,37 +129,39 @@ class ApplicationsMatcherService (pretty.OutputMixin):
         version = 2
         return os.path.join(config.get_cache_home(),
                 "application_identification_v%d.pickle" % version)
+
     def _load(self):
         reg = self._unpickle_register(self._get_filename())
-        self.register = reg if reg else default_associations
+        self.register = reg or default_associations
         # pretty-print register to debug
         if self.register:
             self.output_debug("Learned the following applications")
             self.output_debug("\n{\n%s\n}" % "\n".join(
-                ("  %-30s : %s" % (k,v)
-                    for k,v in self.register.items())
-                ))
+                f"  {k:<30} : {v}" for k,v in self.register.items())
+            )
+
     def _finish(self, sched):
         self._pickle_register(self.register, self._get_filename())
+
     def _unpickle_register(self, pickle_file):
         try:
             pfile = open(pickle_file, "rb")
-        except IOError as e:
+        except OSError as e:
             return None
         try:
             source = pickle.loads(pfile.read())
             assert isinstance(source, dict), "Stored object not a dict"
-            self.output_debug("Reading from %s" % (pickle_file, ))
+            self.output_debug(f"Reading from {pickle_file}")
         except (pickle.PickleError, Exception) as e:
             source = None
-            self.output_info("Error loading %s: %s" % (pickle_file, e))
+            self.output_info(f"Error loading {pickle_file}: {e}")
         finally:
             pfile.close()
         return source
 
     def _pickle_register(self, reg, pickle_file):
         output = open(pickle_file, "wb")
-        self.output_debug("Saving to %s" % (pickle_file, ))
+        self.output_debug(f"Saving to {pickle_file}")
         output.write(pickle.dumps(reg, pickle.HIGHEST_PROTOCOL))
         output.close()
         return True
@@ -217,17 +219,19 @@ class ApplicationsMatcherService (pretty.OutputMixin):
 
     def application_is_running(self, app_id):
         for w in self._get_wnck_screen_windows_stacked():
-            if (w.get_application() and self._is_match(app_id, w) and 
+            if (w.get_application() and self._is_match(app_id, w) and
                 w.get_window_type() == Wnck.WindowType.NORMAL):
                 return True
+
         return False
 
     def get_application_windows(self, app_id):
-        application_windows = []
-        for w in self._get_wnck_screen_windows_stacked():
-            if (w.get_application() and self._is_match(app_id, w) and 
-                w.get_window_type() == Wnck.WindowType.NORMAL):
-                application_windows.append(w)
+        application_windows = [
+            w
+            for w in self._get_wnck_screen_windows_stacked()
+            if (w.get_application() and self._is_match(app_id, w) and
+                w.get_window_type() == Wnck.WindowType.NORMAL)
+        ]
         return application_windows
 
     def application_to_front(self, app_id):
@@ -240,8 +244,8 @@ class ApplicationsMatcherService (pretty.OutputMixin):
         focus_all = True
         if focus_all:
             return self._to_front_application_style(application_windows, etime)
-        else:
-            return self._to_front_single(application_windows, etime)
+
+        return self._to_front_single(application_windows, etime)
 
     def _to_front_application_style(self, application_windows, evttime):
         workspaces = {}
@@ -272,7 +276,7 @@ class ApplicationsMatcherService (pretty.OutputMixin):
         # check if the application's window on current workspace
         # are the topmost
         focus_windows = []
-        if (cur_wspc_windows and 
+        if (cur_wspc_windows and
             set(vis_windows[-len(cur_wspc_windows):]) != set(cur_wspc_windows)):
             focus_windows = cur_wspc_windows
             ## if the topmost window is already active, take another
@@ -327,4 +331,3 @@ def GetApplicationsMatcherService():
     if not _appl_match_service:
         _appl_match_service = ApplicationsMatcherService()
     return _appl_match_service
-

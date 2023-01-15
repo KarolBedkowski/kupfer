@@ -5,7 +5,7 @@ more information.
 import sys
 import weakref
 
-class WeakCallback (object):
+class WeakCallback :
     """A Weak Callback object that will keep a reference to
     the connecting object with weakref semantics.
 

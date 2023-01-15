@@ -30,7 +30,7 @@ __all__ = [
 SERIALIZABLE_ATTRIBUTE = "serializable"
 
 
-class SerializedObject (object):
+class SerializedObject :
     # treat the serializable attribute as a version number, defined on the class
     def __init__(self, obj):
         self.version = getattr(obj, SERIALIZABLE_ATTRIBUTE)
@@ -44,7 +44,7 @@ class SerializedObject (object):
     def reconstruct(self):
         obj = ConservativeUnpickler.loads(self.data)
         if self.version != getattr(obj, SERIALIZABLE_ATTRIBUTE):
-            raise ValueError("Version mismatch for reconstructed %s" % obj)
+            raise ValueError(f"Version mismatch for reconstructed {obj}")
         return obj
 
 def get_unique_id(obj):
@@ -136,5 +136,5 @@ def resolve_action_id(puid, for_item=None):
         for action in actions:
             if get_action_id(action) == puid:
                 return action
-    pretty.print_debug(__name__, "Unable to resolve %s (%s)" % (puid, for_item))
+    pretty.print_debug(__name__, f"Unable to resolve {puid} ({for_item})")
     return None
