@@ -28,6 +28,7 @@ def GetKeyboundObject():
     global _keybound_object
     if not _keybound_object:
         _keybound_object = KeyboundObject()
+
     return _keybound_object
 
 class KeyboundObject (GObject.GObject):
@@ -41,11 +42,14 @@ class KeyboundObject (GObject.GObject):
     __gtype_name__ = "KeyboundObject"
     def __init__(self):
         super().__init__()
+
     def _keybinding(self, target):
         time = Keybinder.get_current_event_time()
         self.emit("keybinding", target, "", time)
+
     def emit_bound_key_changed(self, keystring, is_bound):
         self.emit("bound-key-changed", keystring, is_bound)
+
     def relayed_keys(self, sender, keystring, display, timestamp):
         for target, key in _currently_bound.items():
             if keystring == key:
@@ -73,7 +77,6 @@ def is_available():
             return Keybinder.supported()
         except AttributeError:
             return True
-
 
 def get_all_bound_keys():
     return list(filter(bool, list(_currently_bound.values())))
@@ -116,13 +119,16 @@ def bind_key(keystr, keybinding_target=KEYBINDING_DEFAULT):
         except KeyError as exc:
             pretty.print_error(__name__, exc)
             succ = False
+
     if succ:
         old_keystr = get_currently_bound_key(keybinding_target)
         if old_keystr and old_keystr != keystr:
             Keybinder.unbind(old_keystr)
             pretty.print_debug(__name__, "unbinding", repr(old_keystr))
             GetKeyboundObject().emit_bound_key_changed(old_keystr, False)
+
         _register_bound_key(keystr, keybinding_target)
+
     return succ
 
 
@@ -130,8 +136,11 @@ def _is_sane_keybinding(keystr):
     "Refuse keys that we absolutely do not want to bind"
     if keystr is None:
         return True
+
     if len(keystr) == 1 and keystr.isalnum():
         return False
-    if keystr in {"Return", "space", "BackSpace", "Escape"}:
+
+    if keystr in ("Return", "space", "BackSpace", "Escape"):
         return False
+
     return True

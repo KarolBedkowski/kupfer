@@ -33,8 +33,8 @@ LIST_ICON_SIZE = 18
 def _cb_allocate(label, allocation, maxwid):
     if maxwid == -1:
         maxwid = 300
+
     label.set_size_request(min(maxwid, allocation.width), -1)
-    pass
 
 def wrapped_label(text=None, maxwid=-1):
     label = Gtk.Label.new(text)
@@ -43,15 +43,14 @@ def wrapped_label(text=None, maxwid=-1):
     return label
 
 def kobject_should_show(obj):
-    try:
+    with suppress(AttributeError):
         leaf_repr = obj.get_leaf_repr()
-    except AttributeError:
-        pass
-    else:
         if leaf_repr is None:
             return True
+
         if hasattr(leaf_repr, "is_valid") and not leaf_repr.is_valid():
             return False
+
     return True
 
 def set_combobox(value, combobox):
@@ -67,7 +66,7 @@ def set_combobox(value, combobox):
             return
 
 
-class PreferencesWindowController (pretty.OutputMixin):
+class PreferencesWindowController(pretty.OutputMixin):
 
     KEYBINDING_NAMES = {
         # TRANS: Names of global keyboard shortcuts
@@ -92,6 +91,7 @@ class PreferencesWindowController (pretty.OutputMixin):
         else:
             self.window = None
             return
+
         self.window = builder.get_object("preferenceswindow")
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.connect("delete-event", self._close_window)
@@ -162,7 +162,6 @@ class PreferencesWindowController (pretty.OutputMixin):
         self.terminal_combobox = terminal_combobox
         self.icons_combobox = icons_combobox
         setctl.connect("alternatives-changed", self._on_alternatives_changed)
-
 
         # Plugin List
         columns = [
@@ -242,7 +241,6 @@ class PreferencesWindowController (pretty.OutputMixin):
         button_reset_keys.set_sensitive(keybindings.is_available())
         self.keybind_table.set_sensitive(keybindings.is_available())
 
-
         # kupfer interface (accelerators) keybindings list
         self.gkeybind_table, self.gkeybind_store = _create_conf_keys_list()
         self.gkeybindings_list_parent.add(self.gkeybind_table)
@@ -286,9 +284,8 @@ class PreferencesWindowController (pretty.OutputMixin):
         if d in have:
             self.output_debug("Ignoring duplicate directory: ", d)
             return
-        else:
-            have.append(d)
 
+        have.append(d)
         d = os.path.expanduser(d)
         dispname = utils.get_display_path_for_bytestring(d)
         gicon = icons.get_gicon_for_file(d)
@@ -310,6 +307,8 @@ class PreferencesWindowController (pretty.OutputMixin):
             self.hide()
             return True
 
+        return False
+
     def on_checkstatusicon_gtk_toggled(self, widget):
         setctl = settings.GetSettingsController()
         setctl.set_show_status_icon(widget.get_active())
@@ -326,11 +325,13 @@ class PreferencesWindowController (pretty.OutputMixin):
         autostart_file = Path(autostart_dir, KUPFER_DESKTOP)
         if not autostart_file.exists():
             return False
+
         try:
             dfile = desktop.DesktopEntry(str(autostart_file))
         except xdg_e.ParsingError as exception:
             pretty.print_error(__name__, exception)
             return False
+
         return ((dfile.hasKey(AUTOSTART_KEY) and
                  dfile.get(AUTOSTART_KEY, type="boolean"))
                 and (not dfile.hasKey(HIDDEN_KEY) or
@@ -361,6 +362,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             ## append no-splash
             if "--no-splash" not in executable:
                 executable += " --no-splash"
+
             dfile.set("Exec", executable)
         else:
             try:
@@ -413,6 +415,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             plugin_id = info["name"]
             if setctl.get_plugin_is_hidden(plugin_id):
                 continue
+
             enabled = setctl.get_plugin_enabled(plugin_id)
             name = info["localized_name"]
             folded_name = kupferstring.tofolded(name)
@@ -433,6 +436,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             first_row = next(iter(self.store))
         except StopIteration:
             return
+
         plugin_id = first_row[0]
         self.show_focus_plugin(plugin_id, 0)
 
@@ -461,6 +465,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             plugin_id = row[id_col]
             if plugin_id == id_:
                 return row.path
+
         raise ValueError(f"No such plugin {id_}")
 
 
@@ -468,12 +473,14 @@ class PreferencesWindowController (pretty.OutputMixin):
         for info in self.plugin_info:
             if info["name"] == plugin_id:
                 return info
+
         return None
 
     def plugin_table_cursor_changed(self, table):
         curpath, curcol = table.get_cursor()
         if not curpath:
             return
+
         plugin_id = self._id_for_table_path(curpath)
         self.plugin_sidebar_update(plugin_id)
 
@@ -495,6 +502,7 @@ class PreferencesWindowController (pretty.OutputMixin):
                 (description, author)):
             if not val:
                 continue
+
             label = Gtk.Label()
             label.set_alignment(0, 0)
             label.set_markup(f"<b>{field}</b>")
@@ -504,6 +512,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             label.set_markup(f"{GLib.markup_escape_text(val)}")
             label.set_selectable(True)
             infobox.pack_start(label, False, True, 0)
+
         if version:
             label = wrapped_label()
             label.set_alignment(0, 0)
@@ -511,6 +520,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             label.set_markup(f"<b>{_('Version')}:</b> {m_version}")
             label.set_selectable(True)
             infobox.pack_start(label, False, True, 0)
+
         about.pack_start(infobox, False, True, 0)
 
         # Check for plugin load exception
@@ -521,6 +531,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             import_error_localized = _("Python module '%s' is needed") % "\\1"
             import_error_pat = r"No module named ([^\s]+)"
             errmsg = str(error)
+
             if re.match(import_error_pat, errmsg):
                 errstr = re.sub(import_error_pat,
                         import_error_localized,
@@ -539,6 +550,7 @@ class PreferencesWindowController (pretty.OutputMixin):
                 ))
             label.set_selectable(True)
             about.pack_start(label, False, True, 0)
+
         elif not plugins.is_plugin_loaded(plugin_id):
             label = Gtk.Label()
             label.set_alignment(0, 0)
@@ -554,6 +566,7 @@ class PreferencesWindowController (pretty.OutputMixin):
         oldch = self.plugin_about_parent.get_child()
         if oldch:
             self.plugin_about_parent.remove(oldch)
+
         vp = Gtk.Viewport()
         vp.set_shadow_type(Gtk.ShadowType.NONE)
         vp.add(about)
@@ -583,6 +596,7 @@ class PreferencesWindowController (pretty.OutputMixin):
                 plugin_type = plugins.get_plugin_attribute(plugin_id, item)
                 if not plugin_type:
                     continue
+
                 hbox = Gtk.HBox()
                 hbox.set_property("spacing", 3)
                 obj = plugin_type()
@@ -606,12 +620,15 @@ class PreferencesWindowController (pretty.OutputMixin):
                 # Display information for application content-sources.
                 if not kobject_should_show(obj):
                     continue
+
                 try:
                     leaf_repr = obj.get_leaf_repr()
                 except AttributeError:
                     continue
+
                 if leaf_repr is None:
                     continue
+
                 hbox = Gtk.HBox()
                 hbox.set_property("spacing", 3)
                 gicon = leaf_repr.get_icon()
@@ -622,6 +639,7 @@ class PreferencesWindowController (pretty.OutputMixin):
                 hbox.pack_start(im, False, True, 0)
                 hbox.pack_start(Gtk.Label.new(str(leaf_repr)), False, True, 0)
                 objvbox.pack_start(hbox, True, True, 0)
+
             return objvbox
 
         sources = list(sources or ()) + list(text_sources or ())
@@ -629,6 +647,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             # TRANS: Plugin contents header
             swid = make_objects_frame(sources, _("Sources"))
             vbox.pack_start(swid, True, True, 0)
+
         if actions:
             # TRANS: Plugin contents header
             awid = make_objects_frame(actions, _("Actions"))
@@ -644,8 +663,10 @@ class PreferencesWindowController (pretty.OutputMixin):
             value = getattr(widget, get_attr)()
             if no_false_values and not value:
                 return
+
             setctl = settings.GetSettingsController()
             setctl.set_plugin_config(plugin_id, key, value, value_type)
+
         return callback
 
     def _get_plugin_credentials_callback(self, plugin_id, key):
@@ -657,12 +678,14 @@ class PreferencesWindowController (pretty.OutputMixin):
                 information = _("Using encrypted password storage: %s") % backend_name
             else:
                 information = _("Using password storage: %s") % backend_name
+
             upass = setctl.get_plugin_config(plugin_id, key, val_type) \
                     or plugin_support.UserNamePassword()
             user_password = ask_user_credentials(upass.username, upass.password, information)
             if user_password:
                 upass.username, upass.password = user_password
                 setctl.set_plugin_config(plugin_id, key, upass, val_type)
+
         return callback
 
     def _make_plugin_settings_widget(self, plugin_id):
@@ -690,6 +713,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             hbox.set_property("spacing", 10)
             if tooltip:
                 hbox.set_tooltip_text(tooltip)
+
             label = plugin_settings.get_label(setting)
 
             if issubclass(typ, plugin_support.UserNamePassword):
@@ -711,9 +735,11 @@ class PreferencesWindowController (pretty.OutputMixin):
                         wid.append_text(text)
                         if text == val:
                             active_index = idx
+
                     if active_index < 0:
                         wid.prepend_text(val)
                         active_index = 0
+
                     wid.set_active(active_index)
                     wid.connect("changed", self._get_plugin_change_callback(
                         plugin_id, setting, typ, "get_active_text"))
@@ -723,6 +749,7 @@ class PreferencesWindowController (pretty.OutputMixin):
                     wid.connect("changed", self._get_plugin_change_callback(
                         plugin_id, setting, typ, "get_text",
                         no_false_values=True))
+
                 hbox.pack_start(label_wid, False, True, 0)
                 hbox.pack_start(wid, True, True, 0)
 
@@ -732,6 +759,7 @@ class PreferencesWindowController (pretty.OutputMixin):
                 hbox.pack_start(wid, False, True, 0)
                 wid.connect("toggled", self._get_plugin_change_callback(
                     plugin_id, setting, typ, "get_active"))
+
             elif issubclass(typ, int):
                 wid = Gtk.SpinButton()
                 wid.set_increments(1, 1)
@@ -741,6 +769,7 @@ class PreferencesWindowController (pretty.OutputMixin):
                 hbox.pack_start(wid, False, True, 0)
                 wid.connect("changed", self._get_plugin_change_callback(
                     plugin_id, setting, typ, "get_text", no_false_values=True))
+
             vbox.pack_start(hbox, False, True, 0)
 
         vbox.show_all()
@@ -756,12 +785,14 @@ class PreferencesWindowController (pretty.OutputMixin):
         if chooser_dialog.run() == Gtk.ResponseType.ACCEPT:
             for selected_dir in chooser_dialog.get_filenames():
                 self.add_directory_model(selected_dir, store=True)
+
         chooser_dialog.hide()
 
     def on_buttonremovedirectory_clicked(self, widget):
         curpath, curcol = self.dir_table.get_cursor()
         if not curpath:
             return
+
         it = self.dir_store.get_iter(curpath)
         self.remove_directory_model(it, store=True)
 
@@ -791,6 +822,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             keybindings.bind_key(None, self.KEYBINDING_TARGETS[keybind_id])
             setctl.set_global_keybinding(keybind_id, keystr)
             self.keybind_store.set_value(it, 1, '')
+
         elif keystr is not None:
             setctl.set_global_keybinding(keybind_id, keystr)
             label = Gtk.accelerator_get_label(*Gtk.accelerator_parse(keystr))
@@ -800,6 +832,7 @@ class PreferencesWindowController (pretty.OutputMixin):
         # Reject single letters so you can't bind 'A' etc
         if keystr is None:
             return
+
         label = Gtk.accelerator_get_label(*Gtk.accelerator_parse(keystr))
         ulabel = kupferstring.tounicode(label)
         return not (len(ulabel) == 1 and ulabel.isalnum())
@@ -812,6 +845,7 @@ class PreferencesWindowController (pretty.OutputMixin):
         keystr = getkey_dialog.ask_for_key(self._is_good_keystr,
                 previous_key=curr_key, screen=treeview.get_screen(),
                 parent=treeview.get_toplevel())
+
         if keystr is not None:
             setctl.set_accelerator(keybind_id, keystr)
             label = Gtk.accelerator_get_label(*Gtk.accelerator_parse(keystr))
@@ -825,6 +859,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             # Unbind all before re-binding
             for keybind_id, target in self.KEYBINDING_TARGETS.items():
                 keybindings.bind_key(None, target)
+
             for keybind_id, target in self.KEYBINDING_TARGETS.items():
                 keystr = setctl.get_global_keybinding(keybind_id)
                 keybindings.bind_key(keystr, target)
@@ -854,6 +889,7 @@ class PreferencesWindowController (pretty.OutputMixin):
         if not curpath or not self.dir_store:
             self.buttonremovedirectory.set_sensitive(False)
             return
+
         self.buttonremovedirectory.set_sensitive(True)
 
     def on_terminal_combobox_changed(self, widget):
@@ -900,6 +936,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             _it = combobox_store.append((name, id_))
             if id_ == term_id:
                 term_iter = _it
+
         # Update selection
         term_iter = term_iter or combobox_store.get_iter_first()
         combobox.set_sensitive(len(combobox_store) > 1)
@@ -911,6 +948,7 @@ class PreferencesWindowController (pretty.OutputMixin):
         if category_key == 'terminal':
             self._update_alternative_combobox(category_key,
                     self.terminal_combobox)
+
         elif category_key == 'icon_renderer':
             self._update_alternative_combobox(category_key,
                     self.icons_combobox)
@@ -940,6 +978,7 @@ class PreferencesWindowController (pretty.OutputMixin):
             self.entry_plugins_filter.set_text("")
             self._refresh_plugin_list()
             table_path = self._table_path_for_id(plugin_id)
+
         self.table.set_cursor(table_path)
         self.table.scroll_to_cell(table_path)
         self.preferences_notebook.set_current_page(PLUGIN_LIST_PAGE)
@@ -947,6 +986,7 @@ class PreferencesWindowController (pretty.OutputMixin):
 
     def hide(self):
         self.window.hide()
+
     def _close_window(self, *ignored):
         self.hide()
         return True
@@ -974,6 +1014,7 @@ def _create_conf_keys_list():
         column = Gtk.TreeViewColumn(col['header'], renderer, text=idx)
         column.set_visible(col['header'] is not None)
         keybind_table.append_column(column)
+
     keybind_table.set_property("enable-search", False)
     keybind_table.set_headers_visible(True)
     keybind_table.show()
@@ -987,6 +1028,7 @@ def GetPreferencesWindowController():
     if _preferences_window is None:
         _preferences_window = PreferencesWindowController()
     return _preferences_window
+
 
 class SourceListController :
     def __init__(self, parent_widget):
@@ -1047,8 +1089,10 @@ class SourceListController :
             plugin_id = sc.get_plugin_id_for_object(src)
             if not plugin_id or setctl.get_plugin_is_hidden(plugin_id):
                 continue
+
             if not kobject_should_show(src):
                 continue
+
             gicon = src.get_icon()
             toplevel = setctl.get_source_is_toplevel(plugin_id, src)
 

@@ -32,12 +32,14 @@ class SessionClient (GObject.GObject, pretty.OutputMixin):
             succ = self._connect_session_manager()
         except dbus.DBusException as exc:
             self.output_error(exc)
+
         if not succ:
             # try to bind to xfce session manager
             try:
                 succ = self._connect_xfce_session_manager()
             except dbus.DBusException as exc:
                 self.output_error(exc)
+
         if not succ:
             succ = self._connect_gnomeui()
 
@@ -70,6 +72,7 @@ class SessionClient (GObject.GObject, pretty.OutputMixin):
         except dbus.DBusException as e:
             pretty.print_error(__name__, e)
             return False
+
         smanager = dbus.Interface(obj, iface_name)
 
         app_id = version.PACKAGE_NAME
@@ -123,6 +126,7 @@ class SessionClient (GObject.GObject, pretty.OutputMixin):
         except dbus.DBusException as e:
             pretty.print_error(__name__, e)
             return None
+
         smanager = dbus.Interface(obj, iface_name)
         return smanager
 
@@ -137,6 +141,7 @@ class SessionClient (GObject.GObject, pretty.OutputMixin):
         if not self._session_ended:
             self._session_ended = True
             self.emit("save-yourself")
+
         smanager = self._get_response_obj()
         smanager and smanager.EndSessionResponse(True, "Always OK")
 
@@ -149,10 +154,13 @@ class SessionClient (GObject.GObject, pretty.OutputMixin):
     def _stop_signal(self):
         self.output_debug("Session stop")
         self.emit("die")
+
     def _session_save(self, obj, *args):
         self.emit("save-yourself")
+
     def _session_die(self, obj, *args):
         self.emit("die")
+
     @property
     def enabled(self):
         """If a session connection is available"""

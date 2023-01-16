@@ -39,8 +39,10 @@ class GetKeyDialogController:
 
         if screen:
             self.window.set_screen(screen)
+
         if parent:
             self.window.set_transient_for(parent)
+
         self.window.connect("focus-in-event", self.on_window_focus_in)
         self.window.connect("focus-out-event", self.on_window_focus_out)
 
@@ -73,10 +75,10 @@ class GetKeyDialogController:
     def translate_keyboard_event(self, widget, event):
         keymap = Gdk.Keymap.get_for_display(widget.get_display())
         # translate keys properly
-        _wasmapped, keyval, egroup, level, consumed = keymap.translate_keyboard_state(
-                    event.hardware_keycode, event.get_state(), event.group)
+        _wasmapped, keyval, egroup, level, consumed = \
+            keymap.translate_keyboard_state(
+                event.hardware_keycode, event.get_state(), event.group)
         modifiers = Gtk.accelerator_get_default_mod_mask() & ~consumed
-
         state = event.get_state() & modifiers
 
         return keyval, state
@@ -97,27 +99,28 @@ class GetKeyDialogController:
             self.return_cancel()
         elif keyname == 'BackSpace':
             self.return_clear()
+
         self.update_accelerator_label(keyval, state)
 
     def on_dialoggetkey_key_release_event(self, widget, event):
         if not self._press_time:
             return
+
         keyval, state = self.translate_keyboard_event(widget, event)
         self.update_accelerator_label(0, 0)
 
         state = Gdk.ModifierType(state)
         if Gtk.accelerator_valid(keyval, state):
             key = Gtk.accelerator_name(keyval, state)
-            if (self._previous_key is not None and
-                    key == self._previous_key):
+            if (self._previous_key is not None and key == self._previous_key):
                 self.return_cancel()
                 return
+
             if self._check_callback is None or self._check_callback(key):
                 self._return(key)
             else:
                 self.imagekeybindingaux.show()
                 self.labelkeybindingaux.show()
-
 
     def on_window_focus_in(self, window, _event):
         pass

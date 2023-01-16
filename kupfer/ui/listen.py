@@ -172,8 +172,10 @@ class ServiceNew (ExportedGObject):
         """
         if not session_bus:
             raise NoConnectionError
+
         if session_bus.name_has_owner(server_name_new):
             raise AlreadyRunningError
+
         bus_name = dbus.service.BusName(server_name_new, bus=session_bus)
         super().__init__(conn=session_bus, object_path=object_name_new,
                 bus_name=bus_name)

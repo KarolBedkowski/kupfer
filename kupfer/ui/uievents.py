@@ -44,7 +44,9 @@ class GUIEnvironmentContext :
             "normalize display name"
             if name[-2] == ":":
                 return name+".0"
+
             return name
+
         dm = Gdk.display_manager_get()
         if display:
             new_display = None
@@ -52,12 +54,14 @@ class GUIEnvironmentContext :
                 if norm_name(disp.get_name()) == norm_name(display):
                     new_display = disp
                     break
+
             if new_display is None:
                 pretty.print_debug(__name__,
                         "Opening display in ensure_display_open", display)
                 new_display = Gdk.Display(display)
         else:
             new_display = Gdk.Display.get_default()
+
         ## Hold references to all open displays
         cls._open_displays = set(dm.list_displays())
         return new_display
@@ -73,6 +77,7 @@ class GUIEnvironmentContext :
         """
         def debug(*x):
             pretty.print_debug(__name__, *x)
+
         display = screen.get_display()
         dm = Gdk.DisplayManager.get()
         for disp in list(dm.list_displays()):
@@ -83,6 +88,7 @@ class GUIEnvironmentContext :
                     # find windows on @disp
                     if window.get_screen().get_display() != disp:
                         continue
+
                     if not window.get_property("visible"):
                         debug("Moving window", window.get_name())
                         debug("Moving", window.get_title())
@@ -90,6 +96,7 @@ class GUIEnvironmentContext :
                     else:
                         debug("Open window blocks close")
                         open_windows += 1
+
                 if not open_windows:
                     debug("Closing display", disp.get_name())
                     disp.close()
@@ -124,6 +131,7 @@ class GUIEnvironmentContext :
         window.set_screen(self.get_screen())
         window.present_with_time(self.get_timestamp())
 
+
 class _internal_data :
     seq = 0
     current_event_time = 0
@@ -131,6 +139,7 @@ class _internal_data :
     @classmethod
     def inc_seq(cls):
         cls.seq = cls.seq + 1
+
 
 def _make_startup_notification_id(time):
     _internal_data.inc_seq()
@@ -167,7 +176,8 @@ def using_startup_notify_id(notify_id):
     if timestamp:
         Gdk.notify_startup_complete_with_id(notify_id)
     try:
-        pretty.print_debug(__name__, "Using startup id", repr(notify_id), timestamp)
+        pretty.print_debug(__name__, "Using startup id",
+                           repr(notify_id), timestamp)
         _internal_data.current_event_time = timestamp
         yield timestamp
     finally:

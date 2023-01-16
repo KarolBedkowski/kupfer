@@ -45,7 +45,7 @@ class CredentialsDialogController():
 
 def ask_user_credentials(user=None, password=None, infotext=None):
     ''' Ask user for username and password.
-    
+
     @user, @password - initial values
     @return:
     (user, password) when user press "change"

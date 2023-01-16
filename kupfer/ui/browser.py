@@ -5,6 +5,7 @@ import sys
 import textwrap
 import math
 from contextlib import suppress
+import enum
 
 import gi
 from gi.repository import Gtk, Gdk, GObject
@@ -50,32 +51,30 @@ def tounicode(ustr):
         return ustr
     return ustr.decode("UTF-8", "replace")
 
-def escape_markup_str(mstr):
+def _escape_markup_str(mstr):
     """
     Use a simeple homegrown replace table to replace &, <, > with
     entities in @mstr
     """
-    return tounicode(mstr).translate(_escape_table)
+    return mstr.translate(_escape_table)
 
 def text_direction_is_ltr():
     return Gtk.Widget.get_default_direction() != Gtk.TextDirection.RTL
 
-def make_rounded_rect(cr,x,y,width,height,radius):
+def make_rounded_rect(cr, x, y, width, height, radius):
     """
     Draws a rounded rectangle with corners of @radius
     """
     MPI = math.pi
     cr.save()
 
-    w,h = width, height
-
     cr.move_to(radius, 0)
-    cr.line_to(w-radius,0)
-    cr.arc(w-radius, radius, radius, 3*MPI/2, 2*MPI)
-    cr.line_to(w, h-radius)
-    cr.arc(w-radius, h-radius, radius, 0, MPI/2)
-    cr.line_to(radius, h)
-    cr.arc(radius, h-radius, radius, MPI/2, MPI)
+    cr.line_to(width-radius,0)
+    cr.arc(width-radius, radius, radius, 3*MPI/2, 2*MPI)
+    cr.line_to(width, height-radius)
+    cr.arc(width-radius, height-radius, radius, 0, MPI/2)
+    cr.line_to(radius, height)
+    cr.arc(radius, height-radius, radius, MPI/2, MPI)
     cr.line_to(0, radius)
     cr.arc(radius, radius, radius, MPI, 3*MPI/2)
     cr.close_path()
@@ -98,11 +97,12 @@ def get_glyph_pixbuf(text, sz, center_vert=True, color=None):
         cc.set_source_rgb(*color)
 
     cc.text_path(text)
-    x1, y1, x2, y2 =cc.path_extents()
+    x1, y1, x2, y2 = cc.path_extents()
     skew_horiz = ((sz-x2) - (x1))/2.0
     skew_vert = ((sz-y2) - (y1))/2.0
     if not center_vert:
         skew_vert = skew_vert*0.2 - margin*0.5
+
     cc.new_path()
     cc.move_to(margin+skew_horiz, sz-margin+skew_vert)
     cc.text_path(text)
@@ -119,11 +119,18 @@ def get_glyph_pixbuf(text, sz, center_vert=True, color=None):
     return loader.get_pixbuf()
 
 
-# State Constants
-class State :
-    Wait, Match, NoMatch = (1,2,3)
+def _format_match(match):
+    return f"<u><b>{_escape_markup_str(match)}</b></u>"
 
-class LeafModel :
+
+# State Constants
+class State(enum.IntEnum) :
+    WAIT = 1
+    MATCH = 2
+    NO_MATCH = 3
+
+
+class LeafModel:
     """A base for a tree view
     With a magic load-on-demand feature.
 
@@ -200,7 +207,8 @@ class LeafModel :
 
     def get_object(self, path):
         if path is None:
-            return
+            return None
+
         return self._get_column(path, self.object_column)
 
     def get_store(self):
@@ -222,12 +230,16 @@ class LeafModel :
         """
         if not self.base:
             return None
+
         if num:
             iterator = itertools.islice(self.base, num)
+
         first = None
         for item in iterator:
             self.add(item)
-            if not first: first = item.object
+            if not first:
+                first = item.object
+
         # first.object is a leaf
         return first
 
@@ -250,21 +262,22 @@ class LeafModel :
         self.store.prepend(self._get_row(rankable))
 
     def get_icon(self, leaf):
-        sz = self.icon_size
-        if sz >= 8:
-            return leaf.get_thumbnail(sz, sz) or leaf.get_pixbuf(sz)
+        if (size := self.icon_size) > 8:
+            return leaf.get_thumbnail(size, size) or leaf.get_pixbuf(size)
+
+        return None
 
     def get_label_markup(self, rankable):
         leaf = rankable.object
         # Here we use the items real name
         # Previously we used the alias that was matched,
         # but it can be too confusing or ugly
-        name = escape_markup_str(str(leaf))
-        desc = escape_markup_str(leaf.get_description() or "")
-        if desc:
+        name = _escape_markup_str(str(leaf))
+        if desc := _escape_markup_str(leaf.get_description() or ""):
             text = f'{name}\n<small>{desc}</small>'
         else:
             text = f'{name}'
+
         return text
 
     def get_fav(self, leaf):
@@ -280,6 +293,7 @@ class LeafModel :
         #
         if self.aux_info_callback is not None:
             return self.aux_info_callback(leaf)
+
         return ""
 
     def get_rank_str(self, rank):
@@ -295,7 +309,7 @@ class MatchViewOwner(pretty.OutputMixin):
         # object attributes
         self.label_char_width = 25
         self.preedit_char_width = 5
-        self.match_state = State.Wait
+        self.match_state = State.WAIT
 
         self.object_stack = []
 
@@ -372,6 +386,7 @@ class MatchViewOwner(pretty.OutputMixin):
         new_sz_y = int(base_scale*base.get_height())
         if not base.get_has_alpha():
             base = base.add_alpha(False, 0, 0, 0)
+
         destbuf = base.scale_simple(sz, sz, GdkPixbuf.InterpType.NEAREST)
         destbuf.fill(0x00000000)
         # Align in the middle of the area
@@ -388,6 +403,7 @@ class MatchViewOwner(pretty.OutputMixin):
         for idx, pbuf in enumerate(pixbufs[-n_small:]):
             dest_x = offset_x = int(fr*sz)*idx
             pbuf.copy_area(0,0, small_size,small_size, destbuf, dest_x,dest_y)
+
         return destbuf
 
     def update_match(self):
@@ -395,16 +411,17 @@ class MatchViewOwner(pretty.OutputMixin):
         Update interface to display the currently selected match
         """
         # update icon
-        icon = self.cur_icon
-        if icon:
-            if self.match_state is State.NoMatch:
+        if icon := self.cur_icon:
+            if self.match_state is State.NO_MATCH:
                 icon = self._dim_icon(icon)
+
             if icon and self.object_stack:
                 small_max = 16
                 small_size = 16
                 pixbufs = [o.get_pixbuf(small_size) for o in
                         self.object_stack[-small_max:]]
                 icon = self._render_composed_icon(icon, pixbufs, small_size)
+
             self.icon_view.set_from_pixbuf(icon)
         else:
             self.icon_view.clear()
@@ -415,7 +432,7 @@ class MatchViewOwner(pretty.OutputMixin):
             return
 
         if not self.cur_match:
-            if self.match_state is not State.Match:
+            if self.match_state is not State.MATCH:
                 # Allow markup in the text string if we have no match
                 self.label.set_markup(self.cur_text)
             else:
@@ -426,10 +443,9 @@ class MatchViewOwner(pretty.OutputMixin):
         text = str(self.cur_text)
         key = str(self.cur_match).lower()
 
-        format_match=(lambda m: f"<u><b>{escape_markup_str(m)}</b></u>")
         markup = relevance.formatCommonSubstrings(text, key,
-                format_clean=escape_markup_str,
-                format_match=format_match)
+                format_clean=_escape_markup_str,
+                format_match=_format_match)
 
         self.label.set_markup(markup)
 
@@ -437,6 +453,7 @@ class MatchViewOwner(pretty.OutputMixin):
     def _dim_icon(cls, icon):
         if not icon:
             return icon
+
         dim_icon = icon.copy()
         dim_icon.fill(0)
         icon.composite(dim_icon,
@@ -459,7 +476,8 @@ class MatchViewOwner(pretty.OutputMixin):
         if state:
             self.match_state = state
         else:
-            self.match_state = (State.NoMatch, State.Match)[self.cur_match != None]
+            self.match_state = (State.NO_MATCH, State.MATCH)[self.cur_match is not None]
+
         if update:
             self.update_match()
 
@@ -490,9 +508,9 @@ class MatchViewOwner(pretty.OutputMixin):
         @preedit: Widget to be injected or None
         """
         if preedit:
-            old_parent = preedit.get_parent()
-            if old_parent:
+            if old_parent := preedit.get_parent():
                 old_parent.remove(preedit)
+
             self.shrink_preedit(preedit)
             self._editbox.pack_start(preedit, False, True, 0)
             #selectedc = self.style.dark[Gtk.StateType.SELECTED]
@@ -502,6 +520,7 @@ class MatchViewOwner(pretty.OutputMixin):
         else:
             self.label.set_width_chars(self.label_char_width)
             self.label.set_alignment(.5,.5)
+
 
 class Search(GObject.GObject, pretty.OutputMixin):
     """
@@ -525,7 +544,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         # object attributes
         self.model = LeafModel(self.get_aux_info)
         self.match = None
-        self.match_state = State.Wait
+        self.match_state = State.WAIT
         self.text = ""
         # internal constants
         self.show_initial = 10
@@ -718,27 +737,21 @@ class Search(GObject.GObject, pretty.OutputMixin):
 
     # table methods
     def _table_set_cursor_at_row(self, row):
-        path_at_row = lambda r: (r,)
-        self.table.set_cursor(path_at_row(row))
+        self.table.set_cursor((row, ))
 
     def _table_current_row(self):
-        row_at_path = lambda p: p[0]
-
-        path, col = self.table.get_cursor()
-        return row_at_path(path) if path else None
+        path, _col = self.table.get_cursor()
+        return path[0] if path else None
 
     def go_up(self, rows_count=1):
         """
         Upwards in the table
         """
-        row_at_path = lambda p: p[0]
-
         # go up, simply. close table if we go up from row 0
-        path, col = self.table.get_cursor()
+        path, _col = self.table.get_cursor()
         if path:
-            r = row_at_path(path)
-            if r >= 1:
-                self._table_set_cursor_at_row(r-min(rows_count, r))
+            if (row := path[0]) >= 1:
+                self._table_set_cursor_at_row(row - min(rows_count, row))
             else:
                 self.hide_table()
 
@@ -746,28 +759,28 @@ class Search(GObject.GObject, pretty.OutputMixin):
         """
         Down in the table
         """
-        row_at_path = lambda p: p[0]
-
         table_visible = self.get_table_visible()
         # if no data is loaded (frex viewing catalog), load
         # if too little data is loaded, try load more
         if len(self.model) <= 1:
             self.populate(self.show_more)
         if len(self.model) >= 1:
-            path, col = self.table.get_cursor()
+            path, _col = self.table.get_cursor()
             if path:
-                r = row_at_path(path)
-                if len(self.model) - rows_count <= r:
+                row = path[0]
+                if len(self.model) - rows_count <= row:
                     self.populate(self.show_more)
                 # go down only if table is visible
                 if table_visible:
-                    step = min(len(self.model) - r - 1, rows_count)
+                    step = min(len(self.model) - row - 1, rows_count)
                     if step > 0:
-                        self._table_set_cursor_at_row(r + step)
+                        self._table_set_cursor_at_row(row + step)
             else:
                 self._table_set_cursor_at_row(0)
+
             if show_table:
                 self._show_table()
+
         if force and show_table:
             self._show_table()
 
@@ -821,7 +834,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         self.emit("cursor-changed", self.match)
         if self.match:
             match_text = (rankable and rankable.value)
-            self.match_state = State.Match
+            self.match_state = State.MATCH
             m = self.match
             pbuf = (m.get_thumbnail(self.icon_size*4//3, self.icon_size) or
                 m.get_pixbuf(self.icon_size))
@@ -862,6 +875,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         if not matchrankable:
             self._set_match(None)
             return self.handle_no_matches(empty=not key)
+
         self._set_match(matchrankable)
         self.model.set_base(iter(matches))
         if not self.model and self.get_table_visible():
@@ -874,8 +888,8 @@ class Search(GObject.GObject, pretty.OutputMixin):
         self.setup_empty()
 
     def setup_empty(self):
-        self.match_state = State.NoMatch
-        self.match_view.set_match_state("No match", None, state=State.NoMatch)
+        self.match_state = State.NO_MATCH
+        self.match_view.set_match_state("No match", None, state=State.NO_MATCH)
         self.relax_match()
 
     def populate(self, num):
@@ -885,8 +899,9 @@ class Search(GObject.GObject, pretty.OutputMixin):
     def handle_no_matches(self, empty=False):
         """if @empty, there were no matches to find"""
         name, icon = self.get_nomatch_name_icon(empty=empty)
-        self.match_state = State.NoMatch
-        self.match_view.set_match_state(name, icon, state=State.NoMatch)
+        self.match_state = State.NO_MATCH
+        self.match_view.set_match_state(name, icon, state=State.NO_MATCH)
+
 
 # Take care of GObject things to set up the Search class
 GObject.type_register(Search)
@@ -894,6 +909,8 @@ GObject.signal_new("activate", Search, GObject.SignalFlags.RUN_LAST,
         GObject.TYPE_BOOLEAN, (GObject.TYPE_PYOBJECT, ))
 GObject.signal_new("cursor-changed", Search, GObject.SignalFlags.RUN_LAST,
         GObject.TYPE_BOOLEAN, (GObject.TYPE_PYOBJECT, ))
+
+
 
 class LeafSearch (Search):
     """
@@ -903,41 +920,43 @@ class LeafSearch (Search):
         if hasattr(leaf, "has_content") and leaf.has_content():
             if text_direction_is_ltr():
                 return "\N{BLACK RIGHT-POINTING SMALL TRIANGLE} "
-            else:
-                return "\N{BLACK LEFT-POINTING SMALL TRIANGLE} "
+
+            return "\N{BLACK LEFT-POINTING SMALL TRIANGLE} "
+
         return ""
 
+    def _get_pbuf(self, src):
+        return (src.get_thumbnail(self.icon_size*4//3, self.icon_size) or
+            src.get_pixbuf(self.icon_size))
+
+
     def get_nomatch_name_icon(self, empty):
-        get_pbuf = \
-            lambda m: (m.get_thumbnail(self.icon_size*4/3, self.icon_size) or \
-                    m.get_pixbuf(self.icon_size))
         if empty and self.source:
-            return ("<i>" + escape_markup_str(self.source.get_empty_text()) + "</i>",
-                    get_pbuf(self.source))
-        elif self.source:
+            return (f"<i>{_escape_markup_str(self.source.get_empty_text())}</i>",
+                    self._get_pbuf(self.source))
+
+        if self.source:
             return (_('No matches in %(src)s for "%(query)s"') % {
-                "src": f"<i>{escape_markup_str(str(self.source))}</i>",
-                "query": escape_markup_str(self.text),
+                "src": f"<i>{_escape_markup_str(str(self.source))}</i>",
+                "query": _escape_markup_str(self.text),
                 },
-                get_pbuf(self.source))
+                self._get_pbuf(self.source))
 
         return _("No matches"), icons.get_icon_for_name("kupfer-object",
                                                         self.icon_size)
 
     def setup_empty(self):
         icon = None
-        def get_pbuf(m):
-            return (m.get_thumbnail(self.icon_size*4//3, self.icon_size) or
-                    m.get_pixbuf(self.icon_size))
         if self.source:
-            icon = get_pbuf(self.source)
+            icon = self._get_pbuf(self.source)
             title = "<i>" + self.source.get_search_text() + "</i>"
         else:
             title = "<i>" + _("Type to search") + "</i>"
 
         self._set_match(None)
-        self.match_state = State.Wait
-        self.match_view.set_match_state(title, icon, state=State.Wait)
+        self.match_state = State.WAIT
+        self.match_view.set_match_state(title, icon, state=State.WAIT)
+
 
 class ActionSearch (Search):
     """
@@ -972,11 +991,13 @@ class ActionSearch (Search):
     def get_aux_info(self, obj):
         if not self.action_accel_config:
             return ""
+
         accel = self.accel_for_action(obj, self.action_accel_config)
         if accel:
             keyv, mods = Gtk.accelerator_parse(accel)
             if mods != 0:
                 self.output_error("Ignoring action accelerator mod", mods)
+
             return Gtk.accelerator_get_label(keyv, self.accel_modifier)
 
         return ""
@@ -985,12 +1006,16 @@ class ActionSearch (Search):
         # don't look up icons too early
         if not self._initialized:
             return ("", None)
+
         if self.text:
-            title = "<i>" + (_('No action matches "%s"') % escape_markup_str(self.text)) + "</i>"
+            title = "<i>" \
+                + (_('No action matches "%s"') % _escape_markup_str(self.text)) \
+                + "</i>"
         else:
             title = ""
 
         return title, icons.get_icon_for_name("kupfer-execute", self.icon_size)
+
     def setup_empty(self):
         self.handle_no_matches()
         self.hide_table()
@@ -999,9 +1024,11 @@ class ActionSearch (Search):
     def accel_for_action(cls, action, action_accel_config):
         if action_accel_config is None:
             return None
+
         config_accel = action_accel_config.get(action)
         if config_accel is not None:
             return config_accel
+
         return action.action_accelerator
 
     def select_action(self, accel):
@@ -1010,13 +1037,14 @@ class ActionSearch (Search):
 
         Return pair of bool success, can activate
         """
-        if self.get_match_state() == State.NoMatch:
+        if self.get_match_state() == State.NO_MATCH:
             return False, False
 
         i = self._table_current_row() or 0
         self.populate(1)
-        if not len(self.model):
+        if not self.model:
             return False, False
+
         start_row = i
         while True:
             cur = self.model.get_object((i, ))
@@ -1032,7 +1060,9 @@ class ActionSearch (Search):
             i %= len(self.model)
             if i == start_row:
                 break
+
         return False, False
+
 
 class Interface (GObject.GObject, pretty.OutputMixin):
     """
@@ -1249,7 +1279,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
 
         key_book = self.key_book
         use_command_keys = setctl.get_use_command_keys()
-        has_selection = (self.current.get_match_state() is State.Match)
+        has_selection = (self.current.get_match_state() is State.MATCH)
         if not text_mode and use_command_keys:
             # translate extra commands to normal commands here
             # and remember skipped chars
@@ -1258,16 +1288,20 @@ class Interface (GObject.GObject, pretty.OutputMixin):
                     keyv = key_book["Up"]
                 else:
                     keyv = key_book["Down"]
+
             elif keyv == ord("/") and has_selection:
                 keyv = key_book["Right"]
+
             elif keyv == ord(",") and has_selection:
                 if self.comma_trick():
                     return True
+
             elif keyv in init_text_keys:
                 if self.try_enable_text_mode():
                     # swallow if it is the direct key
                     swallow = (keyv == direct_text_key)
                     return swallow
+
         if text_mode and keyv in (key_book["Left"], key_book["Right"],
                                   key_book["Home"], key_book["End"]):
             # pass these through in text mode
@@ -1309,33 +1343,41 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         # exit here if it's not a special key
         if keyv not in self.keys_sensible:
             return False
+
         self._reset_to_toplevel = False
 
         if keyv == key_book["Escape"]:
             self._escape_key_press()
             return True
 
-
         if keyv == key_book["Up"]:
             self.current.go_up()
+
         elif keyv == key_book["Page_Up"]:
             self.current.go_page_up()
+
         elif keyv == key_book["Down"]:
             ## if typing with shift key, switch to action pane
             if shift_mask and self.current == self.search:
                 self.current.hide_table()
                 self.switch_current()
+
             if (not self.current.get_current() and
-                    self.current.get_match_state() is State.Wait):
+                    self.current.get_match_state() is State.WAIT):
                 self._populate_search()
+
             self.current.go_down()
+
         elif keyv == key_book["Page_Down"]:
             if (not self.current.get_current() and
-                    self.current.get_match_state() is State.Wait):
+                    self.current.get_match_state() is State.WAIT):
                 self._populate_search()
+
             self.current.go_page_down()
+
         elif keyv == key_book["Right"]:
             self._browse_down(alternate=mod1_mask)
+
         elif keyv == key_book["BackSpace"]:
             if not has_input:
                 self._backspace_key_press()
@@ -1343,6 +1385,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
                 self.entry.delete_text(self.entry.get_text_length() - 1, -1)
             else:
                 return False
+
         elif keyv == key_book["Left"]:
             self._back_key_press()
         elif keyv in (key_book["Tab"], key_book["ISO_Left_Tab"]):
@@ -1352,6 +1395,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         else:
             # cont. processing
             return False
+
         return True
 
     def _entry_copy_clipboard(self, entry):
@@ -1363,16 +1407,20 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         selection = self.current.get_current()
         if selection is None:
             return False
+
         clip = Gtk.Clipboard.get_for_display(
                 entry.get_display(),
                 Gdk.SELECTION_CLIPBOARD)
+
         return interface.copy_to_clipboard(selection, clip)
 
     def _entry_cut_clipboard(self, entry):
         if not self._entry_copy_clipboard(entry):
             return False
+
         self.reset_current()
         self.reset()
+        return False  # TODO: check, was no return
 
     def _entry_paste_data_received(self, clipboard, targets, _extra, entry):
         uri_target = Gdk.Atom.intern("text/uri-list", False)
@@ -1415,7 +1463,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
 
         Corresponds to backspace
         """
-        if self.current.get_match_state() is State.Wait:
+        if self.current.get_match_state() is State.WAIT:
             self.toggle_text_mode(False)
         if self.current is self.action or populate:
             self._populate_search()
@@ -1427,6 +1475,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         self.switch_to_source()
         while self._browse_up():
             pass
+
         self.toggle_text_mode(False)
         self.data_controller.object_stack_clear_all()
         self.reset_current()
@@ -1442,11 +1491,10 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         softly (without visible update), and unset _reset_to_toplevel marker.
         """
         pane = pane or self._pane_for_widget(self.current)
-        newsrc = self.data_controller.soft_reset(pane)
-        if newsrc:
+        if newsrc := self.data_controller.soft_reset(pane):
             self.current.set_source(newsrc)
-        self._reset_to_toplevel = False
 
+        self._reset_to_toplevel = False
 
     def _escape_key_press(self):
         """Handle escape if first pane is reset, cancel (put away) self.  """
@@ -1462,8 +1510,10 @@ class Interface (GObject.GObject, pretty.OutputMixin):
                 pane = self._pane_for_widget(self.current)
                 self.data_controller.object_stack_clear(pane)
                 self.emit("cancelled")
+
             self._reset_to_toplevel = True
             self.current.hide_table()
+
         self.reset_text()
 
     def _backspace_key_press(self):
@@ -1473,6 +1523,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
             self.data_controller.object_stack_pop(pane)
             self.reset_text()
             return
+
         self._back_key_press()
 
     def _back_key_press(self):
@@ -1481,17 +1532,17 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         if self.current.is_showing_result():
             self.reset_current(populate=True)
         else:
-            if self._browse_up():
-                pass
-            else:
+            if not self._browse_up():
                 self.reset()
                 self.reset_current()
                 self._reset_to_toplevel = True
+
         self.reset_text()
 
     def _relax_search_terms(self):
         if self.get_in_text_mode():
             return
+
         self.reset_text()
         self.current.relax_match()
 
@@ -1511,8 +1562,10 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         """Perform a soft reset if possible and then try enabling text mode"""
         if self._reset_to_toplevel:
             self.soft_reset()
+
         if self.get_can_enter_text_mode():
             return self.toggle_text_mode(True)
+
         return False
 
     def toggle_text_mode(self, val):
@@ -1527,10 +1580,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
 
     def toggle_text_mode_quick(self):
         """Toggle text mode or not, if we can or not, without reset"""
-        if self._is_text_mode:
-            self._is_text_mode = False
-        else:
-            self._is_text_mode = True
+        self._is_text_mode = not self._is_text_mode
         self.update_text_mode()
 
     def disable_text_mode_quick(self):
@@ -1549,6 +1599,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
             self.preedit.set_width_chars(0)
         else:
             self.entry.hide()
+
         self._update_active()
 
     def switch_to_source_init(self):
@@ -1622,27 +1673,33 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         self.data_controller.compose_selection()
 
     def mark_as_default(self):
-        if self.action.get_match_state() != State.Match:
+        if self.action.get_match_state() != State.MATCH:
             return False
+
         self.data_controller.mark_as_default(data.ActionPane)
         return True
 
     def erase_affinity_for_first_pane(self):
-        if self.search.get_match_state() != State.Match:
+        if self.search.get_match_state() != State.MATCH:
             return False
+
         self.data_controller.erase_object_affinity(data.SourcePane)
         return True
 
     def comma_trick(self):
-        if self.current.get_match_state() != State.Match:
+        if self.current.get_match_state() != State.MATCH:
             return False
+
         cur = self.current.get_current()
         curpane = self._pane_for_widget(self.current)
         if self.data_controller.object_stack_push(curpane, cur):
             self._relax_search_terms()
             if self.get_in_text_mode():
                 self.reset_text()
+
             return True
+
+        return False
 
     def action_accelerator(self, keystr):
         """
@@ -1651,7 +1708,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         Return False if it was not possible to handle or the action was not
         used, return True if it was acted upon
         """
-        if self.search.get_match_state() != State.Match:
+        if self.search.get_match_state() != State.MATCH:
             return False
         self.output_debug("Looking for action accelerator for", keystr)
         success, activate = self.action.select_action(keystr)
@@ -1668,17 +1725,17 @@ class Interface (GObject.GObject, pretty.OutputMixin):
 
     def assign_action_accelerator(self):
         from kupfer.ui import getkey_dialog
-        if self.action.get_match_state() != State.Match:
+        if self.action.get_match_state() != State.MATCH:
             raise RuntimeError("No Action Selected")
 
         def is_good_keystr(k):
             keyv, mods = Gtk.accelerator_parse(k)
             return keyv != 0 and mods in (0, self.action.accel_modifier)
 
-        w = self.get_widget()
+        widget = self.get_widget()
         keystr = getkey_dialog.ask_for_key(is_good_keystr,
-                screen=w.get_screen(),
-                parent=w.get_toplevel())
+                                           screen=widget.get_screen(),
+                                           parent=widget.get_toplevel())
         if keystr is None:
             # Was cancelled
             return
@@ -1698,23 +1755,28 @@ class Interface (GObject.GObject, pretty.OutputMixin):
             """ Return name, method pair for @key"""
             if key not in accelerators.ACCELERATOR_NAMES:
                 raise RuntimeError(f"Missing accelerator: {key}")
+
             return (accelerators.ACCELERATOR_NAMES[key], getattr(self, key))
+
         def trunc(ustr):
             "truncate long object names"
             return ustr[:25] + "…" if len(ustr) > 27 else ustr
-        has_match = self.current.get_match_state() == State.Match
+
+        has_match = self.current.get_match_state() == State.MATCH
         if has_match:
             yield get_accel('compose_action')
+
         yield get_accel('select_selected_text')
+
         if self.get_can_enter_text_mode():
             yield get_accel('toggle_text_mode_quick')
-        if self.action.get_match_state() == State.Match:
+
+        if self.action.get_match_state() == State.MATCH:
             smatch = self.search.get_current()
             amatch = self.action.get_current()
 
             label = (_('Assign Accelerator to "%(action)s"') % {
-                     'action': trunc(str(amatch)),
-                     })
+                     'action': trunc(str(amatch))})
             w_label = textwrap.wrap(label, width=40, subsequent_indent="    ")
             yield ("\n".join(w_label), self.assign_action_accelerator)
 
@@ -1724,6 +1786,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
                      })
             w_label = textwrap.wrap(label, width=40, subsequent_indent="    ")
             yield ("\n".join(w_label), self.mark_as_default)
+
         if has_match:
             if self.data_controller.get_object_has_affinity(data.SourcePane):
                 match = self.search.get_current()
@@ -1754,6 +1817,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         if pane is data.SourcePane:
             self.switch_to_source()
             self.action.reset()
+
         if wid is self.current:
             self.toggle_text_mode(False)
             self._reset_to_toplevel = False
@@ -1785,12 +1849,15 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         for panewidget in (self.action, self.search, self.third):
             if panewidget is not self.current:
                 panewidget.set_state(Gtk.StateType.NORMAL)
+
             panewidget.match_view.inject_preedit(None)
+
         if self._is_text_mode or self._key_repeat_active:
             self.current.set_state(Gtk.StateType.ACTIVE)
         else:
             self.current.set_state(Gtk.StateType.SELECTED)
             self.current.match_view.inject_preedit(self.preedit)
+
         self._description_changed()
 
     def switch_current(self, reverse=False):
@@ -1798,6 +1865,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         order = [self.search, self.action]
         if self._pane_three_is_visible:
             order.append(self.third)
+
         curidx = order.index(self.current)
         newidx = curidx -1 if reverse else curidx +1
         newidx %= len(order)
@@ -1816,11 +1884,12 @@ class Interface (GObject.GObject, pretty.OutputMixin):
 
         if index >= len(order):
             return False
+
         pane_before = order[max(index - 1, 0)]
         new_focus = order[index]
         no_match_ok = index == 0
         # Only allow switch if we have match in the pane before
-        if ((no_match_ok or pane_before.get_match_state() is State.Match) and
+        if ((no_match_ok or pane_before.get_match_state() is State.MATCH) and
                 new_focus is not self.current):
             self.current.hide_table()
             self.current = new_focus
@@ -1830,6 +1899,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
             self._update_active()
             if self.data_controller.get_should_enter_text_mode(pane):
                 self.toggle_text_mode_quick()
+
         return True
 
     def _browse_up(self):
@@ -1855,9 +1925,10 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         """Execute a .kfcom file"""
         def _handle_error(exc_info):
             from kupfer import uiutils
-            etype, exc, tb = exc_info
+            _etype, exc, _tb = exc_info
             if not uiutils.show_notification(str(exc), icon_name="kupfer"):
-                raise
+                raise exc
+
         ctxenv = uievents.gui_context_from_keyevent(event_time, display)
         self.data_controller.execute_file(filepath, ctxenv, _handle_error)
 
@@ -1871,11 +1942,13 @@ class Interface (GObject.GObject, pretty.OutputMixin):
             self._latest_input_timer.set(self._slow_input_interval/2,
                     self._relax_search_terms)
             return
+
         wid = self._widget_for_pane(pane)
         wid.update_match(key, matchrankable, matches)
 
     def _widget_for_pane(self, pane):
         return self.pane_to_widget[pane]
+
     def _pane_for_widget(self, widget):
         return self.widget_to_pane[id(widget)]
 
@@ -1898,13 +1971,14 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         self.data_controller.select(pane, match)
         if not pane_owner is self.current:
             return
+
         self._description_changed()
 
     def _description_changed(self):
         match = self.current.get_current()
         # Use invisible WORD JOINER instead of empty, to maintain vertical size
         desc = match and match.get_description() or "\N{WORD JOINER}"
-        markup = f"<small>{escape_markup_str(desc)}</small>"
+        markup = f"<small>{_escape_markup_str(desc)}</small>"
         self.label.set_markup(markup)
 
     def put_text(self, text):
@@ -1919,11 +1993,11 @@ class Interface (GObject.GObject, pretty.OutputMixin):
     def put_files(self, fileuris, paths):
         self.output_debug("put-files:", list(fileuris))
         if paths:
-            leaves = list(map(interface.get_fileleaf_for_path,
-                [_f for _f in [Gio.File.new_for_path(U).get_path() for U in fileuris] if _f]))
+            objs = (Gio.File.new_for_path(U).get_path() for U in fileuris)
         else:
-            leaves = list(map(interface.get_fileleaf_for_path,
-                [_f for _f in [Gio.File.new_for_uri(U).get_path() for U in fileuris] if _f]))
+            objs = (Gio.File.new_for_uri(U).get_path() for U in fileuris)
+
+        leaves = list(map(interface.get_fileleaf_for_path, filter(None, objs)))
         if leaves:
             self.data_controller.insert_objects(data.SourcePane, leaves)
 
@@ -1940,6 +2014,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
         if preedit_string:
             self.current.match_view.expand_preedit(self.preedit)
             self._reset_input_timer()
+
         self._preedit_text = preedit_string
 
     def _preedit_insert_text(self, editable, text, byte_length, position):
@@ -1949,6 +2024,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
             self.entry.set_position(-1)
             self._reset_input_timer()
             self._update_active()
+
         GObject.signal_stop_emission_by_name(editable, "insert-text")
         return False
 
@@ -1986,6 +2062,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
                 curev.keyval in (self.key_book["Delete"],
                     self.key_book["BackSpace"])):
                 self._backspace_key_press()
+
             return
 
         # start search for updated query
@@ -1995,6 +2072,7 @@ class Interface (GObject.GObject, pretty.OutputMixin):
 
         self.data_controller.search(pane, key=text, context=text,
                 text_mode=self.get_in_text_mode())
+
 
 GObject.type_register(Interface)
 GObject.signal_new("cancelled", Interface, GObject.SignalFlags.RUN_LAST,
@@ -2048,6 +2126,7 @@ KUPFER_CSS = b"""
 """
 
 WINDOW_BORDER_WIDTH = 8
+
 
 class WindowController (pretty.OutputMixin):
     """
@@ -2123,8 +2202,10 @@ class WindowController (pretty.OutputMixin):
     def show_statusicon_ai(self):
         if not self._statusicon_ai:
             self._statusicon_ai = self._setup_appindicator(self._setup_menu())
+
         if not self._statusicon_ai:
             return
+
         self._statusicon_ai.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
 
     def hide_statusicon_ai(self):
@@ -2169,12 +2250,14 @@ class WindowController (pretty.OutputMixin):
             add_menu_item(Gtk.STOCK_CLOSE, self.put_away, with_ctx=False)
         else:
             add_menu_item(None, self.activate, _("Show Main Interface"))
+
         menu.append(Gtk.SeparatorMenuItem())
         if context_menu:
             for name, func in self.interface.get_context_actions():
                 mitem = Gtk.MenuItem(label=name)
                 mitem.connect("activate", submenu_callback, func)
                 menu.append(mitem)
+
             menu.append(Gtk.SeparatorMenuItem())
 
         add_menu_item(Gtk.STOCK_PREFERENCES, kupferui.show_preferences)
@@ -2197,6 +2280,7 @@ class WindowController (pretty.OutputMixin):
     def _setup_appindicator(self, menu):
         if AppIndicator3 is None:
             return None
+
         indicator = AppIndicator3.Indicator.new(version.PROGRAM_NAME,
             version.ICON_NAME,
             AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
@@ -2265,30 +2349,30 @@ class WindowController (pretty.OutputMixin):
         type_hint = Gdk.WindowTypeHint.UTILITY
         hint_name = kupfer.config.get_kupfer_env("WINDOW_TYPE_HINT").upper()
         if hint_name:
-            hint_enum = getattr(Gdk.WindowTypeHint, hint_name, None)
-            if hint_enum is None:
+            if hint_enum := getattr(Gdk.WindowTypeHint, hint_name, None):
+                type_hint = hint_enum
+            else:
                 self.output_error("No such Window Type Hint", hint_name)
                 self.output_error("Existing type hints:")
                 for name in dir(Gdk.WindowTypeHint):
                     if name.upper() == name:
                         self.output_error(name)
-            else:
-                type_hint = hint_enum
+
         return type_hint
 
     def _window_position(self):
         value = Gtk.WindowPosition.NONE
         hint_name = kupfer.config.get_kupfer_env("WINDOW_POSITION").upper()
         if hint_name:
-            hint_enum = getattr(Gtk.WindowPosition, hint_name, None)
-            if hint_enum is None:
+            if hint_enum := getattr(Gtk.WindowPosition, hint_name, None):
+                value = hint_enum
+            else:
                 self.output_error("No such Window Position", hint_name)
                 self.output_error("Existing values:")
                 for name in dir(Gtk.WindowPosition):
                     if name.upper() == name:
                         self.output_error(name)
-            else:
-                value = hint_enum
+
         return value
 
     def _window_frame_clicked(self, widget, event):
@@ -2355,9 +2439,12 @@ class WindowController (pretty.OutputMixin):
             "Make :0.0 out of :0"
             if name[-2] == ":":
                 return name + ".0"
+
             return name
+
         if not self.window.has_screen():
             return False
+
         cur_disp = self.window.get_screen().get_display().get_name()
         return norm_name(cur_disp) == norm_name(displayname)
 
@@ -2365,6 +2452,7 @@ class WindowController (pretty.OutputMixin):
         if self.current_screen_handler:
             scr = self.window.get_screen()
             scr.disconnect(self.current_screen_handler)
+
         if False:
             rgba = screen.get_rgba_colormap()
             if rgba:
@@ -2372,8 +2460,10 @@ class WindowController (pretty.OutputMixin):
                 self.window.set_screen(screen)
                 self.window.set_colormap(rgba)
                 self.window.realize()
+
         else:
             self.window.set_screen(screen)
+
         self.current_screen_handler = \
             screen.connect("monitors-changed", self._monitors_changed)
         self.current_screen = screen
@@ -2384,11 +2474,14 @@ class WindowController (pretty.OutputMixin):
             "Make :0.0 out of :0"
             if name[-2] == ":":
                 return name + ".0"
+
             return name
+
         if not displayname and self.window.has_screen():
             display = self.window.get_display()
         else:
             display = uievents.GUIEnvironmentContext.ensure_display_open(displayname)
+
         screen, x, y, modifiers = display.get_pointer()
         self._window_put_on_screen(screen)
         monitor_nr = screen.get_monitor_at_point(x, y)
@@ -2406,6 +2499,7 @@ class WindowController (pretty.OutputMixin):
         # Check if the GtkWindow was realized yet
         if not self.window.get_realized():
             return True
+
         display = self.window.get_screen().get_display()
         screen, x, y, modifiers = display.get_pointer()
         return (screen.get_monitor_at_point(x,y) !=
@@ -2420,9 +2514,11 @@ class WindowController (pretty.OutputMixin):
         self._window_hide_timer.invalidate()
         if not display:
             display = Gdk.Display.get_default().get_name()
+
         # Center window before first show
         if not self.window.get_realized():
             self._center_window(display)
+
         self.window.stick()
         self.window.present_with_time(timestamp)
         self.window.get_window().focus(timestamp=timestamp)
@@ -2535,8 +2631,10 @@ class WindowController (pretty.OutputMixin):
         setctl = settings.GetSettingsController()
         if setctl.get_show_status_icon():
             self.show_statusicon()
+
         if setctl.get_show_status_icon_ai():
             self.show_statusicon_ai()
+
         setctl.connect("value-changed::kupfer.showstatusicon",
                        self._showstatusicon_changed)
         setctl.connect("value-changed::kupfer.showstatusicon_ai",
@@ -2546,15 +2644,16 @@ class WindowController (pretty.OutputMixin):
 
         if keystr:
             succ = keybindings.bind_key(keystr)
-            self.output_info("Trying to register %s to spawn kupfer.. %s"
-                    % (keystr, "success" if succ else "failed"))
-
+            self.output_info(f"Trying to register {keystr} to spawn kupfer.. "
+                             + ("success" if succ else "failed"))
 
         if magickeystr:
             succ = keybindings.bind_key(magickeystr,
                     keybindings.KEYBINDING_MAGIC)
-            self.output_debug("Trying to register %s to spawn kupfer.. %s"
-                    % (magickeystr, "success" if succ else "failed"))
+            self.output_debug(
+                f"Trying to register {magickeystr} to spawn kupfer.. "
+                + ("success" if succ else "failed"))
+
         keyobj = keybindings.GetKeyboundObject()
         keyobj.connect("keybinding", self._key_binding)
 
@@ -2604,6 +2703,7 @@ class WindowController (pretty.OutputMixin):
             kserv1.connect("put-files", self.on_put_files)
             kserv1.connect("execute-file", self.on_execute_file)
             kserv1.connect("quit", self.quit)
+
         if kserv2:
             kserv2.connect("present", self.on_present)
             kserv2.connect("show-hide", self.on_show_hide)
@@ -2614,13 +2714,15 @@ class WindowController (pretty.OutputMixin):
 
         if not quiet:
             self.activate()
+
         GLib.idle_add(self.lazy_setup)
 
         def do_main_iterations(max_events=0):
             # use sentinel form of iter
-            for idx, pending in enumerate(iter(Gtk.events_pending, False)):
+            for idx, _pending in enumerate(iter(Gtk.events_pending, False)):
                 if max_events and idx > max_events:
                     break
+
                 Gtk.main_iteration()
 
         try:
@@ -2634,8 +2736,10 @@ class WindowController (pretty.OutputMixin):
         # tear down but keep hanging
         if kserv1:
             kserv1.unregister()
+
         if kserv2:
             kserv2.unregister()
+
         keybindings.bind_key(None, keybindings.KEYBINDING_DEFAULT)
         keybindings.bind_key(None, keybindings.KEYBINDING_MAGIC)
 

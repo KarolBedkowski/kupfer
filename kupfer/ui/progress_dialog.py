@@ -9,6 +9,7 @@ def idle_call(func):
     @functools.wraps(func)
     def idle_wrapper(*args):
         glib.idle_add(func, *args)
+
     return idle_wrapper
 
 
@@ -78,4 +79,3 @@ class ProgressDialogController :
                 glib.markup_escape_text(text),
             ))
         return self.aborted
-
