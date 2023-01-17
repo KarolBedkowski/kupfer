@@ -11,8 +11,10 @@ from kupfer import conspickle
 
 KUPFER_COMMAND_SHEBANG=b"#!/usr/bin/env kupfer-exec\n"
 
+
 class ExecutionError (Exception):
     pass
+
 
 def parse_kfcom_file(filepath):
     """Extract the serialized command inside @filepath
@@ -33,7 +35,7 @@ def parse_kfcom_file(filepath):
     # strip shebang away
     data = fobj.read()
     if data.startswith(b"#!") and b"\n" in data:
-        shebang, data = data.split(b"\n", 1)
+        _shebang, data = data.split(b"\n", 1)
 
     try:
         id_ = conspickle.BasicUnpickler.loads(data)
@@ -51,7 +53,8 @@ def parse_kfcom_file(filepath):
     try:
         return tuple(command_object.object)
     except (AttributeError, TypeError):
-        raise ExecutionError(f'"{os.path.basename(filepath)}" is not a saved command')
+        raise ExecutionError(
+            f'"{os.path.basename(filepath)}" is not a saved command')
     finally:
         GLib.idle_add(update_icon, command_object, filepath)
 
@@ -82,6 +85,7 @@ def update_icon(kobj, filepath):
     custom_icon_uri = finfo.get_attribute_string(icon_key)
     if custom_icon_uri and Gio.File.new_for_uri(custom_icon_uri).query_exists():
         return
+
     namespace = gfile.query_writable_namespaces() # FileAttributeInfoList
     if namespace.n_infos > 0:
         pretty.print_debug(__name__, "Updating icon for", filepath)
@@ -93,6 +97,7 @@ def update_icon(kobj, filepath):
                     None)
         except GLib.GError:
             pretty.print_exc(__name__)
+
 
 if __name__ == '__main__':
     import doctest

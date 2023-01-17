@@ -12,8 +12,10 @@ urllib.parse.uses_netloc.append(QFURL_SCHEME)
 with suppress(AttributeError):
     urllib.parse.uses_fragment.append(QFURL_SCHEME)
 
+
 class QfurlError (Exception):
     pass
+
 
 class qfurl :
     """A qfurl is a URI to locate unique objects in kupfer's catalog.
@@ -55,6 +57,7 @@ class qfurl :
                 qfid = obj.qf_id
             except AttributeError:
                 raise QfurlError(f"{obj} has no qfurl")
+
             self.url = _urlunparse((QFURL_SCHEME, "", qfid, "", "", typname))
         else:
             self.url = url
@@ -104,6 +107,7 @@ class qfurl :
                         for pt in src.provides()
                         for t in pt.__subclasses__()):
                     continue
+
             for obj in src.get_leaves():
                 if not hasattr(obj, "qf_id"):
                     continue

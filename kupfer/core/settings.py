@@ -12,12 +12,16 @@ def strbool(value, default=False):
     """Coerce bool from string value or bool"""
     if value in (True, False):
         return value
+
     value = str(value).lower()
     if value in ("no", "false"):
         return False
+
     if value in ("yes", "true"):
         return True
+
     return default
+
 
 def strint(value, default=0):
     """Coerce bool from string value or bool"""
@@ -25,6 +29,7 @@ def strint(value, default=0):
         return int(value)
     except ValueError:
         return default
+
 
 def _override_encoding(name):
     """
@@ -36,6 +41,8 @@ def _override_encoding(name):
         return "UTF-8"
 
     return None
+
+
 
 class SettingsController (GObject.GObject, pretty.OutputMixin):
     __gtype_name__ = "SettingsController"
@@ -88,11 +95,13 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
             for secname, section in defaults.items():
                 if not parser.has_section(secname):
                     parser.add_section(secname)
+
                 for key, default in section.items():
                     if isinstance(default, (tuple, list)):
                         default = self.sep.join(default)
                     elif isinstance(default, int):
                         default = str(default)
+
                     parser.set(secname, key, default)
 
         # Set up defaults
@@ -104,7 +113,9 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
         try:
             defaults_path = config.get_data_file(self.defaults_filename)
         except config.ResourceLookupError:
-            self.output_error(f"Error: no default config file {self.defaults_filename} found!")
+            self.output_error(
+                f"Error: no default config file {self.defaults_filename} "
+                "found!")
         else:
             self._defaults_path = defaults_path
             config_files += (defaults_path, )
@@ -118,9 +129,11 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
             try:
                 parser.read(config_file, encoding=self.encoding)
             except OSError as e:
-                self.output_error(f"Error reading configuration file {config_file}: {e}")
+                self.output_error(
+                    f"Error reading configuration file {config_file}: {e}")
             except UnicodeDecodeError as e:
-                self.output_error(f"Error reading configuration file {config_file}: {e}")
+                self.output_error(
+                    f"Error reading configuration file {config_file}: {e}")
 
         # Read parsed file into the dictionary again
         for secname in parser.sections():
@@ -134,13 +147,15 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
                         if not value:
                             retval = ()
                         else:
-                            retval = [p.strip() for p in value.split(self.sep) if p]
+                            retval = [p.strip()
+                                      for p in value.split(self.sep) if p]
                     elif isinstance(defval, bool):
                         retval = strbool(value)
                     elif isinstance(defval, int):
                         retval = type(defval)(value)
                     else:
                         retval = str(value)
+
                 confmap[secname][key] = retval
 
         return confmap
@@ -168,6 +183,7 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
                             key in defaults[secname]):
                         if defaults[secname][key] == config_val:
                             continue
+
                     difference[secname][key] = config_val
 
                 if not difference[secname]:
@@ -181,20 +197,23 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
                 section = defaults[secname]
                 if not parser.has_section(secname):
                     parser.add_section(secname)
+
                 for key in sorted(section):
                     value = section[key]
                     if isinstance(value, (tuple, list)):
                         value = self.sep.join(value)
                     elif isinstance(value, int):
                         value = str(value)
+
                     parser.set(secname, key, value)
 
         confmap = confmap_difference(self._config, default_confmap)
         fill_parser(parser, confmap)
         ## Write to tmp then rename over for it to be atomic
         temp_config_path = f"{config_path}.{os.getpid()}"
-        with open(temp_config_path, "w") as out:
+        with open(temp_config_path, "w", encoding="UTF_8") as out:
             parser.write(out)
+
         os.rename(temp_config_path, config_path)
 
     def get_config(self, section, key):
@@ -203,6 +222,7 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
         value = self._config[section].get(key)
         if section in self.defaults:
             return value
+
         raise KeyError(f"Invalid settings section: {section}")
 
     def _set_config(self, section, key, value):
@@ -216,6 +236,7 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
             self._emit_value_changed(section, key, value)
             self._update_config_save_timer()
             return True
+
         raise KeyError(f"Invalid settings section: {section}")
 
     def _emit_value_changed(self, section, key, value):
@@ -234,6 +255,7 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
         key = key.lower()
         if section not in self._config:
             self._config[section] = {}
+
         self._config[section][key] = str(value)
         self._update_config_save_timer()
         return False
@@ -244,6 +266,7 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
         if self._defaults_path is None:
             self.output_error('Defaults not found')
             return
+
         parser = configparser.RawConfigParser()
         parser.read(self._defaults_path)
         if option is None:
@@ -257,6 +280,7 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
         value = self._config[section].get(key)
         if section in self.defaults:
             return strint(value)
+
         raise KeyError(f"Invalid settings section: {section}")
 
 
@@ -370,13 +394,16 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
         """Yield directories to use as directory sources"""
 
         specialdirs = {k: getattr(GLib.UserDirectory, k)
-                for k in dir(GLib.UserDirectory) if k.startswith("DIRECTORY_")}
+                for k in dir(GLib.UserDirectory)
+                if k.startswith("DIRECTORY_")}
 
         def get_special_dir(opt):
             if opt.startswith("USER_"):
                 _, opt = opt.split("USER_", 1)
                 if opt in specialdirs:
                     return GLib.get_user_special_dir(specialdirs[opt])
+
+            return None
 
         level = "Direct" if direct else "Catalog"
         for direc in self.get_config("Directories", level):
@@ -394,6 +421,7 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
         plug_section = f"plugin_{plugin}"
         if not plug_section in self._config:
             return default
+
         val = self._get_raw_config(plug_section, key)
 
         if val is None:
@@ -403,16 +431,17 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
             val_obj = value_type()
             val_obj.load(plugin, key, val)
             return val_obj
-        else:
-            if value_type is bool:
-                value_type = strbool
 
-            try:
-                val = value_type(val)
-            except ValueError as err:
-                self.output_info(f"Error for stored value {plug_section}.{key}", err)
-                return default
-            return val
+        if value_type is bool:
+            value_type = strbool
+
+        try:
+            return value_type(val)
+        except ValueError as err:
+            self.output_info(
+                f"Error for stored value {plug_section}.{key}", err)
+
+        return default
 
     def set_plugin_config(self, plugin, key, value, value_type=str):
         """Try set @key for plugin names @plugin, coerce to @value_type
@@ -424,6 +453,7 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
             value_repr = value.save(plugin, key)
         else:
             value_repr = value_type(value)
+
         return self._set_raw_config(plug_section, key, value_repr)
 
     def get_accelerator(self, name):
@@ -464,6 +494,7 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
         """
         if not category_key in self._alternative_validators:
             return
+
         validator = self._alternative_validators[category_key]
         for (id_, alternative) in self._alternatives[category_key].items():
             name = alternative["name"]
@@ -482,6 +513,7 @@ class SettingsController (GObject.GObject, pretty.OutputMixin):
         alt = alternatives.get(tool_id)
         if not alt:
             self.output_debug("Warning, no configuration for", category_key)
+
         return alt or next(iter(alternatives.values()), None)
 
     def _update_alternatives(self, category_key, alternatives, validator):
@@ -514,11 +546,13 @@ GObject.signal_new("alternatives-changed", SettingsController,
         GObject.TYPE_BOOLEAN,
         (GObject.TYPE_STRING, ))
 
+
 _settings_controller = None
 def GetSettingsController():
     global _settings_controller
     if _settings_controller is None:
         _settings_controller = SettingsController()
+
     return _settings_controller
 
 

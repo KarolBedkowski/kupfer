@@ -2,6 +2,7 @@ import itertools
 import operator
 import os
 import sys
+from contextlib import suppress
 
 from gi.repository import GLib, GObject
 
@@ -27,20 +28,20 @@ SourceActionMode, SourceActionObjectMode = (1,2)
 
 DATA_SAVE_INTERVAL_S = 3660
 
-def identity(x):
+def _identity(x):
     return x
 
-def is_iterable(obj):
+def _is_iterable(obj):
     return hasattr(obj, "__iter__")
 
-def dress_leaves(seq, action):
+def _dress_leaves(seq, action):
     """yield items of @seq "dressed" by the source controller"""
     sc = GetSourceController()
     for itm in seq:
         sc.decorate_object(itm.object, action=action)
         yield itm
 
-def peekfirst(seq):
+def _peekfirst(seq):
     """This function will return (firstitem, iter)
     where firstitem is the first item of @seq or None if empty,
     and iter an equivalent copy of @seq
@@ -49,7 +50,20 @@ def peekfirst(seq):
     for itm in seq:
         old_iter = itertools.chain((itm, ), seq)
         return (itm, old_iter)
+
     return (None, seq)
+
+def _as_set_iter(seq):
+    key = operator.attrgetter("object")
+    return datatools.UniqueIterator(seq, key=key)
+
+def _valid_check(seq):
+    """yield items of @seq that are valid"""
+    for itm in seq:
+        obj = itm.object
+        if (not hasattr(obj, "is_valid")) or obj.is_valid():
+            yield itm
+
 
 class Searcher :
     """
@@ -70,7 +84,7 @@ class Searcher :
         Sources, TextSources or sequences of KupferObjects
 
         If @score, sort by rank.
-        filters (with identity() as default):
+        filters (with _identity() as default):
             @item_check: Check items before adding to search pool
             @decorator: Decorate items before access
 
@@ -79,13 +93,14 @@ class Searcher :
         """
         if not self._old_key or not key.startswith(self._old_key):
             self._source_cache.clear()
+
         self._old_key = key
 
         # General strategy: Extract a `list` from each source,
         # and perform ranking as in place operations on lists
 
-        if not item_check: item_check = identity
-        if not decorator: decorator = identity
+        if not item_check: item_check = _identity
+        if not decorator: decorator = _identity
 
         start_time = pretty.timing_start()
         match_lists = []
@@ -93,7 +108,7 @@ class Searcher :
             fixedrank = 0
             can_cache = True
             rankables = None
-            if is_iterable(src):
+            if _is_iterable(src):
                 items = item_check(src)
                 can_cache = False
             else:
@@ -117,10 +132,11 @@ class Searcher :
                 elif key:
                     search.score_objects(rankables, key)
                     search.bonus_objects(rankables, key)
+
                 if can_cache:
                     self._source_cache[src] = rankables
-            matches = rankables
 
+            matches = rankables
             match_lists.append(matches)
 
         if score:
@@ -128,21 +144,10 @@ class Searcher :
         else:
             matches = itertools.chain(*match_lists)
 
-        def as_set_iter(seq):
-            key = operator.attrgetter("object")
-            return datatools.UniqueIterator(seq, key=key)
-
-        def valid_check(seq):
-            """yield items of @seq that are valid"""
-            for itm in seq:
-                obj = itm.object
-                if (not hasattr(obj, "is_valid")) or obj.is_valid():
-                    yield itm
-
         # Check if the items are valid as the search
         # results are accessed through the iterators
-        unique_matches = as_set_iter(matches)
-        match, match_iter = peekfirst(decorator(valid_check(unique_matches)))
+        unique_matches = _as_set_iter(matches)
+        match, match_iter = _peekfirst(decorator(_valid_check(unique_matches)))
         pretty.timing_step(__name__, start_time, "ranked")
         return match, match_iter
 
@@ -155,8 +160,8 @@ class Searcher :
 
         Filters and return value like .score().
         """
-        if not item_check: item_check = identity
-        if not decorator: decorator = identity
+        item_check = item_check or _identity
+        decorator = decorator or _identity
 
         rankables = search.make_rankables(item_check(objects))
         if key:
@@ -164,9 +169,10 @@ class Searcher :
             matches = search.bonus_actions(rankables, key)
         else:
             matches = search.score_actions(rankables, leaf)
+
         matches = sorted(matches, key=operator.attrgetter("rank"), reverse=True)
 
-        match, match_iter = peekfirst(decorator(matches))
+        match, match_iter = _peekfirst(decorator(matches))
         return match, match_iter
 
 class Pane (GObject.GObject):
@@ -185,22 +191,30 @@ class Pane (GObject.GObject):
 
     def select(self, item):
         self.selection = item
+
     def get_selection(self):
         return self.selection
+
     def reset(self):
         self.selection = None
+
     def get_latest_key(self):
         return self.latest_key
+
     def get_can_enter_text_mode(self):
         return False
+
     def get_should_enter_text_mode(self):
         return False
+
     def emit_search_result(self, match, match_iter, context):
         self.emit("search-result", match, match_iter, context)
+
 
 GObject.signal_new("search-result", Pane, GObject.SignalFlags.RUN_LAST,
         GObject.TYPE_BOOLEAN, (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT,
         GObject.TYPE_PYOBJECT))
+
 
 class LeafPane (Pane, pretty.OutputMixin):
     __gtype_name__ = "LeafPane"
@@ -240,6 +254,7 @@ class LeafPane (Pane, pretty.OutputMixin):
         """Return True if succeeded"""
         if not len(self.source_stack):
             return False
+
         self.source = self.source_stack.pop()
         return True
 
@@ -270,8 +285,10 @@ class LeafPane (Pane, pretty.OutputMixin):
             if self.source.has_parent():
                 self.source_rebase(self.source.get_parent())
                 succ = True
+
         if succ:
             self.refresh_data()
+
         return succ
 
     def browse_down(self, alternate=False):
@@ -282,6 +299,7 @@ class LeafPane (Pane, pretty.OutputMixin):
         if leaf and leaf.has_content():
             self.push_source(leaf.content_source(alternate=alternate))
             return True
+
         return False
 
     def reset(self):
@@ -289,12 +307,14 @@ class LeafPane (Pane, pretty.OutputMixin):
         Pane.reset(self)
         while self.pop_source():
             pass
+
         self.refresh_data()
 
     def soft_reset(self):
         Pane.reset(self)
         while self.pop_source():
             pass
+
         return self.source
 
     def search(self, key="", context=None, text_mode=False):
@@ -302,20 +322,22 @@ class LeafPane (Pane, pretty.OutputMixin):
         filter for action @item
         """
         self.latest_key = key
-        sources = [ self.get_source() ] if not text_mode else []
+        sources = [self.get_source()] if not text_mode else []
         if key and self.is_at_source_root():
             # Only use text sources when we are at root catalog
             sc = GetSourceController()
             textsrcs = sc.get_text_sources()
             sources.extend(textsrcs)
 
-        decorator = lambda seq: dress_leaves(seq, action=None)
+        decorator = lambda seq: _dress_leaves(seq, action=None)
         match, match_iter = self.searcher.search(sources, key, score=bool(key),
                 decorator=decorator)
         self.emit_search_result(match, match_iter, context)
 
+
 GObject.signal_new("new-source", LeafPane, GObject.SignalFlags.RUN_LAST,
         GObject.TYPE_BOOLEAN, (GObject.TYPE_PYOBJECT,))
+
 
 class PrimaryActionPane (Pane):
     def __init__(self):
@@ -353,13 +375,12 @@ class PrimaryActionPane (Pane):
             if valid is None:
                 valid = actioncompat.action_valid_for_item(action, leaf)
                 cache[action] = valid
+
             return valid
 
         def valid_decorator(seq):
             """Check if actions are valid before access"""
-            for obj in seq:
-                if is_valid_cached(obj.object):
-                    yield obj
+            return (obj for obj in seq if is_valid_cached(obj.object))
 
         match, match_iter = self.searcher.rank_actions(actions, key, leaf,
                 decorator=valid_decorator)
@@ -380,13 +401,15 @@ class SecondaryObjectPane (LeafPane):
         self.current_item = item
         self.current_action = act
         if item and act:
-            ownsrc, use_catalog = actioncompat.iobject_source_for_action(act, item)
+            ownsrc, use_catalog = actioncompat.iobject_source_for_action(
+                act, item)
             if ownsrc and not use_catalog:
                 self.source_rebase(ownsrc)
             else:
                 extra_sources = [ownsrc] if ownsrc else ()
                 sc = GetSourceController()
-                self.source_rebase(sc.root_for_types(act.object_types(), extra_sources))
+                self.source_rebase(sc.root_for_types(
+                    act.object_types(), extra_sources))
         else:
             self.reset()
 
@@ -411,6 +434,7 @@ class SecondaryObjectPane (LeafPane):
         sources = []
         if not text_mode or hasattr(self.get_source(), "get_text_items"):
             sources.append(self.get_source())
+
         if key and self.is_at_source_root():
             # Only use text sources when we are at root catalog
             sc = GetSourceController()
@@ -419,11 +443,14 @@ class SecondaryObjectPane (LeafPane):
 
         item_check = actioncompat.iobjects_valid_for_action(self.current_action,
                 self.current_item)
-        decorator = lambda seq: dress_leaves(seq, action=self.current_action)
+
+        def decorator(seq):
+            return _dress_leaves(seq, action=self.current_action)
 
         match, match_iter = self.searcher.search(sources, key, score=True,
                 item_check=item_check, decorator=decorator)
         self.emit_search_result(match, match_iter, context)
+
 
 class DataController (GObject.GObject, pretty.OutputMixin):
     """
@@ -446,9 +473,10 @@ class DataController (GObject.GObject, pretty.OutputMixin):
             SourcePane : self.source_pane,
             ActionPane : self.action_pane,
             ObjectPane : self.object_pane,
-            }
-        for pane, ctl in self._panectl_table.items():
+        }
+        for pane, ctl in list(self._panectl_table.items()):
             ctl.connect("search-result", self._pane_search_result, pane)
+
         self.mode = None
         self._search_ids = itertools.count(1)
         self._latest_interaction = -1
@@ -478,8 +506,10 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         for action in actions:
             for appl_type in action.item_types():
                 decorate_types.setdefault(appl_type, []).append(action)
+
         if not decorate_types:
             return
+
         sc = GetSourceController()
         sc.add_action_decorators(plugin_id, decorate_types)
 
@@ -494,13 +524,13 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         # Decorated Leaf Type -> Set of content decorator types
         decorate_item_types = {}
         for c in contents:
-            try:
+            with suppress(AttributeError):
                 applies = c.decorates_type()
-            except AttributeError:
-                continue
-            decorate_item_types.setdefault(applies, set()).add(c)
+                decorate_item_types.setdefault(applies, set()).add(c)
+
         if not decorate_item_types:
             return
+
         sc = GetSourceController()
         sc.add_content_decorators(plugin_id, decorate_item_types)
 
@@ -536,32 +566,28 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         directory sources directly included and for
         catalog inclusion respectively
         """
-
-        s_sources = []
-        S_sources = []
-
         setctl = settings.GetSettingsController()
         source_config = setctl.get_config
 
-        def dir_source(opt):
-            return sources.DirectorySource(opt)
-
         def file_source(opt, depth=1):
-            abs = os.path.abspath(os.path.expanduser(opt))
-            return sources.FileSource((abs,), depth)
+            abs_path = os.path.abspath(os.path.expanduser(opt))
+            return sources.FileSource((abs_path,), depth)
 
-        for coll, direct in zip((s_sources, S_sources), (False, True)):
-            for item in setctl.get_directories(direct):
-                if not os.path.isdir(item):
-                    continue
-                coll.append(dir_source(item))
+        s_sources = [sources.DirectorySource(item)
+            for item in setctl.get_directories(False)
+            if os.path.isdir(item)]
+
+        S_sources = [sources.DirectorySource(item)
+            for item in setctl.get_directories(True)
+            if os.path.isdir(item)]
 
         dir_depth = source_config("DeepDirectories", "Depth")
 
-        for item in source_config("DeepDirectories","Catalog"):
-            s_sources.append(file_source(item, dir_depth))
-        for item in source_config("DeepDirectories", "Direct"):
-            S_sources.append(file_source(item, dir_depth))
+        s_sources.extend(file_source(item, dir_depth)
+            for item in source_config("DeepDirectories","Catalog"))
+
+        S_sources.extend(file_source(item, dir_depth)
+            for item in source_config("DeepDirectories", "Direct"))
 
         return S_sources, s_sources
 
@@ -573,10 +599,9 @@ class DataController (GObject.GObject, pretty.OutputMixin):
 
         setctl = settings.GetSettingsController()
         for item in sorted(plugins.get_plugin_ids()):
-            if not setctl.get_plugin_enabled(item):
-                continue
-            sources = self._load_plugin(item)
-            self._insert_sources(item, sources, initialize=False)
+            if setctl.get_plugin_enabled(item):
+                sources = self._load_plugin(item)
+                self._insert_sources(item, sources, initialize=False)
 
     def _load_plugin(self, plugin_id):
         """
@@ -590,6 +615,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
             self.register_content_decorators(plugin_id, plugin.content_decorators)
             self.register_action_generators(plugin_id, plugin.action_generators)
             return set(plugin.sources)
+
         return set()
 
     def _plugin_enabled(self, setctl, plugin_id, enabled):
@@ -604,6 +630,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         sc = GetSourceController()
         if sc.remove_objects_for_plugin_id(plugin_id):
             self._reload_source_root()
+
         pluginload.remove_plugin(plugin_id)
 
     def _reload_source_root(self):
@@ -617,12 +644,14 @@ class DataController (GObject.GObject, pretty.OutputMixin):
     def _insert_sources(self, plugin_id, sources, initialize=True):
         if not sources:
             return
+
         sc = GetSourceController()
         setctl = settings.GetSettingsController()
         for src in sources:
             is_toplevel = setctl.get_source_is_toplevel(plugin_id, src)
             sc.add(plugin_id, (src, ), toplevel=is_toplevel,
                    initialize=initialize)
+
         if initialize:
             self._reload_source_root()
 
@@ -648,6 +677,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
             pane = SourcePane
         elif ctr is self.object_pane:
             pane = ObjectPane
+
         root = ctr.is_at_source_root()
         self.emit("source-changed", pane, src, root)
 
@@ -658,6 +688,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
     def soft_reset(self, pane):
         if pane is ActionPane:
             return
+
         panectl = self._panectl_table[pane]
         return panectl.soft_reset()
 
@@ -694,6 +725,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
             def ctl_search(*args):
                 ctl.outstanding_search = -1
                 return ctl.search(*args)
+
             ctl.outstanding_search = GLib.timeout_add(timeout, ctl_search,
                     key, wrapcontext, text_mode)
 
@@ -702,7 +734,9 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         if not search_id is panectl.outstanding_search_id:
             self.output_debug("Skipping late search", match, context)
             return True
+
         self.emit("search-result", pane, match, match_iter, context)
+        return False
 
     def select(self, pane, item):
         """Select @item in @pane to self-update
@@ -711,6 +745,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         panectl = self._panectl_table[pane]
         if item == panectl.get_selection():
             return
+
         self.cancel_search()
         panectl.select(item)
         if pane is SourcePane:
@@ -721,17 +756,21 @@ class DataController (GObject.GObject, pretty.OutputMixin):
             if self.mode == SourceActionObjectMode:
                 self.object_stack_clear(ObjectPane)
                 self._populate_third_pane()
+
         elif pane is ActionPane:
             self.object_stack_clear(ObjectPane)
             if item and item.requires_object():
                 newmode = SourceActionObjectMode
             else:
                 newmode = SourceActionMode
+
             if newmode != self.mode:
                 self.mode = newmode
                 self.emit("mode-changed", self.mode, item)
+
             if self.mode == SourceActionObjectMode:
                 self._populate_third_pane()
+
         elif pane is ObjectPane:
             pass
 
@@ -760,11 +799,12 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         def valid_check(obj):
             return not (hasattr(obj, "is_valid") and not obj.is_valid())
 
-        for pane, panectl in self._panectl_table.items():
+        for pane, panectl in list(self._panectl_table.items()):
             sel = panectl.get_selection()
             if not valid_check(sel):
                 self.emit("pane-reset", pane, None)
                 self.select(pane, None)
+
             if self._has_object_stack(pane):
                 new_stack = [o for o in panectl.object_stack if valid_check(o)]
                 if new_stack != panectl.object_stack:
@@ -775,6 +815,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         source"""
         if pane is SourcePane:
             return self.source_pane.browse_up()
+
         if pane is ObjectPane:
             return self.object_pane.browse_up()
 
@@ -784,6 +825,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         if @alternate, use the Source's alternate method"""
         if pane is ActionPane:
             return
+
         # record used object if we browse down
         panectl = self._panectl_table[pane]
         sel, key = panectl.get_selection(), panectl.get_latest_key()
@@ -841,6 +883,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         "Select @objects in @pane"
         if pane != SourcePane:
             raise ValueError("Can only insert in first pane")
+
         self._decorate_object(objects[:-1])
         self._set_object_stack(pane, objects[:-1])
         self._insert_object(pane, objects[-1])
@@ -854,6 +897,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
             self._insert_object(SourcePane, ret)
         else:
             return
+
         self.emit("command-result", result_type, uictx)
 
     def _late_command_execution_result(self, ctx, id_, result_type, ret, uictx):
@@ -876,6 +920,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         """
         if pane is SourcePane or pane is ObjectPane:
             raise RuntimeError("Setting default on pane 1 or 3 not supported")
+
         obj = self.source_pane.get_selection()
         act = self.action_pane.get_selection()
         assert obj and act
@@ -887,10 +932,11 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         for the object selected in @pane
         """
         panectl = self._panectl_table[pane]
-        selection = panectl.get_selection()
-        if not selection:
-            return None
-        return learn.get_object_has_affinity(selection)
+        if selection := panectl.get_selection():
+            return learn.get_object_has_affinity(selection)
+
+        return None
+
 
     def erase_object_affinity(self, pane):
         """
@@ -898,15 +944,16 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         the selection of @pane
         """
         panectl = self._panectl_table[pane]
-        selection = panectl.get_selection()
-        if not selection:
-            return None
-        return learn.erase_object_affinity(selection)
+        if selection := panectl.get_selection():
+            return learn.erase_object_affinity(selection)
+
+        return None
 
     def compose_selection(self):
         leaf, action, iobj = self._get_current_command_objects()
         if leaf is None:
             return
+
         self.object_stack_clear_all()
         obj = compose.ComposedLeaf(leaf, action, iobj)
         self._insert_object(SourcePane, obj)
@@ -933,12 +980,15 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         action = self.action_pane.get_selection()
         if objects is None or action is None:
             return (None, None, None)
+
         iobjects = self._get_pane_object_composed(self.object_pane)
         if self.mode == SourceActionObjectMode:
             if not iobjects:
                 return (None, None, None)
+
         else:
             iobjects = None
+
         return (objects, action, iobjects)
 
     def _has_object_stack(self, pane):
@@ -955,15 +1005,18 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         """
         if not self._has_object_stack(pane):
             return
+
         panectl = self._panectl_table[pane]
         if object_ not in panectl.object_stack:
             panectl.object_stack_push(object_)
             self.emit("object-stack-changed", pane)
+
         return True
 
     def object_stack_pop(self, pane):
         if not self._has_object_stack(pane):
             return
+
         panectl = self._panectl_table[pane]
         obj = panectl.object_stack_pop()
         self._insert_object(pane, obj)
@@ -973,6 +1026,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
     def object_stack_clear(self, pane):
         if not self._has_object_stack(pane):
             return
+
         panectl = self._panectl_table[pane]
         panectl.object_stack[:] = []
         self.emit("object-stack-changed", pane)
@@ -987,8 +1041,10 @@ class DataController (GObject.GObject, pretty.OutputMixin):
     def get_object_stack(self, pane):
         if not self._has_object_stack(pane):
             return ()
+
         panectl = self._panectl_table[pane]
         return panectl.object_stack
+
 
 # pane cleared or set with new item
 # pane, item

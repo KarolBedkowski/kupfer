@@ -15,6 +15,7 @@ class PluginDescription :
     action_generators = ()
     sources = ()
 
+
 def load_plugin(plugin_id):
     """
     @S_sources are to be included directly in the catalog,
@@ -31,6 +32,7 @@ def load_plugin(plugin_id):
     initialize_plugin(item)
     if not plugins.is_plugin_loaded(item):
         return PluginDescription()
+
     text_sources.extend(load_plugin_sources(item, text_sources_attribute))
     action_decorators.extend(load_plugin_sources(item,
         action_decorators_attribute))

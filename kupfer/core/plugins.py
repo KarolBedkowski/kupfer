@@ -1,5 +1,6 @@
 import pkgutil
 import sys
+import textwrap
 
 from kupfer import pretty
 from kupfer.core import settings
@@ -22,19 +23,20 @@ info_attributes = [
         "__author__",
     ]
 
+
 class NotEnabledError (Exception):
     "Plugin may not be imported since it is not enabled"
 
+
 def get_plugin_ids():
     """Enumerate possible plugin ids;
-    return a sequence of possible plugin ids, not
-    guaranteed to be plugins"""
+    return a sequence of possible plugin ids, not guaranteed to be plugins"""
     from kupfer import plugin
 
     def is_plugname(plug):
         return plug != "__init__" and not plug.endswith("_support")
 
-    for importer, modname, ispkg in pkgutil.iter_modules(plugin.__path__):
+    for _importer, modname, _ispkg in pkgutil.iter_modules(plugin.__path__):
         if is_plugname(modname):
             yield modname
 
@@ -44,6 +46,7 @@ class FakePlugin :
         self.exc_info = exc_info
         self.__name__ = plugin_id
         vars(self).update(attributes)
+
     def __repr__(self):
         return f"<{type(self).__name__} {self.__name__}>"
 
@@ -70,6 +73,7 @@ def get_plugin_info():
             pretty.print_error(__name__, f"Could not load '{plugin_name}'")
             pretty.print_exc(__name__)
             continue
+
         localized_name = plugin.get("__kupfer_name__", None)
         desc = plugin.get("__description__", "")
         vers = plugin.get("__version__", "")
@@ -78,6 +82,7 @@ def get_plugin_info():
         # all plugins have to have @localized_name
         if localized_name is None:
             continue
+
         yield {
             "name": plugin_name,
             "localized_name": localized_name,
@@ -87,32 +92,33 @@ def get_plugin_info():
             "provides": (),
         }
 
+
 def get_plugin_desc():
     """Return a formatted list of plugins suitable for printing to terminal"""
-    import textwrap
     infos = list(get_plugin_info())
     verlen = max(len(r["version"]) for r in infos)
     idlen = max(len(r["name"]) for r in infos)
     maxlen = 78
     left_margin = 2 + idlen + 1 + verlen + 1
-    desc = []
-    for rec in infos:
+
+    def format_desc(rec):
         # Wrap the description and align continued lines
         wrapped = textwrap.wrap(rec["description"], maxlen - left_margin)
         description = ("\n" + " "*left_margin).join(wrapped)
-        desc.append("  %s %s %s" %
-            (
-                rec["name"].ljust(idlen),
-                rec["version"].ljust(verlen),
-                description,
-            ))
-    return "\n".join(desc)
+        name = rec["name"].ljust(idlen)
+        ver = rec["version"].ljust(verlen)
+        return f"  {name} {ver} {description}"
+
+    return "\n".join(map(format_desc, infos))
+
 
 _imported_plugins = {}
 _plugin_hooks = {}
 
+
 class LoadingError(ImportError):
     pass
+
 
 def _truncate_source(text, find_attributes):
     found_info_attributes = set(find_attributes)
@@ -121,15 +127,21 @@ def _truncate_source(text, find_attributes):
         lines.append(line)
         if not line.strip():
             continue
+
         first_word, *_rest = line.split(None, 1)
         if first_word in found_info_attributes:
             found_info_attributes.discard(first_word)
+
         if first_word in ("from", "import", "class", "def", "if"):
-            raise LoadingError(("Could not pre-load plugin: Fields missing: %r. "
-                "These fields need to be defined before any other code, including imports.")
-                    % (list(found_info_attributes), ))
+            raise LoadingError(
+                "Could not pre-load plugin: Fields missing: "
+                f"{list(found_info_attributes)}. "
+                "These fields need to be defined before any other code, "
+                "including imports.")
+
         if not found_info_attributes:
             break
+
     return "\n".join(lines)
 
 def _import_plugin_fake(modpath, error=None):
@@ -183,17 +195,23 @@ def _import_hook_true(pathcomps):
         setctl = settings.GetSettingsController()
         if not setctl.get_plugin_enabled(pathcomps[-1]):
             raise NotEnabledError(f"{pathcomps[-1]} is not enabled")
+
         plugin = __import__(path, fromlist=fromlist)
+
     except ImportError as exc:
         # Try to find a fake plugin if it exists
         plugin = _import_plugin_fake(path, error=sys.exc_info())
         if not plugin:
             raise
-        pretty.print_error(__name__, "Could not import plugin '%s': %s" %
-                (plugin.__name__, exc))
+
+        pretty.print_error(
+            __name__,
+            f"Could not import plugin '{plugin.__name__}': {exc}"
+        )
     else:
         pretty.print_debug(__name__, f"Loading {plugin.__name__}")
         pretty.print_debug(__name__, f"  from {plugin.__file__}")
+
     return plugin
 
 def _import_plugin_true(name):
@@ -203,16 +221,15 @@ def _import_plugin_true(name):
     plugin = None
     try:
         plugin = _staged_import(name, _import_hook_true)
-    except ImportError:
+    except (ImportError, NotEnabledError):
         # Reraise to send this up
-        raise
-    except NotEnabledError:
         raise
     except Exception:
         # catch any other error for plugins and write traceback
         import traceback
         traceback.print_exc()
         pretty.print_error(__name__, f"Could not import plugin '{name}'")
+
     return plugin
 
 def _staged_import(name, import_hook):
@@ -223,6 +240,7 @@ def _staged_import(name, import_hook):
     except ImportError as e:
         if name not in e.args[0]:
             raise
+
     return plugin
 
 
@@ -237,11 +255,13 @@ def import_plugin(name):
     finally:
         # store nonexistant plugins as None here
         _imported_plugins[name] = plugin
+
     return plugin
 
 def import_plugin_any(name):
     if name in _imported_plugins:
         return _imported_plugins[name]
+
     return _staged_import(name, _import_hook_fake)
 
 def _plugin_path(name):
@@ -263,6 +283,7 @@ def get_plugin_attributes(plugin_name, attrs, warn=False):
     except ImportError as e:
         pretty.print_info(__name__, f"Skipping plugin {plugin_name}: {e}")
         return
+
     for attr in attrs:
         try:
             obj = getattr(plugin, attr)
@@ -285,12 +306,14 @@ def load_plugin_sources(plugin_name, attr=sources_attribute, instantiate=True):
     sources = get_plugin_attribute(plugin_name, attr)
     if not sources:
         return
+
     for source in get_plugin_attributes(plugin_name, sources, warn=True):
         if source:
             if instantiate:
                 yield source()
             else:
                 yield source
+
         else:
             pretty.print_info(__name__, f"Source not found for {plugin_name}")
 
@@ -305,12 +328,16 @@ def _loader_hook(modpath):
     loader = pkgutil.find_loader(modname)
     if not loader:
         raise ImportError(f"No loader found for {modname}")
+
     if not loader.is_package(modname):
         raise ImportError("Is not a package")
+
     return loader
+
 
 PLUGIN_ICON_FILE = "icon-list"
 icons = None
+
 
 def _load_icons(plugin_name):
     global icons
@@ -321,6 +348,7 @@ def _load_icons(plugin_name):
         _loader = _staged_import(plugin_name, _loader_hook)
     except ImportError as exc:
         return
+
     modname = ".".join(_plugin_path(plugin_name))
 
     try:
@@ -331,6 +359,7 @@ def _load_icons(plugin_name):
 
     def get_icon_data(basename):
         return pkgutil.get_data(modname, basename)
+
     icons.parse_load_icon_list(icon_file, get_icon_data, plugin_name)
 
 def initialize_plugin(plugin_name):
@@ -338,14 +367,13 @@ def initialize_plugin(plugin_name):
     Find settings attribute if defined, and initialize it
     """
     _load_icons(plugin_name)
-    settings_dict = get_plugin_attribute(plugin_name, settings_attribute)
-    if settings_dict:
+    if settings_dict := get_plugin_attribute(plugin_name, settings_attribute):
         settings_dict.initialize(plugin_name)
-    initialize = get_plugin_attribute(plugin_name, initialize_attribute)
-    if initialize:
+
+    if initialize := get_plugin_attribute(plugin_name, initialize_attribute):
         initialize(plugin_name)
-    finalize = get_plugin_attribute(plugin_name, finalize_attribute)
-    if finalize:
+
+    if finalize := get_plugin_attribute(plugin_name, finalize_attribute):
         register_plugin_unimport_hook(plugin_name, finalize, plugin_name)
 
 def unimport_plugin(plugin_name):
@@ -377,6 +405,7 @@ def unimport_plugin(plugin_name):
 def register_plugin_unimport_hook(plugin_name, callback, *args):
     if plugin_name not in _imported_plugins:
         raise ValueError(f"No such plugin {plugin_name}")
+
     _plugin_hooks.setdefault(plugin_name, []).append((callback, args))
 
 def get_plugin_error(plugin_name):
@@ -388,5 +417,6 @@ def get_plugin_error(plugin_name):
         plugin = import_plugin(plugin_name)
         if getattr(plugin, "is_fake_plugin", None):
             return plugin.exc_info
+
     except ImportError:
         return sys.exc_info()

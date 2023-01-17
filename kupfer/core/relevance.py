@@ -64,8 +64,8 @@ def formatCommonSubstrings(s, query, format_clean=None, format_match=None):
     for slc in range(len(query), 0, -1):
         if query[:slc] == ls[first:first+slc]:
             break
-    nextkey = query[slc:]
 
+    nextkey = query[slc:]
     head = s[:first]
     match = s[first: first+slc]
     matchtail = s[first+slc: last]
@@ -104,10 +104,12 @@ def score_single(s, query):
     first = ls.find(query)
     if first == -1:
         return .0
+
     score = 0.9 + .025 / len(s)
 
     if first == 0:
         score += 0.07
+
     return score
 
 def score(s, query):
@@ -234,6 +236,7 @@ def _findBestMatch(s, query):
             cur = s.find(query[qcur], cur, lastChar + 1)
             if cur == -1:
                 return bestMatch
+
             cur += 1
             qcur += 1
 

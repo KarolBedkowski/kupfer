@@ -47,8 +47,7 @@ def bonus_actions(rankables, key):
     key = key.lower()
     get_record_score = learn.get_record_score
     for obj in rankables:
-        obj.rank += get_record_score(obj.object, key)
-        obj.rank += obj.object.rank_adjust
+        obj.rank += get_record_score(obj.object, key) + obj.object.rank_adjust
         yield obj
 
 def add_rank_objects(rankables, rank):
@@ -76,6 +75,7 @@ def score_objects(rankables, key):
     for rb in rankables:
         # Rank object
         rb.rank = _score(rb.value, key) * 100
+
     for rb in rankables:
         if rb.rank < 90:
             rank = rb.rank
@@ -86,7 +86,9 @@ def score_objects(rankables, key):
                 if arank > rank:
                     rank = arank
                     rb.value = alias
+
             rb.rank = rank
+
     rankables[:] = [rb for rb in rankables if rb.rank > 10]
 
 def score_actions(rankables, for_leaf):
@@ -103,6 +105,7 @@ def score_actions(rankables, for_leaf):
             obj.rank = get_record_score(obj.object)
         else:
             obj.rank = -50 + ra + get_record_score(obj.object)
+
         yield obj
 
 
@@ -113,11 +116,14 @@ def _max_multiple(iterables, key):
             new_max = max(iterable, key=key)
         except ValueError:
             continue
+
         if maxval is None:
             maxval = new_max
         else:
             maxval = max(maxval, new_max, key=key)
+
     return maxval
+
 
 def find_best_sort(rankables):
     """
@@ -135,7 +141,8 @@ def find_best_sort(rankables):
 
     key = operator.attrgetter("rank")
     maxval = _max_multiple(rankables, key)
-    if maxval is None: return
-    yield maxval
+    if maxval is None:
+        return
 
+    yield maxval
     yield from sorted(itertools.chain(*rankables), key=key, reverse=True)

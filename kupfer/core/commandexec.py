@@ -51,6 +51,7 @@ def DefaultActionExecutionContext():
     global _action_exec_context
     if _action_exec_context is None:
         _action_exec_context = ActionExecutionContext()
+
     return _action_exec_context
 
 class ActionExecutionError (Exception):
@@ -88,6 +89,7 @@ def _activate_action_single(obj, action, iobj, kwargs):
         ret = action.activate(obj, iobj, **kwargs)
     else:
         ret = action.activate(obj, **kwargs)
+
     return ret
 
 def _activate_action_multiple(obj, action, iobj, kwargs):
@@ -101,6 +103,7 @@ def _activate_action_multiple(obj, action, iobj, kwargs):
                 _get_leaf_members(iobj), **kwargs)
     else:
         ret = action.activate_multiple(_get_leaf_members(obj), **kwargs)
+
     return ret
 
 def _activate_action_multiple_multiplied(objs, action, iobjs, kwargs):
@@ -109,28 +112,30 @@ def _activate_action_multiple_multiplied(objs, action, iobjs, kwargs):
 
     Return an iterable of the return values.
     """
-    rets = []
-    for L in objs:
-        for I in iobjs:
-            ret = _activate_action_single(L, action, I, kwargs)
-            rets.append(ret)
+    rets = [
+        _activate_action_single(L, action, I, kwargs)
+        for L in objs for I in iobjs
+    ]
+
     ctx = DefaultActionExecutionContext()
     ret = ctx._combine_action_result_multiple(action, rets)
     return ret
 
 def parse_action_result(action, ret):
     """Return result type for @action and return value @ret"""
-    def valid_result(ret):
-        return ret and (not hasattr(ret, "is_valid") or ret.is_valid())
+    if not ret or (hasattr(ret, "is_valid") and not ret.is_valid()):
+        return RESULT_NONE
 
     # handle actions returning "new contexts"
     res = RESULT_NONE
-    if action.is_factory() and valid_result(ret):
+    if action.is_factory():
         res = RESULT_SOURCE
-    if action.has_result() and valid_result(ret):
+
+    if action.has_result():
         res = RESULT_OBJECT
-    elif action.is_async() and valid_result(ret):
+    elif action.is_async():
         res = RESULT_ASYNC
+
     return res
 
 def parse_late_action_result(action, ret):
@@ -138,15 +143,14 @@ def parse_late_action_result(action, ret):
     # by default for backward compat.
     #
     # It is also allowed to be a Source
-    def valid_result(ret):
-        return ret and (not hasattr(ret, "is_valid") or ret.is_valid())
 
-    res = RESULT_NONE
-    if isinstance(ret, Source) and valid_result(ret):
-        res = RESULT_SOURCE
-    elif valid_result(ret):
-        res = RESULT_OBJECT
-    return res
+    if not ret or (hasattr(ret, "is_valid") and not ret.is_valid()):
+        return RESULT_NONE
+
+    if isinstance(ret, Source):
+        return RESULT_SOURCE
+
+    return RESULT_OBJECT
 
 class ExecutionToken :
     """
@@ -226,8 +230,9 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
 
     def _do_error_conversion(self, cmdtuple, exc_info):
         if not self.operation_error(exc_info, cmdtuple):
-            raise
-        etype, value, tb = exc_info
+            raise exc_info[1]
+
+        _etype, value, tb = exc_info
         raise ActionExecutionError(value).with_traceback(tb)
 
     def get_async_token(self):
@@ -248,8 +253,9 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
         "Error when executing action. Return True when error was handled"
         if self._is_nested():
             return
-        etype, value, tb = exc_info
-        obj, action, iobj = cmdtuple
+
+        _etype, value, _tb = exc_info
+        _obj, action, _iobj = cmdtuple
         # TRANS: When an error occurs in an action to be carried out,
         # TRANS: then this is the heading of the error notification
         return uiutils.show_notification(
@@ -260,9 +266,11 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
         "Register an error in exc_info. The error must be an OperationError"
         if exc_info is None:
             exc_info = sys.exc_info()
+
         if isinstance(exc_info, Exception):
             exc_info = (type(exc_info), exc_info, None)
-        command_id, cmdtuple = token
+
+        _command_id, cmdtuple = token
         self._do_error_conversion(cmdtuple, exc_info)
 
     def register_late_result(self, token, result, show=True, ctxenv=None):
@@ -276,6 +284,7 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
         command_id, (_ign1, action, _ign2) = token
         if result is None:
             raise ActionExecutionError(f"Late result from {action} was None")
+
         assert isinstance(result, (Leaf, Source))
         res_name = str(result)
         res_desc = result.get_description()
@@ -294,6 +303,7 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
 
         if result_type == RESULT_NONE:
             return
+
         uiutils.show_notification(_('"%s" produced a result') % action, description)
 
         self.emit("late-command-result", command_id, result_type, result, ctxenv)
@@ -317,8 +327,10 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
 
         if not action or not obj:
             raise ActionExecutionError("Primary Object and Action required")
+
         if iobj is None and action.requires_object():
             raise ActionExecutionError(f"{action} requires indirect object")
+
         self.output_debug(repr(obj), repr(action), repr(iobj), repr(ui_ctx))
 
         # The execution token object for the current invocation
@@ -355,6 +367,7 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
         if not self._is_nested():
             self._append_result(res, ret)
             self.emit("command-result", res, ret, ui_ctx)
+
         return res, ret
 
 
@@ -366,13 +379,16 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
             "Construct a return value for type res"
             if res == RESULT_SOURCE:
                 return values[0] if len(values) == 1 else MultiSource(values)
+
             if res == RESULT_OBJECT:
                 return values[0] if len(values) == 1 else MultipleLeaf(values)
+
             if res == RESULT_ASYNC:
                 # Register all tasks now, and return None upwards
                 for task_ in values:
                     self.output_debug("Registering async task", task_)
                     self.task_runner.add_task(task_)
+
             return None
 
         if not self._delegate:
@@ -383,34 +399,38 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
                 if res_type != RESULT_NONE:
                     values.append(ret)
                     res = res_type
+
             return _make_retvalue(res, values)
-        else:
-            # Re-parse result values
-            res = RESULT_NONE
-            resmap = {}
-            for ret in retvals:
-                if ret is None:
-                    continue
-                res_type, ret_obj = ret
-                if res_type != RESULT_NONE:
-                    res = res_type
-                    resmap.setdefault(res_type, []).append(ret_obj)
 
-            # register tasks
-            tasks = resmap.pop(RESULT_ASYNC, [])
-            _make_retvalue(RESULT_ASYNC, tasks)
+        # Re-parse result values
+        res = RESULT_NONE
+        resmap = {}
+        for ret in retvals:
+            if ret is None:
+                continue
 
-            if len(resmap) == 1:
-                # Return the only of the Source or Object case
-                key, values = list(resmap.items())[0]
-                return key, _make_retvalue(key, values)
-            elif len(resmap) > 1:
-                # Put the source in a leaf and return a multiple leaf
-                source = _make_retvalue(RESULT_SOURCE, resmap[RESULT_SOURCE])
-                objects = resmap[RESULT_OBJECT]
-                objects.append(SourceLeaf(source))
-                return RESULT_OBJECT, _make_retvalue(RESULT_OBJECT, objects)
-            return RESULT_NONE, None
+            res_type, ret_obj = ret
+            if res_type != RESULT_NONE:
+                res = res_type
+                resmap.setdefault(res_type, []).append(ret_obj)
+
+        # register tasks
+        tasks = resmap.pop(RESULT_ASYNC, [])
+        _make_retvalue(RESULT_ASYNC, tasks)
+
+        if len(resmap) == 1:
+            # Return the only of the Source or Object case
+            key, values = list(resmap.items())[0]
+            return key, _make_retvalue(key, values)
+
+        if len(resmap) > 1:
+            # Put the source in a leaf and return a multiple leaf
+            source = _make_retvalue(RESULT_SOURCE, resmap[RESULT_SOURCE])
+            objects = resmap[RESULT_OBJECT]
+            objects.append(SourceLeaf(source))
+            return RESULT_OBJECT, _make_retvalue(RESULT_OBJECT, objects)
+
+        return RESULT_NONE, None
 
 
 # Signature: Action result type, action result, gui_context
