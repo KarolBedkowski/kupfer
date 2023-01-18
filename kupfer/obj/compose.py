@@ -1,3 +1,5 @@
+import typing as ty
+
 from kupfer import icons
 from kupfer import pretty
 from kupfer import utils
@@ -96,7 +98,7 @@ class MultipleLeaf (Leaf):
         robj = list(datatools.UniqueIterator(obj))
         Leaf.__init__(self, robj, name)
 
-    def get_multiple_leaf_representation(self):
+    def get_multiple_leaf_representation(self) -> ty.Iterable[Leaf]:
         return self.object
 
     def __getstate__(self):

@@ -409,6 +409,9 @@ class SourceController (pretty.OutputMixin):
         # TODO: ???
         if not src in self:
             raise KeyError
+
+        self.output_debug(f"__getitem__ {src!r}")
+
         for s in self.sources:
             if s == src:
                 return s

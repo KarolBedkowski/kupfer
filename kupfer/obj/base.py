@@ -253,7 +253,7 @@ class Action (KupferObject):
         """
         pass
 
-    def wants_context(self):
+    def wants_context(self) -> bool:
         """Return ``True`` if ``activate`` should receive the
         ActionExecutionContext as the keyword argument context
 

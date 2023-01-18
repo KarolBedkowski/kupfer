@@ -29,6 +29,7 @@ import collections
 import contextlib
 import itertools
 import sys
+import typing as ty
 
 from gi.repository import GObject
 
@@ -36,7 +37,7 @@ from kupfer import pretty
 from kupfer import task
 from kupfer import uiutils
 from kupfer.objects import OperationError
-from kupfer.obj.base import Leaf, Source
+from kupfer.obj.base import Leaf, Source, Action
 from kupfer.obj.objects import SourceLeaf
 from kupfer.obj.sources import MultiSource
 from kupfer.obj.compose import MultipleLeaf
@@ -46,113 +47,33 @@ RESULTS_SYNC = (RESULT_OBJECT, RESULT_SOURCE)
 
 _MAX_LAST_RESULTS = 10
 
-_action_exec_context = None
-def DefaultActionExecutionContext():
-    global _action_exec_context
-    if _action_exec_context is None:
-        _action_exec_context = ActionExecutionContext()
+_ACTION_EXEC_CONTEXT = None
 
-    return _action_exec_context
 
-class ActionExecutionError (Exception):
+class ActionExecutionError(Exception):
     pass
 
-def _get_leaf_members(leaf):
+
+def _get_leaf_members(leaf: Leaf) -> ty.Iterable[Leaf]:
     """
     Return an iterator to members of @leaf, if it is a multiple leaf
     """
     # NOTE : This function duplicates one in core/actionlogic.py
     try:
-        return leaf.get_multiple_leaf_representation()
+        return leaf.get_multiple_leaf_representation()  # type: ignore
     except AttributeError:
-        return (leaf, )
+        return (leaf,)
 
-def _is_multiple(leaf):
+
+def _is_multiple(leaf: Leaf) -> bool:
     return hasattr(leaf, "get_multiple_leaf_representation")
 
-def _wants_context(action):
+
+def _wants_context(action: Action) -> bool:
     return action.wants_context()
 
-def activate_action(context, obj, action, iobj):
-    """ Activate @action in simplest manner """
-    kwargs = {}
-    if _wants_context(action):
-        kwargs['ctx'] = context
 
-    if not _is_multiple(obj) and not _is_multiple(iobj):
-        return _activate_action_single(obj, action, iobj, kwargs)
-
-    return _activate_action_multiple(obj, action, iobj, kwargs)
-
-def _activate_action_single(obj, action, iobj, kwargs):
-    if action.requires_object():
-        ret = action.activate(obj, iobj, **kwargs)
-    else:
-        ret = action.activate(obj, **kwargs)
-
-    return ret
-
-def _activate_action_multiple(obj, action, iobj, kwargs):
-    if not hasattr(action, "activate_multiple"):
-        iobjs = (None, ) if iobj is None else _get_leaf_members(iobj)
-        return _activate_action_multiple_multiplied(_get_leaf_members(obj),
-                action, iobjs, kwargs)
-
-    if action.requires_object():
-        ret = action.activate_multiple(_get_leaf_members(obj),
-                _get_leaf_members(iobj), **kwargs)
-    else:
-        ret = action.activate_multiple(_get_leaf_members(obj), **kwargs)
-
-    return ret
-
-def _activate_action_multiple_multiplied(objs, action, iobjs, kwargs):
-    """
-    Multiple dispatch by "mulitplied" invocation of the simple activation
-
-    Return an iterable of the return values.
-    """
-    rets = [
-        _activate_action_single(L, action, I, kwargs)
-        for L in objs for I in iobjs
-    ]
-
-    ctx = DefaultActionExecutionContext()
-    ret = ctx._combine_action_result_multiple(action, rets)
-    return ret
-
-def parse_action_result(action, ret):
-    """Return result type for @action and return value @ret"""
-    if not ret or (hasattr(ret, "is_valid") and not ret.is_valid()):
-        return RESULT_NONE
-
-    # handle actions returning "new contexts"
-    res = RESULT_NONE
-    if action.is_factory():
-        res = RESULT_SOURCE
-
-    if action.has_result():
-        res = RESULT_OBJECT
-    elif action.is_async():
-        res = RESULT_ASYNC
-
-    return res
-
-def parse_late_action_result(action, ret):
-    # Late result is assumed to be a Leaf (Object) result
-    # by default for backward compat.
-    #
-    # It is also allowed to be a Source
-
-    if not ret or (hasattr(ret, "is_valid") and not ret.is_valid()):
-        return RESULT_NONE
-
-    if isinstance(ret, Source):
-        return RESULT_SOURCE
-
-    return RESULT_OBJECT
-
-class ExecutionToken :
+class ExecutionToken:
     """
     A token object that an ``Action`` carries with it
     from ``activate``.
@@ -160,14 +81,16 @@ class ExecutionToken :
     Must be used for access to current execution context,
     and to access the environment.
     """
+
     def __init__(self, aectx, async_token, ui_ctx):
         self._aectx = aectx
         self._token = async_token
         self._ui_ctx = ui_ctx
 
     def register_late_result(self, result_object, show=True):
-        self._aectx.register_late_result(self._token, result_object, show=show,
-                                         ctxenv=self._ui_ctx)
+        self._aectx.register_late_result(
+            self._token, result_object, show=show, ctxenv=self._ui_ctx
+        )
 
     def register_late_error(self, exc_info=None):
         self._aectx.register_late_error(self._token, exc_info)
@@ -189,12 +112,15 @@ class ExecutionToken :
         else:
             raise RuntimeError("Environment Context not available")
 
-class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
+
+class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
     """
     command-result (result_type, result)
         Emitted when a command is carried out, with its resulting value
     """
+
     __gtype_name__ = "ActionExecutionContext"
+
     def __init__(self):
         GObject.GObject.__init__(self)
         self.task_runner = task.TaskRunner(end_on_finish=False)
@@ -259,8 +185,10 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
         # TRANS: When an error occurs in an action to be carried out,
         # TRANS: then this is the heading of the error notification
         return uiutils.show_notification(
-                _("Could not to carry out '%s'") % action,
-                str(value), icon_name="kupfer")
+            _("Could not to carry out '%s'") % action,
+            str(value),
+            icon_name="kupfer",
+        )
 
     def register_late_error(self, token, exc_info=None):
         "Register an error in exc_info. The error must be an OperationError"
@@ -299,14 +227,20 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
 
         result_type = parse_late_action_result(action, result)
 
-        self.output_debug("late-command-result", command_id, result_type, result, ctxenv)
+        self.output_debug(
+            "late-command-result", command_id, result_type, result, ctxenv
+        )
 
         if result_type == RESULT_NONE:
             return
 
-        uiutils.show_notification(_('"%s" produced a result') % action, description)
+        uiutils.show_notification(
+            _('"%s" produced a result') % action, description
+        )
 
-        self.emit("late-command-result", command_id, result_type, result, ctxenv)
+        self.emit(
+            "late-command-result", command_id, result_type, result, ctxenv
+        )
         self._append_result(result_type, result)
 
     def _append_result(self, res_type, result):
@@ -370,10 +304,10 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
 
         return res, ret
 
-
-    def _combine_action_result_multiple(self, action, retvals):
-        self.output_debug("Combining", repr(action), retvals,
-                f"delegate={self._delegate}")
+    def combine_action_result_multiple(self, action, retvals):
+        self.output_debug(
+            "Combining", repr(action), retvals, f"delegate={self._delegate}"
+        )
 
         def _make_retvalue(res, values):
             "Construct a return value for type res"
@@ -434,14 +368,120 @@ class ActionExecutionContext (GObject.GObject, pretty.OutputMixin):
 
 
 # Signature: Action result type, action result, gui_context
-GObject.signal_new("command-result", ActionExecutionContext,
-        GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN,
-        (GObject.TYPE_INT, GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT))
+GObject.signal_new(
+    "command-result",
+    ActionExecutionContext,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (GObject.TYPE_INT, GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT),
+)
 
 # Signature: Command ID, Action result type, action result, gui_context
-GObject.signal_new("late-command-result", ActionExecutionContext,
-        GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN,
-        (GObject.TYPE_INT, GObject.TYPE_INT,
-            GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT))
+GObject.signal_new(
+    "late-command-result",
+    ActionExecutionContext,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (
+        GObject.TYPE_INT,
+        GObject.TYPE_INT,
+        GObject.TYPE_PYOBJECT,
+        GObject.TYPE_PYOBJECT,
+    ),
+)
+
+
+def DefaultActionExecutionContext() -> ActionExecutionContext:
+    global _ACTION_EXEC_CONTEXT
+    if _ACTION_EXEC_CONTEXT is None:
+        _ACTION_EXEC_CONTEXT = ActionExecutionContext()
+
+    return _ACTION_EXEC_CONTEXT
+
+
+def activate_action(
+    context: ty.Optional[ActionExecutionContext], obj, action: Action, iobj
+):
+    """Activate @action in simplest manner"""
+    kwargs = {}
+    if _wants_context(action):
+        kwargs["ctx"] = context
+
+    if not _is_multiple(obj) and not _is_multiple(iobj):
+        return _activate_action_single(obj, action, iobj, kwargs)
+
+    return _activate_action_multiple(obj, action, iobj, kwargs)
+
+
+def _activate_action_single(obj, action: Action, iobj, kwargs):
+    if action.requires_object():
+        return action.activate(obj, iobj, **kwargs)
+
+    return action.activate(obj, **kwargs)
+
+
+def _activate_action_multiple(obj, action: Action, iobj, kwargs):
+    if not hasattr(action, "activate_multiple"):
+        iobjs = (None,) if iobj is None else _get_leaf_members(iobj)
+        return _activate_action_multiple_multiplied(
+            _get_leaf_members(obj), action, iobjs, kwargs
+        )
+
+    if action.requires_object():
+        return action.activate_multiple(
+            _get_leaf_members(obj), _get_leaf_members(iobj), **kwargs
+        )
+
+    return action.activate_multiple(_get_leaf_members(obj), **kwargs)
+
+
+def _activate_action_multiple_multiplied(
+    objs, action: Action, iobjs, kwargs
+) -> ty.Any:
+    """
+    Multiple dispatch by "mulitplied" invocation of the simple activation
+
+    Return an iterable of the return values.
+    """
+    rets = [
+        _activate_action_single(L, action, I, kwargs)
+        for L in objs
+        for I in iobjs
+    ]
+
+    ctx = DefaultActionExecutionContext()
+    ret = ctx.combine_action_result_multiple(action, rets)
+    return ret
+
+
+def parse_action_result(action: Action, ret: ty.Any) -> int:
+    """Return result type for @action and return value @ret"""
+    if not ret or (hasattr(ret, "is_valid") and not ret.is_valid()):
+        return RESULT_NONE
+
+    # handle actions returning "new contexts"
+    res = RESULT_NONE
+    if action.is_factory():
+        res = RESULT_SOURCE
+
+    if action.has_result():
+        res = RESULT_OBJECT
+    elif action.is_async():
+        res = RESULT_ASYNC
+
+    return res
+
+
+def parse_late_action_result(action: Action, ret: ty.Any) -> int:
+    # Late result is assumed to be a Leaf (Object) result
+    # by default for backward compat.
+    #
+    # It is also allowed to be a Source
+
+    if not ret or (hasattr(ret, "is_valid") and not ret.is_valid()):
+        return RESULT_NONE
+
+    if isinstance(ret, Source):
+        return RESULT_SOURCE
+
+    return RESULT_OBJECT

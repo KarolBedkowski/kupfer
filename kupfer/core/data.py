@@ -3,10 +3,12 @@ import operator
 import os
 import sys
 from contextlib import suppress
+import typing as ty
 
 from gi.repository import GLib, GObject
 
 from kupfer.obj import base, sources, compose
+from kupfer.obj.base import Action, Leaf, Source
 from kupfer import pretty, scheduler
 from kupfer import datatools
 from kupfer.core import actioncompat
@@ -21,43 +23,53 @@ from kupfer.core.sources import GetSourceController
 
 # "Enums"
 # Which pane
-SourcePane, ActionPane, ObjectPane = (1,2,3)
+SourcePane, ActionPane, ObjectPane = (1, 2, 3)
 
 # In two-pane or three-pane mode
-SourceActionMode, SourceActionObjectMode = (1,2)
+SourceActionMode, SourceActionObjectMode = (1, 2)
 
 DATA_SAVE_INTERVAL_S = 3660
 
-def _identity(x):
+
+def _identity(x: ty.Any) -> ty.Any:
     return x
 
-def _is_iterable(obj):
+
+def _is_iterable(obj: ty.Any) -> bool:
     return hasattr(obj, "__iter__")
 
-def _dress_leaves(seq, action):
+
+def _dress_leaves(
+    seq: ty.Iterable[Leaf], action: ty.Optional[Action]
+) -> ty.Iterable[Leaf]:
     """yield items of @seq "dressed" by the source controller"""
-    sc = GetSourceController()
+    sctr = GetSourceController()
     for itm in seq:
-        sc.decorate_object(itm.object, action=action)
+        sctr.decorate_object(itm.object, action=action)
         yield itm
 
-def _peekfirst(seq):
+
+def _peekfirst(
+    seq: ty.Iterable[Leaf],
+) -> ty.Tuple[ty.Optional[Leaf], ty.Iterable[Leaf]]:
     """This function will return (firstitem, iter)
     where firstitem is the first item of @seq or None if empty,
     and iter an equivalent copy of @seq
     """
     seq = iter(seq)
     for itm in seq:
-        old_iter = itertools.chain((itm, ), seq)
+        old_iter = itertools.chain((itm,), seq)
         return (itm, old_iter)
 
     return (None, seq)
 
-def _as_set_iter(seq):
+
+def _as_set_iter(seq: ty.Iterable[Leaf]) -> ty.Iterable[Leaf]:
     key = operator.attrgetter("object")
     return datatools.UniqueIterator(seq, key=key)
 
-def _valid_check(seq):
+
+def _valid_check(seq: ty.Iterable[Leaf]) -> ty.Iterable[Leaf]:
     """yield items of @seq that are valid"""
     for itm in seq:
         obj = itm.object
@@ -65,7 +77,7 @@ def _valid_check(seq):
             yield itm
 
 
-class Searcher :
+class Searcher:
     """
     This class searches KupferObjects efficiently, and
     stores searches in a cache for a very limited time (*)
@@ -78,7 +90,9 @@ class Searcher :
         self._source_cache = {}
         self._old_key = None
 
-    def search(self, sources, key, score=True, item_check=None, decorator=None):
+    def search(
+        self, sources, key, score=True, item_check=None, decorator=None
+    ):
         """
         @sources is a sequence listing the inputs, which should be
         Sources, TextSources or sequences of KupferObjects
@@ -98,9 +112,8 @@ class Searcher :
 
         # General strategy: Extract a `list` from each source,
         # and perform ranking as in place operations on lists
-
-        if not item_check: item_check = _identity
-        if not decorator: decorator = _identity
+        item_check = item_check or _identity
+        decorator = decorator or _identity
 
         start_time = pretty.timing_start()
         match_lists = []
@@ -151,7 +164,9 @@ class Searcher :
         pretty.timing_step(__name__, start_time, "ranked")
         return match, match_iter
 
-    def rank_actions(self, objects, key, leaf, item_check=None, decorator=None):
+    def rank_actions(
+        self, objects, key, leaf, item_check=None, decorator=None
+    ):
         """
         rank @objects, which should be a sequence of KupferObjects,
         for @key, with the action ranker algorithm.
@@ -170,17 +185,22 @@ class Searcher :
         else:
             matches = search.score_actions(rankables, leaf)
 
-        matches = sorted(matches, key=operator.attrgetter("rank"), reverse=True)
+        matches = sorted(
+            matches, key=operator.attrgetter("rank"), reverse=True
+        )
 
         match, match_iter = _peekfirst(decorator(matches))
         return match, match_iter
 
-class Pane (GObject.GObject):
+
+class Pane(GObject.GObject):
     """
     signals:
         search-result (match, match_iter, context)
     """
+
     __gtype_name__ = "Pane"
+
     def __init__(self):
         super().__init__()
         self.selection = None
@@ -211,12 +231,16 @@ class Pane (GObject.GObject):
         self.emit("search-result", match, match_iter, context)
 
 
-GObject.signal_new("search-result", Pane, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN, (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT,
-        GObject.TYPE_PYOBJECT))
+GObject.signal_new(
+    "search-result",
+    Pane,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT),
+)
 
 
-class LeafPane (Pane, pretty.OutputMixin):
+class LeafPane(Pane, pretty.OutputMixin):
     __gtype_name__ = "LeafPane"
 
     def __init__(self):
@@ -226,16 +250,17 @@ class LeafPane (Pane, pretty.OutputMixin):
         self.object_stack = []
 
     def select(self, item):
-        assert item is None or isinstance(item, base.Leaf), \
-                    "New selection for object pane is not a Leaf!"
+        assert item is None or isinstance(
+            item, base.Leaf
+        ), "New selection for object pane is not a Leaf!"
         super().select(item)
 
     def _load_source(self, src):
         """Try to get a source from the SourceController,
         if it is already loaded we get it from there, else
         returns @src"""
-        sc = GetSourceController()
-        return sc.get_canonical_source(src)
+        sctr = GetSourceController()
+        return sctr.get_canonical_source(src)
 
     def get_source(self):
         return self.source
@@ -250,13 +275,14 @@ class LeafPane (Pane, pretty.OutputMixin):
         self.source = self._load_source(src)
         self.refresh_data()
 
+
     def pop_source(self):
         """Return True if succeeded"""
-        if not len(self.source_stack):
-            return False
+        if self.source_stack:
+            self.source = self.source_stack.pop()
+            return True
 
-        self.source = self.source_stack.pop()
-        return True
+        return False
 
     def is_at_source_root(self):
         """Return True if we have no source stack"""
@@ -310,7 +336,7 @@ class LeafPane (Pane, pretty.OutputMixin):
 
         self.refresh_data()
 
-    def soft_reset(self):
+    def soft_reset(self) -> ty.Optional[Source]:
         Pane.reset(self)
         while self.pop_source():
             pass
@@ -325,28 +351,37 @@ class LeafPane (Pane, pretty.OutputMixin):
         sources = [self.get_source()] if not text_mode else []
         if key and self.is_at_source_root():
             # Only use text sources when we are at root catalog
-            sc = GetSourceController()
-            textsrcs = sc.get_text_sources()
+            sctr = GetSourceController()
+            textsrcs = sctr.get_text_sources()
             sources.extend(textsrcs)
 
-        decorator = lambda seq: _dress_leaves(seq, action=None)
-        match, match_iter = self.searcher.search(sources, key, score=bool(key),
-                decorator=decorator)
+        def decorator(seq):
+            return _dress_leaves(seq, action=None)
+
+        match, match_iter = self.searcher.search(
+            sources, key, score=bool(key), decorator=decorator
+        )
         self.emit_search_result(match, match_iter, context)
 
 
-GObject.signal_new("new-source", LeafPane, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN, (GObject.TYPE_PYOBJECT,))
+GObject.signal_new(
+    "new-source",
+    LeafPane,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (GObject.TYPE_PYOBJECT,),
+)
 
 
-class PrimaryActionPane (Pane):
+class PrimaryActionPane(Pane):
     def __init__(self):
         super().__init__()
         self.set_item(None)
 
     def select(self, item):
-        assert not item or isinstance(item, base.Action), \
-                "Selection in action pane is not an Action!"
+        assert not item or isinstance(
+            item, base.Action
+        ), "Selection in action pane is not an Action!"
         super().select(item)
 
     def set_item(self, item):
@@ -382,16 +417,19 @@ class PrimaryActionPane (Pane):
             """Check if actions are valid before access"""
             return (obj for obj in seq if is_valid_cached(obj.object))
 
-        match, match_iter = self.searcher.rank_actions(actions, key, leaf,
-                decorator=valid_decorator)
+        match, match_iter = self.searcher.rank_actions(
+            actions, key, leaf, decorator=valid_decorator
+        )
         self.emit_search_result(match, match_iter, context)
 
-class SecondaryObjectPane (LeafPane):
+
+class SecondaryObjectPane(LeafPane):
     __gtype_name__ = "SecondaryObjectPane"
+
     def __init__(self):
         LeafPane.__init__(self)
-        self.current_item = None
-        self.current_action = None
+        self.current_item: ty.Optional[Leaf] = None
+        self.current_action: ty.Optional[Action] = None
 
     def reset(self):
         LeafPane.reset(self)
@@ -402,14 +440,16 @@ class SecondaryObjectPane (LeafPane):
         self.current_action = act
         if item and act:
             ownsrc, use_catalog = actioncompat.iobject_source_for_action(
-                act, item)
+                act, item
+            )
             if ownsrc and not use_catalog:
                 self.source_rebase(ownsrc)
             else:
                 extra_sources = [ownsrc] if ownsrc else ()
-                sc = GetSourceController()
-                self.source_rebase(sc.root_for_types(
-                    act.object_types(), extra_sources))
+                sctr = GetSourceController()
+                self.source_rebase(
+                    sctr.root_for_types(act.object_types(), extra_sources)
+                )
         else:
             self.reset()
 
@@ -417,14 +457,16 @@ class SecondaryObjectPane (LeafPane):
         """Check if there are any reasonable text sources for this action"""
         atroot = self.is_at_source_root()
         types = tuple(self.current_action.object_types())
-        sc = GetSourceController()
-        textsrcs = sc.get_text_sources()
-        return (atroot and
-            any(sc.good_source_for_types(s, types) for s in textsrcs))
+        sctr = GetSourceController()
+        textsrcs = sctr.get_text_sources()
+        return atroot and any(
+            sctr.good_source_for_types(s, types) for s in textsrcs
+        )
 
     def get_should_enter_text_mode(self):
-        return (self.is_at_source_root() and
-                hasattr(self.get_source(), "get_text_items"))
+        return self.is_at_source_root() and hasattr(
+            self.get_source(), "get_text_items"
+        )
 
     def search(self, key="", context=None, text_mode=False):
         """
@@ -437,28 +479,35 @@ class SecondaryObjectPane (LeafPane):
 
         if key and self.is_at_source_root():
             # Only use text sources when we are at root catalog
-            sc = GetSourceController()
-            textsrcs = sc.get_text_sources()
+            sctr = GetSourceController()
+            textsrcs = sctr.get_text_sources()
             sources.extend(textsrcs)
 
-        item_check = actioncompat.iobjects_valid_for_action(self.current_action,
-                self.current_item)
+        item_check = actioncompat.iobjects_valid_for_action(
+            self.current_action, self.current_item
+        )
 
         def decorator(seq):
             return _dress_leaves(seq, action=self.current_action)
 
-        match, match_iter = self.searcher.search(sources, key, score=True,
-                item_check=item_check, decorator=decorator)
+        match, match_iter = self.searcher.search(
+            sources,
+            key,
+            score=True,
+            item_check=item_check,
+            decorator=decorator,
+        )
         self.emit_search_result(match, match_iter, context)
 
 
-class DataController (GObject.GObject, pretty.OutputMixin):
+class DataController(GObject.GObject, pretty.OutputMixin):
     """
     Sources <-> Actions controller
 
     The data controller must be created before main program commences,
     so it can register itself at the scheduler correctly.
     """
+
     __gtype_name__ = "DataController"
 
     def __init__(self):
@@ -469,10 +518,10 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         self.source_pane.connect("new-source", self._new_source)
         self.object_pane.connect("new-source", self._new_source)
         self.action_pane = PrimaryActionPane()
-        self._panectl_table = {
-            SourcePane : self.source_pane,
-            ActionPane : self.action_pane,
-            ObjectPane : self.object_pane,
+        self._panectl_table : ty.Dict[int, LeafPane] = {
+            SourcePane: self.source_pane,
+            ActionPane: self.action_pane,
+            ObjectPane: self.object_pane,
         }
         for pane, ctl in list(self._panectl_table.items()):
             ctl.connect("search-result", self._pane_search_result, pane)
@@ -481,10 +530,12 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         self._search_ids = itertools.count(1)
         self._latest_interaction = -1
         self._execution_context = commandexec.DefaultActionExecutionContext()
-        self._execution_context.connect("command-result",
-                self._command_execution_result)
-        self._execution_context.connect("late-command-result",
-                self._late_command_execution_result)
+        self._execution_context.connect(
+            "command-result", self._command_execution_result
+        )
+        self._execution_context.connect(
+            "late-command-result", self._late_command_execution_result
+        )
 
         self._save_data_timer = scheduler.Timer()
 
@@ -496,13 +547,13 @@ class DataController (GObject.GObject, pretty.OutputMixin):
     def register_text_sources(self, plugin_id, srcs):
         """Pass in text sources as @srcs
 
-        we register text sources """
-        sc = GetSourceController()
-        sc.add_text_sources(plugin_id, srcs)
+        we register text sources"""
+        sctr = GetSourceController()
+        sctr.add_text_sources(plugin_id, srcs)
 
     def register_action_decorators(self, plugin_id, actions):
         # Keep a mapping: Decorated Leaf Type -> List of actions
-        decorate_types = {}
+        decorate_types: ty.Dict[ty.Any, ty.List[Action]] = {}
         for action in actions:
             for appl_type in action.item_types():
                 decorate_types.setdefault(appl_type, []).append(action)
@@ -510,8 +561,8 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         if not decorate_types:
             return
 
-        sc = GetSourceController()
-        sc.add_action_decorators(plugin_id, decorate_types)
+        sctr = GetSourceController()
+        sctr.add_action_decorators(plugin_id, decorate_types)
 
     def register_content_decorators(self, plugin_id, contents):
         """
@@ -522,24 +573,24 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         """
         # Keep a mapping:
         # Decorated Leaf Type -> Set of content decorator types
-        decorate_item_types = {}
-        for c in contents:
+        decorate_item_types: ty.Dict[ty.Any, ty.Set[Source]] = {}
+        for content in contents:
             with suppress(AttributeError):
-                applies = c.decorates_type()
-                decorate_item_types.setdefault(applies, set()).add(c)
+                applies = content.decorates_type()
+                decorate_item_types.setdefault(applies, set()).add(content)
 
         if not decorate_item_types:
             return
 
-        sc = GetSourceController()
-        sc.add_content_decorators(plugin_id, decorate_item_types)
+        sctr = GetSourceController()
+        sctr.add_content_decorators(plugin_id, decorate_item_types)
 
     def register_action_generators(self, plugin_id, generators):
-        sc = GetSourceController()
+        sctr = GetSourceController()
         for generator in generators:
-            sc.add_action_generator(plugin_id, generator)
+            sctr.add_action_generator(plugin_id, generator)
 
-    def _load(self, sched):
+    def _load(self, _sched: ty.Any) -> None:
         """Begin Data Controller work when we get application 'load' signal
 
         Load the data model from saved configuration and caches
@@ -549,20 +600,24 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         setctl.connect("plugin-toplevel-changed", self._plugin_catalog_changed)
 
         self._load_all_plugins()
-        D_s, d_s = self._get_directory_sources()
-        sc = GetSourceController()
-        sc.add(None, D_s, toplevel=True)
-        sc.add(None, d_s, toplevel=False)
-        sc.initialize()
+        dir_src, indir_src = self._get_directory_sources()
+        sctr = GetSourceController()
+        sctr.add(None, dir_src, toplevel=True)
+        sctr.add(None, indir_src, toplevel=False)
+        sctr.initialize()
         learn.load()
 
-    def _display(self, sched):
+    def _display(self, _sched: ty.Any) -> None:
         self._reload_source_root()
         self._save_data_timer.set(DATA_SAVE_INTERVAL_S, self._save_data)
 
-    def _get_directory_sources(self):
+    def _get_directory_sources(
+        self,
+    ) -> ty.Tuple[
+        ty.List[sources.DirectorySource], ty.List[sources.DirectorySource]
+    ]:
         """
-        Return a tuple of S_sources, s_sources for
+        Return a tuple of dir_sources, indir_sources for
         directory sources directly included and for
         catalog inclusion respectively
         """
@@ -573,23 +628,31 @@ class DataController (GObject.GObject, pretty.OutputMixin):
             abs_path = os.path.abspath(os.path.expanduser(opt))
             return sources.FileSource((abs_path,), depth)
 
-        s_sources = [sources.DirectorySource(item)
+        indir_sources = [
+            sources.DirectorySource(item)
             for item in setctl.get_directories(False)
-            if os.path.isdir(item)]
+            if os.path.isdir(item)
+        ]
 
-        S_sources = [sources.DirectorySource(item)
+        dir_sources = [
+            sources.DirectorySource(item)
             for item in setctl.get_directories(True)
-            if os.path.isdir(item)]
+            if os.path.isdir(item)
+        ]
 
         dir_depth = source_config("DeepDirectories", "Depth")
 
-        s_sources.extend(file_source(item, dir_depth)
-            for item in source_config("DeepDirectories","Catalog"))
+        indir_sources.extend(
+            file_source(item, dir_depth)
+            for item in source_config("DeepDirectories", "Catalog")
+        )
 
-        S_sources.extend(file_source(item, dir_depth)
-            for item in source_config("DeepDirectories", "Direct"))
+        dir_sources.extend(
+            file_source(item, dir_depth)
+            for item in source_config("DeepDirectories", "Direct")
+        )
 
-        return S_sources, s_sources
+        return dir_sources, indir_sources
 
     def _load_all_plugins(self):
         """
@@ -603,7 +666,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
                 sources = self._load_plugin(item)
                 self._insert_sources(item, sources, initialize=False)
 
-    def _load_plugin(self, plugin_id):
+    def _load_plugin(self, plugin_id: str) -> ty.Set[Source]:
         """
         Load @plugin_id, register all its Actions, Content and TextSources.
         Return its sources.
@@ -611,58 +674,70 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         with pluginload.exception_guard(plugin_id):
             plugin = pluginload.load_plugin(plugin_id)
             self.register_text_sources(plugin_id, plugin.text_sources)
-            self.register_action_decorators(plugin_id, plugin.action_decorators)
-            self.register_content_decorators(plugin_id, plugin.content_decorators)
-            self.register_action_generators(plugin_id, plugin.action_generators)
+            self.register_action_decorators(
+                plugin_id, plugin.action_decorators
+            )
+            self.register_content_decorators(
+                plugin_id, plugin.content_decorators
+            )
+            self.register_action_generators(
+                plugin_id, plugin.action_generators
+            )
             return set(plugin.sources)
 
         return set()
 
-    def _plugin_enabled(self, setctl, plugin_id, enabled):
+    def _plugin_enabled(
+        self, _setctl: ty.Any, plugin_id: str, enabled: bool
+    ) -> None:
         from kupfer.core import plugins
+
         if enabled and not plugins.is_plugin_loaded(plugin_id):
             sources = self._load_plugin(plugin_id)
             self._insert_sources(plugin_id, sources, initialize=True)
         elif not enabled:
             self._remove_plugin(plugin_id)
 
-    def _remove_plugin(self, plugin_id):
-        sc = GetSourceController()
-        if sc.remove_objects_for_plugin_id(plugin_id):
+    def _remove_plugin(self, plugin_id: str) -> None:
+        sctl = GetSourceController()
+        if sctl.remove_objects_for_plugin_id(plugin_id):
             self._reload_source_root()
 
         pluginload.remove_plugin(plugin_id)
 
-    def _reload_source_root(self):
+    def _reload_source_root(self) -> None:
         self.output_debug("Reloading source root")
-        sc = GetSourceController()
-        self.source_pane.source_rebase(sc.root)
+        sctl = GetSourceController()
+        self.source_pane.source_rebase(sctl.root)
 
-    def _plugin_catalog_changed(self, setctl, plugin_id, toplevel):
+    def _plugin_catalog_changed(
+        self, _setctl: ty.Any, _plugin_id: str, _toplevel: ty.Any
+    ) -> None:
         self._reload_source_root()
 
-    def _insert_sources(self, plugin_id, sources, initialize=True):
+    def _insert_sources(self, plugin_id: str, sources: ty.List[Source], initialize: bool=True) -> None:
         if not sources:
             return
 
-        sc = GetSourceController()
+        sctl = GetSourceController()
         setctl = settings.GetSettingsController()
         for src in sources:
             is_toplevel = setctl.get_source_is_toplevel(plugin_id, src)
-            sc.add(plugin_id, (src, ), toplevel=is_toplevel,
-                   initialize=initialize)
+            sctl.add(
+                plugin_id, (src,), toplevel=is_toplevel, initialize=initialize
+            )
 
         if initialize:
             self._reload_source_root()
 
-    def _finish(self, sched):
+    def _finish(self, _sched: ty.Any) -> None:
         "Close down the data model, save user data, and write caches to disk"
         GetSourceController().finalize()
         self._save_data(final_invocation=True)
         self.output_info("Saving cache...")
         GetSourceController().save_cache()
 
-    def _save_data(self, final_invocation=False):
+    def _save_data(self, final_invocation:bool=False)->None:
         """Save Learning data and User's configuration data in sources
         (Recurring timer)
         """
@@ -672,7 +747,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         if not final_invocation:
             self._save_data_timer.set(DATA_SAVE_INTERVAL_S, self._save_data)
 
-    def _new_source(self, ctr, src):
+    def _new_source(self, ctr: LeafPane, src: Source) -> None:
         if ctr is self.source_pane:
             pane = SourcePane
         elif ctr is self.object_pane:
@@ -681,28 +756,35 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         root = ctr.is_at_source_root()
         self.emit("source-changed", pane, src, root)
 
-    def reset(self):
+    def reset(self) -> None:
         self.source_pane.reset()
         self.action_pane.reset()
 
-    def soft_reset(self, pane):
+    def soft_reset(self, pane: LeafPane) -> ty.Optional[Source]:
         if pane is ActionPane:
-            return
+            return None
 
-        panectl = self._panectl_table[pane]
+        panectl : LeafPane = self._panectl_table[pane]
         return panectl.soft_reset()
 
     def cancel_search(self, pane=None):
         """Cancel any outstanding search, or the search for @pane"""
-        panes = (pane, ) if pane else iter(self._panectl_table)
+        panes = (pane,) if pane else iter(self._panectl_table)
         for pane in panes:
             ctl = self._panectl_table[pane]
             if ctl.outstanding_search > 0:
                 GLib.source_remove(ctl.outstanding_search)
                 ctl.outstanding_search = -1
 
-    def search(self, pane, key="", context=None, interactive=False, lazy=False,
-            text_mode=False):
+    def search(
+        self,
+        pane,
+        key="",
+        context=None,
+        interactive=False,
+        lazy=False,
+        text_mode=False,
+    ):
         """Search: Register the search method in the event loop
 
         Will search in @pane's base using @key, promising to return
@@ -720,16 +802,19 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         if interactive:
             ctl.search(key, wrapcontext, text_mode)
         else:
-            timeout = 300 if lazy else 0 if not key else 50//len(key)
+            timeout = 300 if lazy else 0 if not key else 50 // len(key)
 
             def ctl_search(*args):
                 ctl.outstanding_search = -1
                 return ctl.search(*args)
 
-            ctl.outstanding_search = GLib.timeout_add(timeout, ctl_search,
-                    key, wrapcontext, text_mode)
+            ctl.outstanding_search = GLib.timeout_add(
+                timeout, ctl_search, key, wrapcontext, text_mode
+            )
 
-    def _pane_search_result(self, panectl, match,match_iter, wrapcontext, pane):
+    def _pane_search_result(
+        self, panectl, match, match_iter, wrapcontext, pane
+    ):
         search_id, context = wrapcontext
         if not search_id is panectl.outstanding_search_id:
             self.output_debug("Skipping late search", match, context)
@@ -796,6 +881,7 @@ class DataController (GObject.GObject, pretty.OutputMixin):
         This will trigger .select() with None if items
         are not valid..
         """
+
         def valid_check(obj):
             return not (hasattr(obj, "is_valid") and not obj.is_valid())
 
@@ -900,7 +986,9 @@ class DataController (GObject.GObject, pretty.OutputMixin):
 
         self.emit("command-result", result_type, uictx)
 
-    def _late_command_execution_result(self, ctx, id_, result_type, ret, uictx):
+    def _late_command_execution_result(
+        self, ctx, id_, result_type, ret, uictx
+    ):
         "Receive late command result"
         if self._latest_interaction < id_:
             self._command_execution_result(ctx, result_type, ret, uictx)
@@ -936,7 +1024,6 @@ class DataController (GObject.GObject, pretty.OutputMixin):
             return learn.get_object_has_affinity(selection)
 
         return None
-
 
     def erase_object_affinity(self, pane):
         """
@@ -1048,30 +1135,76 @@ class DataController (GObject.GObject, pretty.OutputMixin):
 
 # pane cleared or set with new item
 # pane, item
-GObject.signal_new("pane-reset", DataController, GObject.SignalFlags.RUN_LAST,
-    GObject.TYPE_BOOLEAN, (GObject.TYPE_INT, GObject.TYPE_PYOBJECT,))
+GObject.signal_new(
+    "pane-reset",
+    DataController,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (
+        GObject.TYPE_INT,
+        GObject.TYPE_PYOBJECT,
+    ),
+)
 
 # pane, match, iter to matches, context
-GObject.signal_new("search-result", DataController, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN, (GObject.TYPE_INT, GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT))
+GObject.signal_new(
+    "search-result",
+    DataController,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (
+        GObject.TYPE_INT,
+        GObject.TYPE_PYOBJECT,
+        GObject.TYPE_PYOBJECT,
+        GObject.TYPE_PYOBJECT,
+    ),
+)
 
-GObject.signal_new("source-changed", DataController, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN, (int, object, bool))
+GObject.signal_new(
+    "source-changed",
+    DataController,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (int, object, bool),
+)
 
 # mode, None(?)
-GObject.signal_new("mode-changed", DataController, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN, (GObject.TYPE_INT, GObject.TYPE_PYOBJECT,))
+GObject.signal_new(
+    "mode-changed",
+    DataController,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (
+        GObject.TYPE_INT,
+        GObject.TYPE_PYOBJECT,
+    ),
+)
 
 # object stack update signal
 # arguments: pane
-GObject.signal_new("object-stack-changed", DataController, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN, (GObject.TYPE_INT, ))
+GObject.signal_new(
+    "object-stack-changed",
+    DataController,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (GObject.TYPE_INT,),
+)
 # when an command returned a result
 # arguments: result type, gui_context
-GObject.signal_new("command-result", DataController, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN, (GObject.TYPE_INT, GObject.TYPE_PYOBJECT))
+GObject.signal_new(
+    "command-result",
+    DataController,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (GObject.TYPE_INT, GObject.TYPE_PYOBJECT),
+)
 
 # when an action was launched
 # arguments: none
-GObject.signal_new("launched-action", DataController, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN, ())
+GObject.signal_new(
+    "launched-action",
+    DataController,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (),
+)
