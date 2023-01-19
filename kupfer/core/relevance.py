@@ -30,9 +30,23 @@ based on the relevance.  It originates in Gnome-Do.
 
 Compatibility: Python 3
 """
+import typing as ty
 
 
-def formatCommonSubstrings(s, query, format_clean=None, format_match=None):
+FormatCleanCB = ty.Callable[[str], str]
+FormatMatchCB = ty.Callable[[str], str]
+
+
+def defaultFormat(x:str) -> str:
+    return x
+
+
+def formatCommonSubstrings(
+    s: str,
+    query: str,
+    format_clean: ty.Optional[FormatCleanCB] = None,
+    format_match: ty.Optional[FormatMatchCB] = None,
+) -> str:
     """
     Creates a new string highlighting matching substrings.
 
@@ -45,12 +59,13 @@ def formatCommonSubstrings(s, query, format_clean=None, format_match=None):
     >>> formatCommonSubstrings('parallelism', 'lsm', format_match=str.upper)
     'paralleLiSM'
     """
-    format_clean = format_clean or (lambda x: x)
-    format_match = format_match or (lambda x: x)
-    format = lambda x: x and format_clean(x)
+    format_clean = format_clean or defaultFormat
+
+    def _format(x: str) -> str:
+        return x and format_clean(x)
 
     if not query:
-        return format(s)
+        return _format(s)
 
     ls = s.lower()
 
@@ -58,29 +73,34 @@ def formatCommonSubstrings(s, query, format_clean=None, format_match=None):
     first, last = _findBestMatch(ls, query)
 
     if first == -1:
-        return format(s)
+        return _format(s)
 
     # find longest perfect match, put in slc
     for slc in range(len(query), 0, -1):
-        if query[:slc] == ls[first:first+slc]:
+        if query[:slc] == ls[first : first + slc]:
             break
 
     nextkey = query[slc:]
     head = s[:first]
-    match = s[first: first+slc]
-    matchtail = s[first+slc: last]
+    match = s[first : first + slc]
+    matchtail = s[first + slc : last]
     tail = s[last:]
 
-    # we use s[0:0], which is "" or u""
-    return s[0:0].join((
-            format(head),
-            format_match(match),
-            formatCommonSubstrings(matchtail, nextkey,
-                                   format_clean, format_match),
-            format(tail),
-            ))
+    format_match = format_match or defaultFormat
 
-def score_single(s, query):
+    return "".join(
+        (
+            _format(head),
+            format_match(match),
+            formatCommonSubstrings(
+                matchtail, nextkey, format_clean, format_match
+            ),
+            _format(tail),
+        )
+    )
+
+
+def score_single(s: str, query: str)->float:
     """
     s: text body to score
     query: A single character
@@ -103,16 +123,17 @@ def score_single(s, query):
     # and get the ration of their lengths for a base score
     first = ls.find(query)
     if first == -1:
-        return .0
+        return 0.0
 
-    score = 0.9 + .025 / len(s)
+    score = 0.9 + 0.025 / len(s)
 
     if first == 0:
         score += 0.07
 
     return score
 
-def score(s, query):
+
+def score(s: str, query: str) -> float:
     """
     A relevancy score for the string ranging from 0 to 1
 
@@ -146,18 +167,18 @@ def score(s, query):
     # and get the ration of their lengths for a base score
     first, last = _findBestMatch(ls, query)
     if first == -1:
-        return .0
+        return 0.0
 
-    score = len(query) / (last - first)
+    score : float= len(query) / (last - first)
 
     # Now we weight by string length so shorter strings are better
-    score *= .7 + len(query) / len(s) * .3
+    score *= 0.7 + len(query) / len(s) * 0.3
 
     # Bonus points if the characters start words
     good = 0
     bad = 1
     firstCount = 0
-    for i in range(first, last-1):
+    for i in range(first, last - 1):
         if ls[i] in " -.([_":
             if ls[i + 1] in query:
                 firstCount += 1
@@ -186,13 +207,14 @@ def score(s, query):
     # everything else lower
 
     if last - first == len(query):
-        score = .9 + .1 * score
+        score = 0.9 + 0.1 * score
     else:
-        score = .9 * score
+        score = 0.9 * score
 
     return score
 
-def _findBestMatch(s, query):
+
+def _findBestMatch(s: str, query: str) -> ty.Tuple[int, int]:
     """
     Finds the shortest substring of @s that contains all characters of query
     in order.
@@ -251,6 +273,8 @@ def _findBestMatch(s, query):
 
     return bestMatch
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

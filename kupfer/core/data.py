@@ -275,7 +275,6 @@ class LeafPane(Pane, pretty.OutputMixin):
         self.source = self._load_source(src)
         self.refresh_data()
 
-
     def pop_source(self):
         """Return True if succeeded"""
         if self.source_stack:
@@ -518,7 +517,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.source_pane.connect("new-source", self._new_source)
         self.object_pane.connect("new-source", self._new_source)
         self.action_pane = PrimaryActionPane()
-        self._panectl_table : ty.Dict[int, LeafPane] = {
+        self._panectl_table: ty.Dict[int, LeafPane] = {
             SourcePane: self.source_pane,
             ActionPane: self.action_pane,
             ObjectPane: self.object_pane,
@@ -715,7 +714,9 @@ class DataController(GObject.GObject, pretty.OutputMixin):
     ) -> None:
         self._reload_source_root()
 
-    def _insert_sources(self, plugin_id: str, sources: ty.List[Source], initialize: bool=True) -> None:
+    def _insert_sources(
+        self, plugin_id: str, sources: ty.List[Source], initialize: bool = True
+    ) -> None:
         if not sources:
             return
 
@@ -737,7 +738,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.output_info("Saving cache...")
         GetSourceController().save_cache()
 
-    def _save_data(self, final_invocation:bool=False)->None:
+    def _save_data(self, final_invocation: bool = False) -> None:
         """Save Learning data and User's configuration data in sources
         (Recurring timer)
         """
@@ -764,7 +765,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if pane is ActionPane:
             return None
 
-        panectl : LeafPane = self._panectl_table[pane]
+        panectl: LeafPane = self._panectl_table[pane]
         return panectl.soft_reset()
 
     def cancel_search(self, pane=None):

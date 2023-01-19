@@ -1,6 +1,7 @@
 import pkgutil
 import sys
 import textwrap
+import typing as ty
 
 from kupfer import pretty
 from kupfer.core import settings
@@ -28,7 +29,7 @@ class NotEnabledError (Exception):
     "Plugin may not be imported since it is not enabled"
 
 
-def get_plugin_ids():
+def get_plugin_ids() -> ty.Iterator[str]:
     """Enumerate possible plugin ids;
     return a sequence of possible plugin ids, not guaranteed to be plugins"""
     from kupfer import plugin

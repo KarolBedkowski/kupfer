@@ -3,6 +3,7 @@ Module for confiugration and misc things
 """
 import os
 from pathlib import Path
+import typing as ty
 
 import xdg.BaseDirectory as base
 
@@ -108,7 +109,7 @@ def get_config_files(filename):
     """
     return base.load_config_paths(PACKAGE_NAME, filename) or ()
 
-def save_config_file(filename):
+def save_config_file(filename) -> ty.Optional[str]:
     """
     Return filename in the XDG data home directory, where the
     directory is guaranteed to exist
@@ -116,5 +117,6 @@ def save_config_file(filename):
     direc = base.save_config_path(PACKAGE_NAME)
     if not direc:
         return None
+
     filepath = os.path.join(direc, filename)
     return filepath

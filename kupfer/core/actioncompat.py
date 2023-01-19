@@ -73,18 +73,16 @@ def iobjects_valid_for_action(
 
     _valid_object = action.valid_object  # type: ignore
 
-    def valid_object(leaf, for_item):
-        return all(
-            _valid_object(L, for_item=I)
-            for L in _get_leaf_members(leaf)
-            for I in _get_leaf_members(for_item)
-        )
-
     def type_obj_check(iobjs):
         return (
             i
             for i in iobjs
-            if isinstance(i, types) and valid_object(i, for_item=for_item)
+            if isinstance(i, types)
+            and all(
+                _valid_object(leaf, for_item=item)
+                for leaf in _get_leaf_members(i)
+                for item in _get_leaf_members(for_item)
+            )
         )
 
     return type_obj_check

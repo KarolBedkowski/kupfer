@@ -1,21 +1,32 @@
+from __future__ import annotations
+import typing as ty
+
 import operator
 import itertools
 from kupfer.core import learn, relevance
+from kupfer.obj.base import Leaf
 
-def make_rankables(itr, rank=0):
+
+def make_rankables(
+    itr: ty.Iterable[ty.Any], rank: int = 0
+) -> ty.Iterable[Rankable]:
     return [Rankable(str(obj), obj, rank) for obj in itr]
 
-def wrap_rankable(obj, rank=0):
+
+def wrap_rankable(obj: ty.Any, rank: int = 0) -> Rankable:
     return Rankable(str(obj), obj, rank)
 
-class Rankable :
+
+class Rankable:
     """
     Rankable has an object (represented item),
     value (determines rank) and an associated rank
     """
+
     # To save memory with (really) many Rankables
     __slots__ = ("rank", "value", "object", "aliases")
-    def __init__(self, value, obj, rank=0):
+
+    def __init__(self, value: ty.Any, obj: ty.Any, rank: float = 0) -> None:
         self.rank = rank
         self.value = value
         self.object = obj
@@ -27,7 +38,8 @@ class Rankable :
     def __repr__(self):
         return f"<Rankable {self} repres {self.object!r} at {id(self):x}>"
 
-def bonus_objects(rankables, key):
+
+def bonus_objects(rankables: ty.Iterable[Rankable], key: str) -> None:
     """
     rankables: List[Rankable]
     inncrement each for mnemonic score for key.
@@ -37,7 +49,10 @@ def bonus_objects(rankables, key):
     for obj in rankables:
         obj.rank += get_record_score(obj.object, key)
 
-def bonus_actions(rankables, key):
+
+def bonus_actions(
+    rankables: ty.Iterable[Rankable], key: str
+) -> ty.Iterator[Rankable]:
     """
     generator of @rankables that have mnemonics for @key
 
@@ -50,7 +65,8 @@ def bonus_actions(rankables, key):
         obj.rank += get_record_score(obj.object, key) + obj.object.rank_adjust
         yield obj
 
-def add_rank_objects(rankables, rank):
+
+def add_rank_objects(rankables: ty.Iterator[Rankable], rank: float) -> None:
     """
     rankables: List[Rankable]
     rank: Fixed rank
@@ -58,32 +74,32 @@ def add_rank_objects(rankables, rank):
     for obj in rankables:
         obj.rank += rank
 
-def _score_for_key(query):
+
+def _score_for_key(query: str) -> ty.Callable[[str, str], float]:
     if len(query) == 1:
         return relevance.score_single
 
     return relevance.score
 
-def score_objects(rankables, key):
+
+def score_objects(rankables: ty.List[Rankable], key: str) -> None:
     """
     rankables: List[Rankable]
 
     Prune rankables that score low for the key.
+
+    TODO: convert to generator
     """
     key = key.lower()
     _score = _score_for_key(key)
     for rb in rankables:
         # Rank object
-        rb.rank = _score(rb.value, key) * 100
-
-    for rb in rankables:
-        if rb.rank < 90:
-            rank = rb.rank
+        rank = rb.rank = _score(rb.value, key) * 100
+        if rank < 90:
             for alias in rb.aliases:
                 # consider aliases and change rb.value if alias is better
                 # aliases rank lower so that value is chosen when close
-                arank = _score(alias, key) * 95
-                if arank > rank:
+                if (arank := _score(alias, key) * 95) > rank:
                     rank = arank
                     rb.value = alias
 
@@ -91,7 +107,10 @@ def score_objects(rankables, key):
 
     rankables[:] = [rb for rb in rankables if rb.rank > 10]
 
-def score_actions(rankables, for_leaf):
+
+def score_actions(
+    rankables: ty.Iterable[Rankable], for_leaf: Leaf
+) -> ty.Iterator[Rankable]:
     """Alternative (rigid) scoring mechanism for objects,
     putting much more weight in rank_adjust
     """
@@ -100,7 +119,7 @@ def score_actions(rankables, for_leaf):
         ra = obj.object.rank_adjust
         ra += learn.get_correlation_bonus(obj.object, for_leaf)
         if ra > 0:
-            obj.rank = 50 + ra + get_record_score(obj.object)//2
+            obj.rank = 50 + ra + get_record_score(obj.object) // 2
         elif ra == 0:
             obj.rank = get_record_score(obj.object)
         else:
@@ -110,6 +129,7 @@ def score_actions(rankables, for_leaf):
 
 
 def _max_multiple(iterables, key):
+    # TODO: not in use
     maxval = None
     for iterable in iterables:
         try:
@@ -125,7 +145,9 @@ def _max_multiple(iterables, key):
     return maxval
 
 
-def find_best_sort(rankables):
+def find_best_sort(
+    rankables: ty.List[ty.List[Rankable]],
+) -> ty.Iterator[Rankable]:
     """
     rankables: List[List[Rankable]]
 
@@ -140,7 +162,8 @@ def find_best_sort(rankables):
     """
 
     key = operator.attrgetter("rank")
-    maxval = _max_multiple(rankables, key)
+    # maxval = _max_multiple(rankables, key)
+    maxval = max(itertools.chain(*rankables), default=None, key=key)
     if maxval is None:
         return
 

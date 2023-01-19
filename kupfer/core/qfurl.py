@@ -13,11 +13,11 @@ with suppress(AttributeError):
     urllib.parse.uses_fragment.append(QFURL_SCHEME)
 
 
-class QfurlError (Exception):
+class QfurlError(Exception):
     pass
 
 
-class qfurl :
+class qfurl:
     """A qfurl is a URI to locate unique objects in kupfer's catalog.
 
     The qfurl is built up as follows:
@@ -90,6 +90,7 @@ class qfurl :
         scheme, mother, qfid, _ign, _ore, typname = _urlparse(url)
         if scheme != QFURL_SCHEME:
             raise QfurlError(f"Wrong scheme: {scheme}")
+
         qfid = qfid.lstrip("/")
         return mother, qfid, typname
 
@@ -101,11 +102,13 @@ class qfurl :
         _module, name = typname.rsplit(".", 1) if typname else (None, None)
         for src in catalog:
             if name:
-                if name not in (pt.__name__
-                        for pt in src.provides()) and \
-                    name not in (t.__name__
-                        for pt in src.provides()
-                        for t in pt.__subclasses__()):
+                if name not in (
+                    pt.__name__ for pt in src.provides()
+                ) and name not in (
+                    t.__name__
+                    for pt in src.provides()
+                    for t in pt.__subclasses__()
+                ):
                     continue
 
             for obj in src.get_leaves():
@@ -119,6 +122,8 @@ class qfurl :
         pretty.print_debug(__name__, "No match found for", self)
         return None
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
