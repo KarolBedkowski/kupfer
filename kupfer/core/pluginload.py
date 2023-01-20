@@ -1,22 +1,29 @@
 import contextlib
+import typing as ty
 
 from kupfer import pretty
-
+from kupfer.obj.base import Source, ActionGenerator, Action
 from kupfer.core import plugins
-from kupfer.core.plugins import (load_plugin_sources, sources_attribute,
-        action_decorators_attribute, text_sources_attribute,
-        content_decorators_attribute, action_generators_attribute,
-        initialize_plugin)
-
-class PluginDescription :
-    text_sources = ()
-    action_decorators = ()
-    content_decorators = ()
-    action_generators = ()
-    sources = ()
+from kupfer.core.plugins import (
+    load_plugin_sources,
+    sources_attribute,
+    action_decorators_attribute,
+    text_sources_attribute,
+    content_decorators_attribute,
+    action_generators_attribute,
+    initialize_plugin,
+)
 
 
-def load_plugin(plugin_id):
+class PluginDescription:
+    text_sources : ty.List[Source] = []
+    action_decorators : ty.List[Action] = []
+    content_decorators : ty.List[Source] = []
+    action_generators : ty.List[ActionGenerator]= []
+    sources : ty.List[Source] = []
+
+
+def load_plugin(plugin_id: str) -> PluginDescription:
     """
     @S_sources are to be included directly in the catalog,
     @s_souces as just as subitems
@@ -34,16 +41,22 @@ def load_plugin(plugin_id):
         return PluginDescription()
 
     text_sources.extend(load_plugin_sources(item, text_sources_attribute))
-    action_decorators.extend(load_plugin_sources(item,
-        action_decorators_attribute))
-    action_generators.extend(load_plugin_sources(item,
-        action_generators_attribute))
+    action_decorators.extend(
+        load_plugin_sources(item, action_decorators_attribute)
+    )
+    action_generators.extend(
+        load_plugin_sources(item, action_generators_attribute)
+    )
 
     # Register all Sources as (potential) content decorators
-    content_decorators.extend(load_plugin_sources(item,
-        sources_attribute, instantiate=False))
-    content_decorators.extend(load_plugin_sources(item,
-        content_decorators_attribute, instantiate=False))
+    content_decorators.extend(
+        load_plugin_sources(item, sources_attribute, instantiate=False)
+    )
+    content_decorators.extend(
+        load_plugin_sources(
+            item, content_decorators_attribute, instantiate=False
+        )
+    )
     sources.extend(load_plugin_sources(item))
 
     desc = PluginDescription()
@@ -55,13 +68,15 @@ def load_plugin(plugin_id):
     desc.action_generators = action_generators
     return desc
 
+
 @contextlib.contextmanager
-def exception_guard(name, callback=None, *args, **kwargs):
+def exception_guard(name, *args, callback=None, **kwargs):
     "Guard for exceptions, print traceback and call @callback if any is raised"
     try:
         yield
     except Exception:
         import traceback
+
         pretty.print_error(__name__, f"Loading {name} raised an exception:")
         traceback.print_exc()
         pretty.print_error(__name__, "This error is probably a bug in", name)
@@ -69,5 +84,6 @@ def exception_guard(name, callback=None, *args, **kwargs):
         if callback is not None:
             callback(*args, **kwargs)
 
-def remove_plugin(plugin_id):
+
+def remove_plugin(plugin_id: str) -> None:
     plugins.unimport_plugin(plugin_id)

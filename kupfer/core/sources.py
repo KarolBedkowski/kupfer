@@ -7,20 +7,20 @@ import threading
 import time
 import weakref
 from pathlib import Path
+import typing as ty
 
 from kupfer import config, pretty, scheduler
 from kupfer import conspickle
 from kupfer.obj import base, sources
+from kupfer.obj.base import Source
 from kupfer.core import pluginload
 
 
-
-class InternalError (Exception):
+class InternalError(Exception):
     pass
 
 
-
-class PeriodicRescanner (pretty.OutputMixin):
+class PeriodicRescanner(pretty.OutputMixin):
     """
     Periodically rescan a @catalog of sources
 
@@ -30,27 +30,32 @@ class PeriodicRescanner (pretty.OutputMixin):
     Each campaign of rescans is separarated by @campaign
     seconds
     """
-    def __init__(self, period=5, startup=10, campaign=3600):
+
+    def __init__(
+        self, period: int = 5, startup: int = 10, campaign: int = 3600
+    ) -> None:
         self.startup = startup
         self.period = period
-        self.campaign=campaign
+        self.campaign = campaign
         self.timer = scheduler.Timer()
         # Source -> time mapping
-        self.latest_rescan_time = weakref.WeakKeyDictionary()
-        self._min_rescan_interval = campaign//4
+        self.latest_rescan_time: ty.Dict[
+            sources.Source, float
+        ] = weakref.WeakKeyDictionary()
+        self._min_rescan_interval = campaign // 4
 
-    def set_catalog(self, catalog):
+    def set_catalog(self, catalog: ty.Iterable[sources.Source]) -> None:
         self.catalog = catalog
         self.cur = iter(self.catalog)
         self.output_debug(f"Registering new campaign, in {self.startup} s")
         self.timer.set(self.startup, self._new_campaign)
 
-    def _new_campaign(self):
+    def _new_campaign(self) -> None:
         self.output_info(f"Starting new campaign, interval {self.period} s")
         self.cur = iter(self.catalog)
         self.timer.set(self.period, self._periodic_rescan_helper)
 
-    def _periodic_rescan_helper(self):
+    def _periodic_rescan_helper(self) -> None:
         # Advance until we find a source that was not recently rescanned
         for next in self.cur:
             oldtime = self.latest_rescan_time.get(next, 0)
@@ -63,7 +68,7 @@ class PeriodicRescanner (pretty.OutputMixin):
         self.output_info(f"Campaign finished, pausing {self.campaign} s")
         self.timer.set(self.campaign, self._new_campaign)
 
-    def rescan_now(self, source, force_update=False):
+    def rescan_now(self, source: Source, force_update: bool = False) -> None:
         "Rescan @source immediately"
         if force_update:
             # if forced update, we know that it was brought up to date
@@ -71,37 +76,39 @@ class PeriodicRescanner (pretty.OutputMixin):
 
         self.rescan_source(source, force_update=force_update)
 
-    def _start_source_rescan(self, source):
+    def _start_source_rescan(self, source: Source) -> None:
         self.latest_rescan_time[source] = time.time()
         if not source.is_dynamic():
-            thread = threading.Thread(target=self.rescan_source, args=(source,))
+            thread = threading.Thread(
+                target=self.rescan_source, args=(source,)
+            )
             thread.daemon = True
             thread.start()
 
-    def rescan_source(self, source, force_update=True):
+    def rescan_source(self, source: Source, force_update: bool = True) -> None:
         list(source.get_leaves(force_update=force_update))
 
 
-
-class SourcePickler (pretty.OutputMixin):
+class SourcePickler(pretty.OutputMixin):
     """
     Takes care of pickling and unpickling Kupfer Sources.
     """
+
     format_version = 5
     name_template = "k%s-v%d.pickle.gz"
 
-    def __init__(self):
-        self.open = lambda f,mode: gzip.open(f, mode, compresslevel=3)
+    def __init__(self)->None:
+        self.open = lambda f, mode: gzip.open(f, mode, compresslevel=3)
 
     @classmethod
-    def should_use_cache(cls):
-        return config.has_capability("CACHE")
+    def should_use_cache(cls) -> bool:
+        return config.has_capability("CACHE") # type: ignore
 
     @classmethod
-    def should_use_cache_for_source(cls, source):
+    def should_use_cache_for_source(cls, source:Source) -> bool:
         return cls.should_use_cache() and source.source_use_cache
 
-    def rm_old_cachefiles(self):
+    def rm_old_cachefiles(self) -> None:
         """Checks if there are old cachefiles from last version,
         and deletes those
         """
@@ -109,7 +116,7 @@ class SourcePickler (pretty.OutputMixin):
             # Look for files matching beginning and end of
             # name_template, with the previous file version
             chead, ctail = self.name_template.split("%s")
-            ctail = ctail % ((self.format_version -1),)
+            ctail = ctail % ((self.format_version - 1),)
             obsolete_files = []
             for cfile in files:
                 if cfile.startswith(chead) and cfile.endswith(ctail):
@@ -117,8 +124,9 @@ class SourcePickler (pretty.OutputMixin):
                     obsolete_files.append(cfullpath)
 
         if obsolete_files:
-            self.output_info("Removing obsolete cache files:", sep="\n",
-                    *obsolete_files)
+            self.output_info(
+                "Removing obsolete cache files:", sep="\n", *obsolete_files
+            )
             for fpath in obsolete_files:
                 # be overly careful
                 assert fpath.startswith(config.get_cache_home())
@@ -151,7 +159,9 @@ class SourcePickler (pretty.OutputMixin):
         try:
             pfile = Path(pickle_file).read_bytes()
             source = pickle.loads(pfile)
-            assert isinstance(source, base.Source), "Stored object not a Source"
+            assert isinstance(
+                source, base.Source
+            ), "Stored object not a Source"
             sname = os.path.basename
             self.output_debug("Loading", source, "from", sname(pickle_file))
             return source
@@ -178,12 +188,13 @@ class SourcePickler (pretty.OutputMixin):
         sname = os.path.basename
         self.output_debug("Storing", source, "as", sname(pickle_file))
         Path(pickle_file).write_bytes(
-            pickle.dumps(source, pickle.HIGHEST_PROTOCOL))
+            pickle.dumps(source, pickle.HIGHEST_PROTOCOL)
+        )
         return True
 
 
-class SourceDataPickler (pretty.OutputMixin):
-    """ Takes care of pickling and unpickling Kupfer Sources' configuration
+class SourceDataPickler(pretty.OutputMixin):
+    """Takes care of pickling and unpickling Kupfer Sources' configuration
     or data.
 
     The SourceDataPickler requires a protocol of three methods:
@@ -197,6 +208,7 @@ class SourceDataPickler (pretty.OutputMixin):
     config_restore(obj)
       Receive the configuration object `obj' to load
     """
+
     format_version = 2
     name_template = "config-%s-v%d.pickle"
 
@@ -243,6 +255,7 @@ class SourceDataPickler (pretty.OutputMixin):
             data = pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)
         except pickle.PickleError:
             import traceback
+
             self.output_error("Unable to save configuration for", source)
             self.output_error("Saving configuration raised an exception:")
             traceback.print_exc()
@@ -259,13 +272,13 @@ class SourceDataPickler (pretty.OutputMixin):
         return True
 
 
-
-class SourceController (pretty.OutputMixin):
+class SourceController(pretty.OutputMixin):
     """Control sources; loading, pickling, rescanning
 
     Call .add() to add sources.
     Call .initialize() before use commences.
     """
+
     def __init__(self):
         self.rescanner = PeriodicRescanner(period=3)
         self.sources = set()
@@ -320,7 +333,7 @@ class SourceController (pretty.OutputMixin):
 
     def get_plugin_id_for_object(self, obj):
         id_ = self.plugin_object_map.get(obj)
-        #self.output_debug("Object", repr(obj), "has id", id_, id(obj))
+        # self.output_debug("Object", repr(obj), "has id", id_, id(obj))
         return id_
 
     def remove_objects_for_plugin_id(self, plugin_id):
@@ -419,10 +432,10 @@ class SourceController (pretty.OutputMixin):
         raise KeyError
 
     @property
-    def root(self):
+    def root(self) -> ty.Tuple[ty.Iterable[Source], ...]:
         """Get the root source of catalog"""
         if len(self.sources) == 1:
-            root_catalog, = self.sources
+            (root_catalog,) = self.sources
         elif len(self.sources) > 1:
             firstlevel = self._firstlevel
             root_catalog = sources.MultiSource(firstlevel)
@@ -453,13 +466,11 @@ class SourceController (pretty.OutputMixin):
 
     @classmethod
     def good_source_for_types(cls, s, types):
-        """return whether @s provides good leaves for @types
-        """
+        """return whether @s provides good leaves for @types"""
         if provides := list(s.provides()):
             return any(issubclass(t, types) for t in provides)
 
         return True
-
 
     def root_for_types(self, types, extra_sources=[]):
         """
@@ -477,11 +488,12 @@ class SourceController (pretty.OutputMixin):
         firstlevel = set(extra_sources)
         # include the Catalog index since we want to include
         # the top of the catalogs (like $HOME)
-        catalog_index = (sources.SourcesSource(self.sources), )
+        catalog_index = (sources.SourcesSource(self.sources),)
         firstlevel.update(
             s
             for s in itertools.chain(self.sources, catalog_index)
-            if self.good_source_for_types(s, types))
+            if self.good_source_for_types(s, types)
+        )
 
         return sources.MultiSource(firstlevel)
 
@@ -503,10 +515,8 @@ class SourceController (pretty.OutputMixin):
 
             for content in list(val):
                 with pluginload.exception_guard(
-                        content,
-                        self._remove_source,
-                        content,
-                        is_decorator=True):
+                    content, self._remove_source, content, is_decorator=True
+                ):
                     dsrc = content.decorate_item(leaf)
 
                 if dsrc:
@@ -529,8 +539,9 @@ class SourceController (pretty.OutputMixin):
             contents = list(self.get_contents_for_leaf(obj, types))
             content = contents[0] if contents else None
             if len(contents) > 1:
-                content = sources.SourcesSource(contents, name=str(obj),
-                        use_reprs=False)
+                content = sources.SourcesSource(
+                    contents, name=str(obj), use_reprs=False
+                )
 
             obj.add_content(content)
 
@@ -579,8 +590,9 @@ class SourceController (pretty.OutputMixin):
         sourcepickler = SourcePickler()
         sourcepickler.rm_old_cachefiles()
         for source in sources:
-            if (source.is_dynamic() or
-                SourceDataPickler.source_has_config(source)):
+            if source.is_dynamic() or SourceDataPickler.source_has_config(
+                source
+            ):
                 continue
 
             self._pickle_source(source, pickler=sourcepickler)
@@ -640,6 +652,8 @@ class SourceController (pretty.OutputMixin):
 
 
 _SOURCE_CONTROLLER = None
+
+
 def GetSourceController():
     global _SOURCE_CONTROLLER
     if _SOURCE_CONTROLLER is None:

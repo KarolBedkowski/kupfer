@@ -444,9 +444,9 @@ def _activate_action_multiple_multiplied(
     Return an iterable of the return values.
     """
     rets = [
-        _activate_action_single(L, action, I, kwargs)
-        for L in objs
-        for I in iobjs
+        _activate_action_single(leaf, action, item, kwargs)
+        for leaf in objs
+        for item in iobjs
     ]
 
     ctx = DefaultActionExecutionContext()

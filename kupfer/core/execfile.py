@@ -2,12 +2,15 @@ import hashlib
 import pickle
 import os
 from pathlib import Path
+import typing as ty
 
 from gi.repository import Gio, GLib
+from gi.repository import GdkPixbuf
 
 from kupfer import pretty
 from kupfer import puid
 from kupfer import conspickle
+from kupfer.obj.base import KupferObject
 
 KUPFER_COMMAND_SHEBANG = b"#!/usr/bin/env kupfer-exec\n"
 
@@ -16,7 +19,7 @@ class ExecutionError(Exception):
     pass
 
 
-def parse_kfcom_file(filepath: str):
+def parse_kfcom_file(filepath: str) -> ty.Tuple[ty.Any, ...]:
     """Extract the serialized command inside @filepath
 
     The file must be executable (comparable to a shell script)
@@ -44,11 +47,11 @@ def parse_kfcom_file(filepath: str):
         id_ = conspickle.BasicUnpickler.loads(data)
         command_object = puid.resolve_unique_id(id_)
     except pickle.UnpicklingError as err:
-        raise ExecutionError(f"Could not parse: {err}")
-    except Exception:
+        raise ExecutionError(f"Could not parse: {err}") from err
+    except Exception as err:
         raise ExecutionError(
             f'"{os.path.basename(filepath)}" is not a saved command'
-        )
+        ) from err
 
     if command_object is None:
         raise ExecutionError(
@@ -58,22 +61,22 @@ def parse_kfcom_file(filepath: str):
 
     try:
         return tuple(command_object.object)
-    except (AttributeError, TypeError):
+    except (AttributeError, TypeError) as exe:
         raise ExecutionError(
             f'"{os.path.basename(filepath)}" is not a saved command'
-        )
+        ) from exe
     finally:
         GLib.idle_add(update_icon, command_object, filepath)
 
 
-def save_to_file(command_leaf, filename):
+def save_to_file(command_leaf: ty.Any, filename: str) -> None:
     ofd = os.open(filename, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o777)
     with os.fdopen(ofd, "wb") as wfile:
         wfile.write(KUPFER_COMMAND_SHEBANG)
         pickle.dump(puid.get_unique_id(command_leaf), wfile, protocol=3)
 
 
-def _write_thumbnail(gfile, pixbuf):
+def _write_thumbnail(gfile: Gio.File, pixbuf: GdkPixbuf.Pixbuf) -> Path:
     uri = gfile.get_uri()
     hashname = hashlib.md5(uri.encode("utf-8")).hexdigest()
     thumb_dir = Path("~/.thumbnails/normal").expanduser()
@@ -83,7 +86,7 @@ def _write_thumbnail(gfile, pixbuf):
     return thumb_filename
 
 
-def update_icon(kobj, filepath):
+def update_icon(kobj: KupferObject, filepath: str) -> None:
     "Give @filepath a custom icon taken from @kobj"
     icon_key = "metadata::custom-icon"
 

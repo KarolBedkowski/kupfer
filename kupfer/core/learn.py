@@ -7,6 +7,7 @@ import typing as ty
 from kupfer import config
 from kupfer import conspickle
 from kupfer import pretty
+from kupfer.obj.base import Leaf
 
 _MNEMONICS_FILENAME = "mnemonics.pickle"
 _CORRELATION_KEY = "kupfer.bonus.correlation"
@@ -16,7 +17,8 @@ _DEFAULT_ACTIONS = {
     "<builtin.AppLeaf gnome-terminal>": "<builtin.LaunchAgain>",
     "<builtin.AppLeaf xfce4-terminal>": "<builtin.LaunchAgain>",
 }
-_FAVORITES = set()
+
+_FAVORITES: ty.Set[str] = set()
 
 
 class Mnemonics:
@@ -25,22 +27,22 @@ class Mnemonics:
     as well as the total count
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.mnemonics: ty.Dict[str, int] = {}
         self.count: int = 0
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         mnm = "".join(f"{m}: {c}, " for m, c in self.mnemonics.items())
         return f"<{self.__class__.__name__} {self.count} {mnm}>"
 
-    def increment(self, mnemonic=None):
+    def increment(self, mnemonic: ty.Optional[str] = None) -> None:
         if mnemonic:
             mcount = self.mnemonics.get(mnemonic, 0)
             self.mnemonics[mnemonic] = mcount + 1
 
         self.count += 1
 
-    def decrement(self):
+    def decrement(self) -> None:
         """Decrement total count and the least mnemonic"""
         if self.mnemonics:
             key = min(self.mnemonics, key=lambda k: self.mnemonics[k])
@@ -51,7 +53,7 @@ class Mnemonics:
 
         self.count = max(self.count - 1, 0)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self.count > 0
 
     def get_count(self) -> int:
@@ -63,22 +65,26 @@ class Mnemonics:
 
 class Learning:
     @classmethod
-    def _unpickle_register(cls, pickle_file):
+    def unpickle_register(
+        cls, pickle_file: str
+    ) -> ty.Optional[ty.Dict[str, ty.Any]]:
         try:
             pfile = Path(pickle_file).read_bytes()
             data = conspickle.ConservativeUnpickler.loads(pfile)
             assert isinstance(data, dict), "Stored object not a dict"
             pretty.print_debug(__name__, f"Reading from {pickle_file}")
+            return data
         except OSError:
-            return None
+            pass
         except (pickle.PickleError, Exception) as exc:
-            data = None
             pretty.print_error(__name__, f"Error loading {pickle_file}: {exc}")
 
-        return data
+        return None
 
     @classmethod
-    def _pickle_register(cls, reg, pickle_file):
+    def pickle_register(
+        cls, reg: ty.Dict[str, ty.Any], pickle_file: str
+    ) -> bool:
         ## Write to tmp then rename over for atomicity
         tmp_pickle_file = f"{pickle_file}.{os.getpid()}"
         pretty.print_debug(__name__, f"Saving to {pickle_file}")
@@ -89,7 +95,8 @@ class Learning:
         return True
 
 
-_REGISTER: ty.Dict[str, Mnemonics] = {}
+# under _CORRELATION_KEY is {str:str}, other keys keeps Mnemonics
+_REGISTER: ty.Dict[str, ty.Union[Mnemonics, ty.Dict[str, str]]] = {}
 
 
 def record_search_hit(obj: ty.Any, key: str = "") -> None:
@@ -98,10 +105,12 @@ def record_search_hit(obj: ty.Any, key: str = "") -> None:
     search term @key recording
     """
     name = repr(obj)
-    if name not in _REGISTER:
-        _REGISTER[name] = Mnemonics()
+    mns = _REGISTER.get(name)
+    if not mns:
+        mns = _REGISTER[name] = Mnemonics()
 
-    _REGISTER[name].increment(key)
+    assert isinstance(mns, Mnemonics)
+    mns.increment(key)
 
 
 def get_record_score(obj: ty.Any, key: str = "") -> float:
@@ -115,6 +124,7 @@ def get_record_score(obj: ty.Any, key: str = "") -> float:
         return fav
 
     mns = _REGISTER[name]
+    assert isinstance(mns, Mnemonics)
     if not key:
         cnt = mns.get_count()
         return fav + 50 * (1 - 1.0 / (cnt + 1))
@@ -127,48 +137,54 @@ def get_record_score(obj: ty.Any, key: str = "") -> float:
     return fav + mnscore
 
 
-def get_correlation_bonus(obj, for_leaf):
+def get_correlation_bonus(obj: Leaf, for_leaf: Leaf) -> int:
     """
     Get the bonus rank for @obj when used with @for_leaf
     """
-    if _REGISTER.setdefault(_CORRELATION_KEY, {}).get(repr(for_leaf)) == repr(
-        obj
-    ):
+    rval = _REGISTER[_CORRELATION_KEY]
+    assert isinstance(rval, dict)
+    if rval.get(repr(for_leaf)) == repr(obj):
         return 50
 
     return 0
 
 
-def set_correlation(obj, for_leaf):
+def set_correlation(obj: Leaf, for_leaf: Leaf) -> None:
     """
     Register @obj to get a bonus when used with @for_leaf
     """
-    _REGISTER.setdefault(_CORRELATION_KEY, {})[repr(for_leaf)] = repr(obj)
+    rval = _REGISTER[_CORRELATION_KEY]
+    assert isinstance(rval, dict)
+    rval[repr(for_leaf)] = repr(obj)
 
 
-def _get_mnemonic_items(in_register):
+def _get_mnemonic_items(
+    in_register: ty.Dict[str, ty.Any]
+) -> ty.List[ty.Tuple[str, ty.Any]]:
     return [(k, v) for k, v in in_register.items() if k != _CORRELATION_KEY]
 
 
-def get_object_has_affinity(obj):
+def get_object_has_affinity(obj: Leaf) -> bool:
     """
     Return if @obj has any positive score in the register
     """
+    robj = repr(obj)
     return bool(
-        _REGISTER.get(repr(obj))
-        or _REGISTER.get(_CORRELATION_KEY, {}).get(repr(obj))
+        _REGISTER.get(robj)
+        or _REGISTER[_CORRELATION_KEY].get(robj)  # type: ignore
     )
 
 
-def erase_object_affinity(obj):
+def erase_object_affinity(obj: Leaf) -> None:
     """
     Remove all track of affinity for @obj
     """
-    _REGISTER.pop(repr(obj), None)
-    _REGISTER.get(_CORRELATION_KEY, {}).pop(repr(obj), None)
+    robj = repr(obj)
+    _REGISTER.pop(robj, None)
+    _REGISTER[_CORRELATION_KEY].pop(robj, None)  # type: ignore
 
 
-def _prune_register():
+def _prune_register() -> None:
     """
     Remove items with chance (len/25000)
 
@@ -186,12 +202,12 @@ def _prune_register():
     alpha = flux / goalitems**2
 
     chance = min(0.1, len(_REGISTER) * alpha)
-    for leaf, mn in _get_mnemonic_items(_REGISTER):
+    for leaf, mne in _get_mnemonic_items(_REGISTER):
         if rand() > chance:
             continue
 
-        mn.decrement()
-        if not mn:
+        mne.decrement()
+        if not mne:
             _REGISTER.pop(leaf)
 
     pretty.print_debug(
@@ -199,7 +215,7 @@ def _prune_register():
     )
 
 
-def load():
+def load() -> None:
     """
     Load learning database
     """
@@ -207,7 +223,7 @@ def load():
 
     filepath = config.get_config_file(_MNEMONICS_FILENAME)
     if filepath:
-        _REGISTER = Learning._unpickle_register(filepath)
+        _REGISTER = Learning.unpickle_register(filepath)  # type: ignore
 
     if not _REGISTER:
         _REGISTER = {}
@@ -216,7 +232,7 @@ def load():
         _REGISTER[_CORRELATION_KEY] = _DEFAULT_ACTIONS
 
 
-def save():
+def save() -> None:
     """
     Save the learning record
     """
@@ -228,16 +244,17 @@ def save():
         _prune_register()
 
     filepath = config.save_config_file(_MNEMONICS_FILENAME)
-    Learning._pickle_register(_REGISTER, filepath)
+    assert filepath
+    Learning.pickle_register(_REGISTER, filepath)
 
 
-def add_favorite(obj):
+def add_favorite(obj: Leaf) -> None:
     _FAVORITES.add(repr(obj))
 
 
-def remove_favorite(obj):
+def remove_favorite(obj: Leaf) -> None:
     _FAVORITES.discard(repr(obj))
 
 
-def is_favorite(obj):
+def is_favorite(obj: Leaf) -> bool:
     return repr(obj) in _FAVORITES

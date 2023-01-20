@@ -2,6 +2,7 @@ import urllib.parse
 from urllib.parse import urlparse as _urlparse
 from urllib.parse import urlunparse as _urlunparse
 from contextlib import suppress
+import typing as ty
 
 from kupfer import pretty
 
@@ -62,17 +63,17 @@ class qfurl:
         else:
             self.url = url
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.url
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.url)
 
-    def __eq__(self, other):
+    def __eq__(self, other: ty.Any) -> bool:
         return self.reduce_url(self.url) == self.reduce_url(other.url)
 
     @classmethod
-    def reduce_url(cls, url):
+    def reduce_url(cls, url: str) -> str:
         """
         >>> url = "qpfer://mother/qfid#module_and_type_hint"
         >>> qfurl.reduce_url(url)
@@ -81,7 +82,7 @@ class qfurl:
         return urllib.parse.urldefrag(url)[0].replace("///", "", 1)
 
     @classmethod
-    def _parts_mother_id_typename(cls, url):
+    def _parts_mother_id_typename(cls, url: str) -> ty.Tuple[str, str, str]:
         """
         >>> murl = "qpfer://mother/qfid#module_and_type_hint"
         >>> qfurl._parts_mother_id_typename(murl)
