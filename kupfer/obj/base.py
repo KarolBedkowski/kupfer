@@ -226,7 +226,7 @@ class Leaf(KupferObject):
         """Represented object @obj and its @name"""
         super().__init__(name)
         self.object = obj
-        self._content_source: ty.Any = None
+        self._content_source: ty.Union[_NonpersistentToken, Source, None] = None
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -241,10 +241,10 @@ class Leaf(KupferObject):
     def has_content(self) -> bool:
         return bool(self._content_source)
 
-    def content_source(self, alternate: bool = False) -> ty.Any:
+    def content_source(self, alternate: bool = False) -> ty.Optional[Source]:
         """Content of leaf. it MAY alter behavior with @alternate,
         as easter egg/extra mode"""
-        return self._content_source and self._content_source.object
+        return self._content_source and self._content_source.object # type: ignore
 
     def get_actions(self) -> ty.Iterable[Action]:
         """Default (builtin) actions for this Leaf"""
