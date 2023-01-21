@@ -2,12 +2,14 @@ import fnmatch
 import io
 import pickle
 import sys
+import typing as ty
 
-class universalset :
-    def __contains__(self, item):
+class UniversalSet:
+    def __contains__(self, item: ty.Any) -> bool:
         return True
 
-class ConservativeUnpickler (pickle.Unpickler):
+
+class ConservativeUnpickler(pickle.Unpickler):
     """An Unpickler that refuses to import new modules
 
     >>> import pickle
@@ -30,31 +32,37 @@ class ConservativeUnpickler (pickle.Unpickler):
         ...
     UnpicklingError: Refusing to load module kupfer.obj.base
     """
-    safe_modules = {
-        "builtins" : {"set", "sum", "object"},
-        "copy_reg" : {"_reconstructor"},
-        "kupfer.*" : universalset(),
+
+    safe_modules : ty.Dict[str, ty.Any] ={
+        "builtins": {"set", "sum", "object"},
+        "copy_reg": {"_reconstructor"},
+        "kupfer.*": UniversalSet(),
     }
+
     @classmethod
-    def is_safe_symbol(cls, module, name):
-        for pattern in cls.safe_modules:
+    def is_safe_symbol(cls, module: str, name: str) -> bool:
+        for pattern, modules in cls.safe_modules.items():
             if fnmatch.fnmatchcase(module, pattern):
-                return name in cls.safe_modules[pattern]
+                return name in modules
+
         return False
 
-    def find_class(self, module, name):
+    def find_class(self, module: str, name: str) -> ty.Type[ty.Any]:
         if module not in sys.modules:
             raise pickle.UnpicklingError(f"Refusing to load module {module}")
+
         if not self.is_safe_symbol(module, name):
             raise pickle.UnpicklingError(f"Refusing unsafe {module}.{name}")
-        return pickle.Unpickler.find_class(self, module, name)
+
+        return pickle.Unpickler.find_class(self, module, name)  # type: ignore
 
     @classmethod
-    def loads(cls, pickledata):
+    def loads(cls, pickledata: bytes) -> ty.Any:
         unpickler = cls(io.BytesIO(pickledata))
         return unpickler.load()
 
-class BasicUnpickler (ConservativeUnpickler):
+
+class BasicUnpickler(ConservativeUnpickler):
     """An Unpickler that can only unpickle persistend ids and select builtins
 
     >>> import pickle
@@ -66,12 +74,14 @@ class BasicUnpickler (ConservativeUnpickler):
     UnpicklingError: Refusing unsafe kupfer.obj.objects.FileLeaf
     """
 
-    safe_modules = {
-        "__builtin__" : {"object"},
-        "copy_reg" : {"_reconstructor"},
-        "kupfer.puid" : {"SerializedObject"},
+    safe_modules : ty.Dict[str, ty.Set[str]] = {
+        "__builtin__": {"object"},
+        "copy_reg": {"_reconstructor"},
+        "kupfer.puid": {"SerializedObject"},
     }
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
