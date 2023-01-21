@@ -9,14 +9,18 @@ from kupfer import puid
 from kupfer.obj.base import Leaf, Action, Source, InvalidDataError
 from kupfer.obj.objects import Perform, RunnableLeaf, TextLeaf
 
-class TimedPerform (Perform):
-    """A timed (delayed) version of Run (Perform) """
-    action_accelerator = None
-    def __init__(self):
-        Action.__init__(self, _("Run after Delay..."))
+
+class TimedPerform(Perform):
+    """A timed (delayed) version of Run (Perform)"""
+
+    action_accelerator : ty.Optional[str] = None
+
+    def __init__(self) -> None:
+        super().__init__(self, _("Run after Delay..."))
 
     def activate(self, leaf, iobj, ctx):
         from kupfer import scheduler
+
         # make a timer that will fire when Kupfer exits
         interval = utils.parse_time_interval(iobj.object)
         pretty.print_debug(__name__, f"Run {leaf} in {interval} seconds")
@@ -26,6 +30,7 @@ class TimedPerform (Perform):
 
     def requires_object(self):
         return True
+
     def object_types(self):
         yield TextLeaf
 
@@ -36,8 +41,10 @@ class TimedPerform (Perform):
     def get_description(self):
         return _("Perform command after a specified time interval")
 
-class ComposedLeaf (RunnableLeaf):
+
+class ComposedLeaf(RunnableLeaf):
     serializable = 1
+
     def __init__(self, obj, action, iobj=None):
         object_ = (obj, action, iobj)
         # A slight hack: We remove trailing ellipsis and whitespace
@@ -78,21 +85,26 @@ class ComposedLeaf (RunnableLeaf):
         obj, action, iobj = self.object
         return icons.ComposedIcon(obj.get_icon(), action.get_icon())
 
-class _MultipleLeafContentSource (Source):
+
+class _MultipleLeafContentSource(Source):
     def __init__(self, leaf):
         Source.__init__(self, str(leaf))
         self.leaf = leaf
+
     def get_items(self):
         return self.leaf.object
 
-class MultipleLeaf (Leaf):
+
+class MultipleLeaf(Leaf):
     """
     A Leaf for the direct representation of many leaves. It is not
     a container or "source", it *is* the many leaves itself.
 
     The represented object is a sequence of Leaves
     """
+
     serializable = 1
+
     def __init__(self, obj, name=_("Multiple Objects")):
         # modifying the list of objects is strictly forbidden
         robj = list(datatools.UniqueIterator(obj))
@@ -124,6 +136,7 @@ class MultipleLeaf (Leaf):
 
     def get_description(self):
         n = len(self.object)
-        return ngettext("%s object", "%s objects", n) % (n, )
+        return ngettext("%s object", "%s objects", n) % (n,)
+
     def get_icon_name(self):
         return "kupfer-object-multiple"

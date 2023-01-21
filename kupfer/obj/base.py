@@ -271,8 +271,8 @@ class Action(KupferObject):
         quickly
     '''
 
-    fallback_icon_name = "kupfer-execute"
-    action_accelerator = None
+    fallback_icon_name: str = "kupfer-execute"
+    action_accelerator: ty.Optional[str] = None
 
     def __hash__(self) -> int:
         return hash(repr(self))
@@ -289,11 +289,11 @@ class Action(KupferObject):
         return ""
 
     def activate(
-        self, obj: ty.Any, iobj: ty.Any = None, ctx: ty.Any = None
+        self, leaf: ty.Any, iobj: ty.Any = None, ctx: ty.Any = None
     ) -> None:
         """Use this action with @obj and @iobj
 
-        @obj:  the direct object (Leaf)
+        @leaf:  the direct object (Leaf)
         @iobj: the indirect object (Leaf), if ``self.requires_object``
                returns ``False``
 
@@ -335,7 +335,7 @@ class Action(KupferObject):
         """
         return ()
 
-    def valid_for_item(self, item: Leaf) -> bool:
+    def valid_for_item(self, leaf: Leaf) -> bool:
         """Whether action can be used with exactly @item"""
         return True
 
@@ -527,7 +527,11 @@ class TextSource(KupferObject):
 
     this is a psedo Source"""
 
-    def __init__(self, name: ty.Optional[str]=None, placeholder: ty.Optional[str]=None)->None:
+    def __init__(
+        self,
+        name: ty.Optional[str] = None,
+        placeholder: ty.Optional[str] = None,
+    ) -> None:
         """
         name: Localized name
         placeholder: Localized placeholder when it has no input
@@ -538,7 +542,7 @@ class TextSource(KupferObject):
         KupferObject.__init__(self, name)
         self.placeholder = placeholder
 
-    def __eq__(self, other: ty.Any) ->bool:
+    def __eq__(self, other: ty.Any) -> bool:
         return type(self) is type(other) and repr(self).__eq__(repr(other))
 
     def __hash__(self) -> int:
@@ -568,13 +572,13 @@ class TextSource(KupferObject):
         """A seq of the types of items it provides"""
         yield Leaf
 
-    def get_icon_name(self)->str:
+    def get_icon_name(self) -> str:
         return "edit-select-all"
 
-    def get_search_text(self)->str:
+    def get_search_text(self) -> str:
         return self.placeholder or _("Text")
 
-    def get_empty_text(self)->str:
+    def get_empty_text(self) -> str:
         return self.placeholder or _("Text")
 
 

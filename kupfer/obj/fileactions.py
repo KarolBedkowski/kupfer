@@ -1,4 +1,5 @@
 import os
+import typing as ty
 
 from gi.repository import Gio
 
@@ -16,7 +17,7 @@ def is_good_executable(fileleaf):
     ctype, uncertain = Gio.content_type_guess(fileleaf.object, None)
     return uncertain or Gio.content_type_can_be_executable(ctype)
 
-def get_actions_for_file(fileleaf):
+def get_actions_for_file(fileleaf) -> ty.List[Action]:
     acts = [GetParent(), ]
     if fileleaf.is_dir():
         acts.append(OpenTerminal())
