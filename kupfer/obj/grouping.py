@@ -9,13 +9,15 @@ import weakref
 from collections import defaultdict
 
 from kupfer.objects import Leaf, Source
-from kupfer import utils, pretty
+from kupfer import utils
 
 __author__ = (
     "Karol Będkowski <karol.bedkowsk+gh@gmail.com>, "
     "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 )
 
+
+Slots = ty.Optional[ty.Dict[str, ty.Any]]
 
 class GroupingLeaf(Leaf):
     """
@@ -29,13 +31,13 @@ class GroupingLeaf(Leaf):
     None will not be grouped with others.
     """
 
-    grouping_slots = ()
+    grouping_slots : ty.Tuple[str, ...] = ()
 
     def __init__(self, obj: Leaf, name: str) -> None:
         Leaf.__init__(self, obj, name)
         self.links = [self]
 
-    def slots(self) -> ty.Optional[ty.Dict[str, ty.Any]]:
+    def slots(self) -> Slots:
         return self.object  # type: ignore
 
     def has_content(self) -> bool:

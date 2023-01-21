@@ -7,7 +7,7 @@ Main definition and *constructor* classes.
 
 import typing as ty
 
-from kupfer.obj.grouping import GroupingLeaf
+from kupfer.obj.grouping import GroupingLeaf, Slots
 
 __author__ = (
     "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>, "
@@ -42,7 +42,7 @@ class HostServiceLeaf(HostLeaf):
         port: ty.Optional[str] = None,
         user: ty.Optional[str] = None,
         password: ty.Optional[str] = None,
-        slots: ty.Optional[ty.Dict[str, ty.Any]] = None,
+        slots: Slots = None,
     ) -> None:
         _slots = {
             HOST_NAME_KEY: name,

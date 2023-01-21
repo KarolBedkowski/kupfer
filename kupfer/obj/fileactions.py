@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import typing as ty
 
@@ -6,30 +8,41 @@ from gi.repository import Gio
 from kupfer import utils
 from kupfer import launch
 
-from kupfer.obj.base import Action, OperationError
+from kupfer.obj.base import Action, OperationError, Leaf
 
-class NoDefaultApplicationError (OperationError):
+
+class NoDefaultApplicationError(OperationError):
     pass
+
 
 def is_good_executable(fileleaf):
     if not fileleaf._is_executable():
         return False
+
     ctype, uncertain = Gio.content_type_guess(fileleaf.object, None)
     return uncertain or Gio.content_type_can_be_executable(ctype)
 
-def get_actions_for_file(fileleaf) -> ty.List[Action]:
-    acts = [GetParent(), ]
+
+def get_actions_for_file(fileleaf: Leaf) -> ty.Iterator[Action]:
+    # fileleaf is FileLeaf; FIXME: circular imports
+    yield Open()
+    yield GetParent()
+
     if fileleaf.is_dir():
-        acts.append(OpenTerminal())
+        yield OpenTerminal()
+
     elif fileleaf.is_valid():
         if is_good_executable(fileleaf):
-            acts.extend((Execute(), Execute(in_terminal=True)))
-    return [Open()] + acts
+            yield Execute()
+            yield Execute(in_terminal=True)
 
-class Open (Action):
-    """ Open with default application """
+
+class Open(Action):
+    """Open with default application"""
+
     action_accelerator = "o"
     rank_adjust = 5
+
     def __init__(self, name=_("Open")):
         Action.__init__(self, name)
 
@@ -37,22 +50,27 @@ class Open (Action):
     def default_application_for_leaf(cls, leaf):
         content_attr = Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE
         gfile = leaf.get_gfile()
-        info = gfile.query_info(content_attr, Gio.FileQueryInfoFlags.NONE, None)
+        info = gfile.query_info(
+            content_attr, Gio.FileQueryInfoFlags.NONE, None
+        )
         content_type = info.get_attribute_string(content_attr)
         def_app = Gio.app_info_get_default_for_type(content_type, False)
         if not def_app:
             raise NoDefaultApplicationError(
-                    (_("No default application for %(file)s (%(type)s)") %
-                     {"file": str(leaf), "type": content_type}) + "\n" +
-                    _('Please use "%s"') % _("Set Default Application...")
+                (
+                    _("No default application for %(file)s (%(type)s)")
+                    % {"file": str(leaf), "type": content_type}
                 )
+                + "\n"
+                + _('Please use "%s"') % _("Set Default Application...")
+            )
         return def_app
 
     def wants_context(self):
         return True
 
     def activate(self, leaf, ctx):
-        self.activate_multiple((leaf, ), ctx)
+        self.activate_multiple((leaf,), ctx)
 
     def activate_multiple(self, objects, ctx):
         appmap = {}
@@ -65,16 +83,21 @@ class Open (Action):
 
         for id_, leaves in leafmap.items():
             app = appmap[id_]
-            launch.launch_application(app, paths=[L.object for L in leaves],
-                                      activate=False,
-                                      screen=ctx and ctx.environment.get_screen())
+            launch.launch_application(
+                app,
+                paths=[L.object for L in leaves],
+                activate=False,
+                screen=ctx and ctx.environment.get_screen(),
+            )
 
     def get_description(self):
         return _("Open with default application")
 
-class GetParent (Action):
+
+class GetParent(Action):
     action_accelerator = "p"
     rank_adjust = -5
+
     def __init__(self, name=_("Get Parent Folder")):
         super().__init__(name)
 
@@ -84,6 +107,7 @@ class GetParent (Action):
     def activate(self, leaf):
         # Avoid cyclical dep on module level
         from kupfer.objects import FileLeaf
+
         fileloc = leaf.object
         parent = os.path.normpath(os.path.join(fileloc, os.path.pardir))
         return FileLeaf(parent)
@@ -94,8 +118,10 @@ class GetParent (Action):
     def get_icon_name(self):
         return "folder-open"
 
-class OpenTerminal (Action):
+
+class OpenTerminal(Action):
     action_accelerator = "t"
+
     def __init__(self, name=_("Open Terminal Here")):
         super().__init__(name)
 
@@ -110,12 +136,16 @@ class OpenTerminal (Action):
 
     def get_description(self):
         return _("Open this location in a terminal")
+
     def get_icon_name(self):
         return "utilities-terminal"
 
-class Execute (Action):
-    """ Execute executable file (FileLeaf) """
+
+class Execute(Action):
+    """Execute executable file (FileLeaf)"""
+
     rank_adjust = 10
+
     def __init__(self, in_terminal=False, quoted=True):
         name = _("Run in Terminal") if in_terminal else _("Run (Execute)")
         super().__init__(name)
