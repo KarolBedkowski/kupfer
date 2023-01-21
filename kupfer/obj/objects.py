@@ -26,7 +26,7 @@ from kupfer.kupferstring import tounicode
 from kupfer.version import DESKTOP_ID
 
 
-def ConstructFileLeafTypes():
+def ConstructFileLeafTypes() -> ty.Iterator[ty.Type[Leaf]]:
     """Return a seq of the Leaf types returned by ConstructFileLeaf"""
     yield FileLeaf
     yield AppLeaf

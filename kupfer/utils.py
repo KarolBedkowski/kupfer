@@ -1,3 +1,4 @@
+import typing as ty
 import itertools
 import os
 from os import path as os_path
@@ -66,7 +67,9 @@ def get_dirlist(folder, depth=0, include=None, exclude=None):
 
     return paths
 
-def locale_sort(seq, key=str):
+_SortItem = ty.TypeVar("_SortItem")
+
+def locale_sort(seq: ty.Iterable[_SortItem], key: ty.Callable[[_SortItem], ty.Any]=str) -> ty.List[_SortItem]:
     """Return @seq of objects with @key function as a list sorted
     in locale lexical order
 

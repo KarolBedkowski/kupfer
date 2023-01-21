@@ -1,6 +1,7 @@
 from time import time
 import os
 import pickle as pickle
+import typing as ty
 
 from gi.repository import GLib, Gio
 
@@ -36,7 +37,7 @@ default_associations = {
 }
 
 
-def application_id(app_info, desktop_file=None):
+def application_id(app_info, desktop_file:ty.Optional[str]=None)->str:
     """Return an application id (string) for GAppInfo @app_info"""
     app_id = app_info.get_id()
     if not app_id:
@@ -46,7 +47,7 @@ def application_id(app_info, desktop_file=None):
     return app_id
 
 def launch_application(app_info, files=(), uris=(), paths=(), track=True,
-                       activate=True, desktop_file=None, screen=None):
+                       activate=True, desktop_file=None, screen=None)->bool:
     """
     Launch @app_rec correctly, using a startup notification
 
@@ -217,7 +218,7 @@ class ApplicationsMatcherService (pretty.OutputMixin):
             return None
         return self.register[app_id]
 
-    def application_is_running(self, app_id):
+    def application_is_running(self, app_id: str) ->bool:
         for w in self._get_wnck_screen_windows_stacked():
             if (w.get_application() and self._is_match(app_id, w) and
                 w.get_window_type() == Wnck.WindowType.NORMAL):
@@ -316,7 +317,7 @@ class ApplicationsMatcherService (pretty.OutputMixin):
                 wspc.activate(evttime)
             window.activate_transient(evttime)
 
-    def application_close_all(self, app_id):
+    def application_close_all(self, app_id: str) -> None:
         application_windows = self.get_application_windows(app_id)
         evttime = uievents.current_event_time()
         for w in application_windows:

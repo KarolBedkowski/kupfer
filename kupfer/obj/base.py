@@ -2,13 +2,14 @@ from __future__ import annotations
 import builtins
 import typing as ty
 
+from gi.repository import GdkPixbuf
+
 from kupfer import datatools
 from kupfer import icons
 from kupfer import pretty
 from kupfer.utils import locale_sort
 from kupfer.kupferstring import tounicode, tofolded
 
-from gi.repository import GdkPixbuf
 
 __all__ = [
     "Error",
@@ -503,7 +504,7 @@ class Source(KupferObject, pretty.OutputMixin):
     def get_parent(self) -> ty.Optional[KupferObject]:
         return None
 
-    def get_leaf_repr(self) -> ty.Optional[KupferObject]:
+    def get_leaf_repr(self) -> ty.Optional[Leaf]:
         """Return, if appicable, another object
         to take the source's place as Leaf"""
         return None

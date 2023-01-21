@@ -1,3 +1,4 @@
+import typing as ty
 import locale
 from unicodedata import normalize, category
 
@@ -26,12 +27,13 @@ def _folditems():
 
 folding_table = dict(_folditems())
 
-def tounicode(utf8str):
+def tounicode(utf8str: ty.Union[str, bytes]) -> str:
     """Return `unicode` from UTF-8 encoded @utf8str
     This is to use the same error handling etc everywhere
     """
     if isinstance(utf8str, str):
         return utf8str
+
     return utf8str.decode("UTF-8", "replace") if utf8str is not None else ""
 
 def toutf8(ustr):

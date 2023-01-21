@@ -1,4 +1,5 @@
 from contextlib import suppress
+import typing as ty
 
 from gi.repository import Gio, GdkPixbuf, Gtk
 from gi.repository.GLib import GError
@@ -207,7 +208,7 @@ def get_pixbuf_from_file(thumb_path, width=-1, height=-1):
         pretty.print_debug(__name__, "get_pixbuf_from_file file:", thumb_path,
             "error:", e)
 
-def get_gicon_for_file(uri):
+def get_gicon_for_file(uri: str) -> ty.Optional[GdkPixbuf]:
     """
     Return a GIcon representing the file at
     the @uri, which can be *either* and uri or a path
