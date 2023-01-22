@@ -121,7 +121,7 @@ def get_plugin_desc() -> str:
 
 
 _IMPORTED_PLUGINS: ty.Dict[str, ty.Any] = {}
-_PLUGIN_HOOKS: ty.Dict[str, ty.Any] = {}
+_PLUGIN_HOOKS: ty.Dict[str, tuple[ty.Callable[..., None], ty.Any]] = {}
 
 
 class LoadingError(ImportError):
@@ -426,7 +426,7 @@ def unimport_plugin(plugin_name: str):
 
 
 def register_plugin_unimport_hook(
-    plugin_name: str, callback: ty.Callable[[ty.Any], None], *args: ty.Any
+    plugin_name: str, callback: ty.Callable[..., None], *args: ty.Any
 ) -> None:
     if plugin_name not in _IMPORTED_PLUGINS:
         raise ValueError(f"No such plugin {plugin_name}")

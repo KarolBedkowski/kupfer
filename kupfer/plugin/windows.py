@@ -6,7 +6,7 @@ __author__ = ""
 
 from gi.repository import Wnck
 
-from kupfer.objects import Leaf, Action, Source, NotAvailableError
+from kupfer.objects import Leaf, Action, Source
 from kupfer.weaklib import gobject_connect_weakly
 
 

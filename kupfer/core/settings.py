@@ -10,7 +10,7 @@ from gi.repository import GLib, GObject
 
 from kupfer import config, pretty, scheduler
 
-_AltValidator = ty.Callable[[str], bool]
+_AltValidator = ty.Callable[[dict[str, ty.Any]], bool]
 
 
 def strbool(value: ty.Any, default: bool = False) -> bool:
@@ -580,8 +580,11 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
 
         return alt or next(iter(alternatives.values()), None)
 
-    def _update_alternatives(
-        self, category_key: str, alternatives: ty.Any, validator: _AltValidator
+    def update_alternatives(
+        self,
+        category_key: str,
+        alternatives: dict[str, ty.Any],
+        validator: _AltValidator,
     ) -> None:
         self._alternatives[category_key] = alternatives
         self._alternative_validators[category_key] = validator
