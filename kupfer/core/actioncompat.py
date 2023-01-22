@@ -20,7 +20,7 @@ def action_valid_for_item(action: Action, leaf: Leaf) -> bool:
 
 def actions_for_item(
     leaf: Leaf, sourcecontroller: SourceController
-) -> ty.Optional[ty.Iterable[Action]]:
+) -> ty.Iterable[Action]:
     if leaf is None:
         return []
 
@@ -33,12 +33,12 @@ def actions_for_item(
         else:
             actions.intersection_update(l_actions)
 
-    return actions
+    return actions or []
 
 
 def iobject_source_for_action(
     action: Action, for_item: Leaf
-) -> ty.Tuple[ty.Optional[Source], bool]:
+) -> tuple[ty.Optional[Source], bool]:
     """
     Return (src, use_catalog)
 
@@ -50,6 +50,8 @@ def iobject_source_for_action(
         return action.object_source(leaf), action.object_source_and_catalog(
             leaf
         )
+
+    return None, False
 
 
 FilteringFunction = ty.Callable[[ty.Iterable[ty.Any]], bool]

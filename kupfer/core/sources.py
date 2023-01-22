@@ -465,7 +465,7 @@ class SourceController(pretty.OutputMixin):
         if len(self.sources) == 1:
             (root_catalog,) = self.sources
         elif len(self.sources) > 1:
-            firstlevel = self._firstlevel
+            firstlevel = self.firstlevel
             root_catalog = sources.MultiSource(firstlevel)
         else:
             root_catalog = None
@@ -477,7 +477,7 @@ class SourceController(pretty.OutputMixin):
         self._pre_root = None
 
     @property
-    def _firstlevel(self) -> ty.List[Source]:
+    def firstlevel(self) -> ty.List[Source]:
         if self._pre_root:
             return self._pre_root
 

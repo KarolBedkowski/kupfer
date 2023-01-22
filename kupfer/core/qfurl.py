@@ -5,6 +5,7 @@ from contextlib import suppress
 import typing as ty
 
 from kupfer import pretty
+from kupfer.obj.base import Leaf, Source
 
 QFURL_SCHEME = "qpfer"
 
@@ -95,7 +96,9 @@ class qfurl:
         qfid = qfid.lstrip("/")
         return mother, qfid, typname
 
-    def resolve_in_catalog(self, catalog):
+    def resolve_in_catalog(
+        self, catalog: ty.Collection[Source]
+    ) -> ty.Optional[Leaf]:
         """Resolve self in a catalog of sources
 
         Return *immediately* on match found"""
@@ -112,7 +115,7 @@ class qfurl:
                 ):
                     continue
 
-            for obj in src.get_leaves():
+            for obj in src.get_leaves() or []:
                 if not hasattr(obj, "qf_id"):
                     continue
 
