@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import typing as ty
 
 from gi.repository import Gtk, Gdk, Gio, GLib
 
@@ -11,7 +12,7 @@ from kupfer import kupferstring
 from kupfer import pretty
 from kupfer import terminal
 
-__all__ = ['launch_app_info', 'spawn_app', 'spawn_app_id']
+__all__ = ["launch_app_info", "spawn_app", "spawn_app_id"]
 
 STARTUP_ENV = "DESKTOP_STARTUP_ID"
 
@@ -19,31 +20,43 @@ STARTUP_ENV = "DESKTOP_STARTUP_ID"
 # NOTE: GDK's startup notification things that we use
 #       are really only sending xmessages. (roughly).
 
-def debug_log(*args):
+
+def debug_log(*args: ty.Any) -> None:
     pretty.print_debug(__name__, *args)
+
+
 warning_log = debug_log
 
-def error_log(*args):
+
+def error_log(*args: ty.Any) -> None:
     pretty.print_error(__name__, *args)
-def exc_log():
+
+
+def exc_log() -> None:
     pretty.print_exc(__name__)
 
-class SpawnError (Exception):
+
+class SpawnError(Exception):
     "Error starting application"
 
-class ResourceLookupError (Exception):
+
+class ResourceLookupError(Exception):
     "Unable to find resource"
 
-class ResourceReadError (Exception):
+
+class ResourceReadError(Exception):
     "Unable to open resource"
 
-def gtk_to_unicode(gtkstring):
+
+def gtk_to_unicode(gtkstring: ty.AnyStr) -> str:
     """Return unicode for a GTK/GLib string (bytestring or unicode)"""
     if isinstance(gtkstring, str):
         return gtkstring
+
     return gtkstring.decode("UTF-8", "ignore")
 
-def find_desktop_file(desk_id):
+
+def find_desktop_file(desk_id: str) -> str:
     """Find file for @desk_id or raise ResourceLookupError
 
     Desktop files are found by appending /applications/ to
@@ -52,26 +65,27 @@ def find_desktop_file(desk_id):
     """
     if not desk_id:
         raise ResourceLookupError("Empty id")
+
     try:
-        return next(xdg.BaseDirectory.load_data_paths("applications", desk_id))
+        return next(xdg.BaseDirectory.load_data_paths("applications", desk_id))  # type: ignore
     except StopIteration:
         ## it was not found as an immediate child of the data paths,
         ## so we split by the hyphens and search deeper
         file_id = desk_id
-        directories = ['applications']
+        directories = ["applications"]
 
-        def lookup(path):
+        def lookup(path: list[str]) -> ty.Optional[str]:
             """Return location for @path if exists, else none"""
             return next(xdg.BaseDirectory.load_data_paths(*path), None)
 
-        def get_dir_id_depth(desk_id, depth):
+        def get_dir_id_depth(desk_id: str, depth: int) -> ty.Tuple[str, str]:
             "split 'hyph-example-id' at the nth hyphen"
-            parts = desk_id.split('-', depth)
-            return '-'.join(parts[:depth]), '-'.join(parts[depth:])
+            parts = desk_id.split("-", depth)
+            return "-".join(parts[:depth]), "-".join(parts[depth:])
 
-        while 1:
+        while True:
             ## try the first parts of the id to see if it matches a directory
-            for x in range(1,4):
+            for x in range(1, 4):
                 dirname, rest_id = get_dir_id_depth(file_id, x)
                 if rest_id and lookup(directories + [dirname]):
                     file_id = rest_id
@@ -80,12 +94,15 @@ def find_desktop_file(desk_id):
             else:
                 ## we did not reach break
                 break
+
             desktop_file_path = lookup(directories + [file_id])
             if desktop_file_path:
                 return desktop_file_path
+
     raise ResourceLookupError(f"Cannot locate '{desk_id}'")
 
-def read_desktop_info(desktop_file):
+
+def read_desktop_info(desktop_file: str) -> dict[str, str]:
     """
     Get the keys StartupNotify, Terminal, Exec, Path, Icon
     Return dict with bool and unicode values
@@ -95,8 +112,10 @@ def read_desktop_info(desktop_file):
         de = xdg.DesktopEntry.DesktopEntry(desktop_file)
     except xdg.Exceptions.Error:
         raise ResourceReadError
+
     if not de.getExec():
         raise ResourceReadError("Invalid data: empty Exec key")
+
     return {
         "Terminal": de.getTerminal(),
         "StartupNotify": de.getStartupNotify(),
@@ -106,7 +125,15 @@ def read_desktop_info(desktop_file):
         "Name": gtk_to_unicode(de.getName()),
     }
 
-def create_desktop_info(commandline, name, icon, work_dir, in_terminal, startup_notify):
+
+def create_desktop_info(
+    commandline: str,
+    name: str,
+    icon: str,
+    work_dir: str,
+    in_terminal: str,
+    startup_notify: str,
+) -> dict[str, str]:
     return {
         "Terminal": in_terminal,
         "StartupNotify": startup_notify,
@@ -148,6 +175,7 @@ def replace_format_specs(argv, location, desktop_info, gfilelist):
     """
     supports_single_file = False
     files_added_at_end = False
+
     class Flags:
         did_see_small_f = False
         did_see_large_f = False
@@ -168,7 +196,7 @@ def replace_format_specs(argv, location, desktop_info, gfilelist):
 
     def replace_single_code(key):
         "Handle all embedded format codes, including those to be removed"
-        deprecated = {'%d', '%D', '%n', '%N', '%v', '%m'}
+        deprecated = {"%d", "%D", "%n", "%N", "%v", "%m"}
         if key in deprecated:
             return ""
 
@@ -203,7 +231,9 @@ def replace_format_specs(argv, location, desktop_info, gfilelist):
                 warning_log("Warning, multiple file format specs!")
                 return True, []
             Flags.did_see_large_f = True
-            return True, list(filter(bool,[get_file_path(f) for f in gfilelist]))
+            return True, list(
+                filter(bool, [get_file_path(f) for f in gfilelist])
+            )
 
         if elem == "%i":
             if desktop_info["Icon"]:
@@ -221,10 +251,11 @@ def replace_format_specs(argv, location, desktop_info, gfilelist):
         """
         if not s:
             return s
+
         def _inner():
             it = iter(zip(s, s[1:]))
             for cur, nex in it:
-                key = cur+nex
+                key = cur + nex
                 rep = repfunc(key)
                 if rep is not None:
                     yield rep
@@ -236,7 +267,8 @@ def replace_format_specs(argv, location, desktop_info, gfilelist):
                 else:
                     yield cur
             yield s[-1]
-        return ''.join(_inner())
+
+        return "".join(_inner())
 
     new_argv = []
     for x in argv:
@@ -254,11 +286,16 @@ def replace_format_specs(argv, location, desktop_info, gfilelist):
 
     if len(gfilelist) > 1 and not Flags.did_see_large_f:
         supports_single_file = True
-    if not Flags.did_see_small_f and not Flags.did_see_large_f and len(gfilelist):
+    if (
+        not Flags.did_see_small_f
+        and not Flags.did_see_large_f
+        and len(gfilelist)
+    ):
         files_added_at_end = True
         new_argv.append(get_next_file_path())
 
     return supports_single_file, files_added_at_end, new_argv
+
 
 def _file_for_app_info(app_info):
     try:
@@ -267,6 +304,7 @@ def _file_for_app_info(app_info):
         exc_log()
         desktop_file = None
     return desktop_file
+
 
 def _info_for_desktop_file(desktop_file):
     if not desktop_file:
@@ -278,8 +316,16 @@ def _info_for_desktop_file(desktop_file):
         exc_log()
     return desktop_info
 
-def launch_app_info(app_info, gfiles=[], in_terminal=None, timestamp=None,
-                    desktop_file=None, launch_cb=None, screen=None):
+
+def launch_app_info(
+    app_info,
+    gfiles=[],
+    in_terminal=None,
+    timestamp=None,
+    desktop_file=None,
+    launch_cb=None,
+    screen=None,
+):
     """
     Launch @app_info, opening @gfiles
 
@@ -296,12 +342,14 @@ def launch_app_info(app_info, gfiles=[], in_terminal=None, timestamp=None,
     if not desktop_file or not desktop_info:
         # Allow in-memory app_info creations (without id or desktop file)
         desktop_file = ""
-        desktop_info = create_desktop_info(app_info.get_commandline() or "",
-                                           app_info.get_name(),
-                                           "",
-                                           "",
-                                           False,
-                                           False)
+        desktop_info = create_desktop_info(
+            app_info.get_commandline() or "",
+            app_info.get_name(),
+            "",
+            "",
+            False,
+            False,
+        )
         # in this case, the command line is already primarily escaped
         argv = desktop_parse.parse_argv(desktop_info["Exec"])
     else:
@@ -310,8 +358,9 @@ def launch_app_info(app_info, gfiles=[], in_terminal=None, timestamp=None,
     assert argv and argv[0]
 
     # Now Resolve the %f etc format codes
-    multiple_needed, missing_format, launch_argv = \
-            replace_format_specs(argv, desktop_file, desktop_info, gfiles)
+    multiple_needed, missing_format, launch_argv = replace_format_specs(
+        argv, desktop_file, desktop_info, gfiles
+    )
 
     if not multiple_needed:
         # Launch 1 process
@@ -321,8 +370,9 @@ def launch_app_info(app_info, gfiles=[], in_terminal=None, timestamp=None,
         # Launch one process per file
         launch_records = [(launch_argv, [gfiles[0]])]
         for f in gfiles[1:]:
-            _ignore1, _ignore2, launch_argv = \
-                replace_format_specs(argv, desktop_file, desktop_info, [f])
+            _ignore1, _ignore2, launch_argv = replace_format_specs(
+                argv, desktop_file, desktop_info, [f]
+            )
             launch_records.append((launch_argv, [f]))
 
     notify = desktop_info["StartupNotify"]
@@ -341,12 +391,20 @@ def launch_app_info(app_info, gfiles=[], in_terminal=None, timestamp=None,
             if term["exearg"]:
                 targv.append(term["exearg"])
             argv = targv + argv
-        ret = spawn_app(app_info, argv, gfiles, workdir, notify,
-                        timestamp=timestamp, launch_cb=launch_cb,
-                        screen=screen)
+        ret = spawn_app(
+            app_info,
+            argv,
+            gfiles,
+            workdir,
+            notify,
+            timestamp=timestamp,
+            launch_cb=launch_cb,
+            screen=screen,
+        )
         if not ret:
             return False
     return True
+
 
 def spawn_app_id(app_id, argv, workdir=None, startup_notify=True, screen=None):
     """
@@ -357,10 +415,21 @@ def spawn_app_id(app_id, argv, workdir=None, startup_notify=True, screen=None):
     except (TypeError, RuntimeError):
         app_info = None
         startup_notify = False
-    return spawn_app(app_info, argv, [], workdir, startup_notify, screen=screen)
+    return spawn_app(
+        app_info, argv, [], workdir, startup_notify, screen=screen
+    )
 
-def spawn_app(app_info, argv, filelist, workdir=None, startup_notify=True,
-              timestamp=None, launch_cb=None, screen=None):
+
+def spawn_app(
+    app_info,
+    argv,
+    filelist,
+    workdir=None,
+    startup_notify=True,
+    timestamp=None,
+    launch_cb=None,
+    screen=None,
+):
     """
     Spawn app.
 
@@ -403,12 +472,13 @@ def spawn_app(app_info, argv, filelist, workdir=None, startup_notify=True,
         # FIXME: Support paths as bytes
         argv_ = list(map(kupferstring.tounicode, argv))
         (pid, _ig1, _ig2, _ig3) = GLib.spawn_async(
-                argv_,
-                flags=GLib.SpawnFlags.SEARCH_PATH,
-                working_directory=workdir,
-                child_setup=child_setup,
-                user_data=child_env_add)
-        debug_log("Launched", argv,  notify_id, "pid:", pid)
+            argv_,
+            flags=GLib.SpawnFlags.SEARCH_PATH,
+            working_directory=workdir,
+            child_setup=child_setup,
+            user_data=child_env_add,
+        )
+        debug_log("Launched", argv, notify_id, "pid:", pid)
     except GLib.GError as exc:
         error_log("Error Launching ", argv, str(exc))
         if notify_id:
@@ -417,6 +487,7 @@ def spawn_app(app_info, argv, filelist, workdir=None, startup_notify=True,
     if launch_cb:
         launch_cb(argv, pid, notify_id, filelist, timestamp)
     return pid
+
 
 def child_setup(add_environ):
     """Called to setup the child process before exec()
@@ -427,6 +498,7 @@ def child_setup(add_environ):
             v = ""
         os.putenv(key, v)
 
+
 def locale_encode_argv(argv):
     for x in argv:
         if isinstance(x, str):
@@ -434,12 +506,14 @@ def locale_encode_argv(argv):
         else:
             yield x
 
+
 def get_info_for_id(id_):
     return Gio.DesktopAppInfo.new(id_)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     while True:
         id_ = input("Give me an App ID > ")
         launch_app_info(get_info_for_id(id_ + ".desktop"), [])
-        #launch_app_info(Gio.AppInfo("gvim"), [Gio.File(".")])
+        # launch_app_info(Gio.AppInfo("gvim"), [Gio.File(".")])
