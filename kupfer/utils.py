@@ -466,7 +466,7 @@ def get_display_path_for_bytestring(filepath):
         desc = desc.replace(homedir, "~/", 1)
     return desc
 
-def parse_time_interval(tstr):
+def parse_time_interval(tstr: str) -> int:
     """
     Parse a time interval in @tstr, return whole number of seconds
 

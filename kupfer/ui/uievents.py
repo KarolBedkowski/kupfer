@@ -102,7 +102,7 @@ class GUIEnvironmentContext :
                     disp.close()
 
 
-    def get_timestamp(self):
+    def get_timestamp(self) -> int:
         return self._timestamp
 
     def get_startup_notification_id(self):

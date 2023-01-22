@@ -1,5 +1,6 @@
 debug = False
 
+import typing as ty
 import sys
 import traceback
 from time import time as timestamp
@@ -46,7 +47,7 @@ class OutputMixin :
         end = kwargs.get("end", "\n")
         self._output_core("Error ", sep, end, sys.stderr, *items)
 
-class _StaticOutput (OutputMixin):
+class __StaticOutput (OutputMixin):
     current_calling_module = None
     def _output_category(self):
         return f"[{self.current_calling_module}]:"
@@ -63,11 +64,12 @@ class _StaticOutput (OutputMixin):
         self.current_calling_module = modulename
         self.output_exc(*args, **kwargs)
 
-    def print_debug(self, modulename, *args, **kwargs):
+    def print_debug(self, modulename: str, *args: ty.Any, **kwargs: ty.Any) -> None:
         if debug:
             self.current_calling_module = modulename
             self.output_debug(*args, **kwargs)
-_StaticOutput = _StaticOutput()
+
+_StaticOutput = __StaticOutput()
 
 print_info = _StaticOutput.print_info
 print_debug = _StaticOutput.print_debug

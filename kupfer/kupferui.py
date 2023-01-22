@@ -1,31 +1,39 @@
 """
 Access functions of Kupfer's Interface
 """
+import typing as ty
+
 from gi.repository import Gtk
 
 from kupfer import utils, version
+from kupfer.ui.uievents import GUIEnvironmentContext
 
-def _get_time(ctxenv):
-    return ctxenv.get_timestamp() if ctxenv else \
-            Gtk.get_current_event_time()
 
-def show_help(ctxenv=None):
+def _get_time(ctxenv: ty.Optional[GUIEnvironmentContext]) -> int:
+    return ctxenv.get_timestamp() if ctxenv else Gtk.get_current_event_time()  # type: ignore
+
+
+def show_help(ctxenv: ty.Optional[GUIEnvironmentContext] = None) -> None:
     """
     Show Kupfer help pages, if possible
     """
     if not utils.show_help_url(f"help:{version.PACKAGE_NAME}"):
         utils.show_url(version.HELP_WEBSITE)
 
-_about_dialog = None
 
-def show_about_dialog(ctxenv=None):
+_ABOUT_DIALOG = None
+
+
+def show_about_dialog(
+    ctxenv: ty.Optional[GUIEnvironmentContext] = None,
+) -> None:
     """
     create an about dialog and show it
     """
-    # Use only one instance, stored in _about_dialog
-    global _about_dialog
-    if _about_dialog:
-        ab = _about_dialog
+    # Use only one instance, stored in _ABOUT_DIALOG
+    global _ABOUT_DIALOG
+    if _ABOUT_DIALOG:
+        ab = _ABOUT_DIALOG
     else:
         ab = Gtk.AboutDialog()
         ab.set_program_name(version.PROGRAM_NAME)
@@ -47,26 +55,32 @@ def show_about_dialog(ctxenv=None):
         ab.connect("response", _response_callback)
         # do not delete window on close
         ab.connect("delete-event", lambda *ign: True)
-        _about_dialog = ab
+        _ABOUT_DIALOG = ab
+
     if ctxenv:
         ctxenv.present_window(ab)
     else:
         ab.present()
 
-def _response_callback(dialog, response_id):
+
+def _response_callback(dialog: Gtk.Dialog, response_id: ty.Any) -> None:
     dialog.hide()
 
 
-def show_preferences(ctxenv):
+def show_preferences(ctxenv: GUIEnvironmentContext) -> None:
     from kupfer.ui import preferences
+
     win = preferences.GetPreferencesWindowController()
     if ctxenv:
-        win.show_on_screen(ctxenv.get_timestamp(),
-                           ctxenv.get_screen())
+        win.show_on_screen(ctxenv.get_timestamp(), ctxenv.get_screen())
     else:
         win.show(_get_time(ctxenv))
 
-def show_plugin_info(plugin_id, ctxenv=None):
+
+def show_plugin_info(
+    plugin_id: str, ctxenv: ty.Optional[GUIEnvironmentContext] = None
+) -> None:
     from kupfer.ui import preferences
+
     prefs = preferences.GetPreferencesWindowController()
     prefs.show_focus_plugin(plugin_id, _get_time(ctxenv))
