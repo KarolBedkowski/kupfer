@@ -1,4 +1,3 @@
-
 """
 Implementation of unescaping and unquoting of the Exec= key in
 the Desktop Entry Specification (As of March 2011, version 1.1-draft)
@@ -9,26 +8,27 @@ The unescaping we are doing is only one way.. so we unescape according to the
 rules, but we accept everything, if validly quoted or not.
 """
 
+import typing as ty
 import shlex
 
 # This is the "string" type encoding escapes
 # this is unescaped before we process anything..
 escape_table = {
-    r'\s': ' ',
-    r'\n': '\n',
-    r'\t': '\t',
-    r'\r': '\r',
-    '\\\\': '\\',
+    r"\s": " ",
+    r"\n": "\n",
+    r"\t": "\t",
+    r"\r": "\r",
+    "\\\\": "\\",
 }
 
 # quoted are those chars that need a backslash in front
 # (inside a double-quoted section, that is)
 quoted = r""" " ` $ \ """.split()
 quoted_table = {
-    r'\"': '"',
-    r'\`': '`',
-    r'\$': '$',
-    '\\\\': '\\',
+    r"\"": '"',
+    r"\`": "`",
+    r"\$": "$",
+    "\\\\": "\\",
 }
 
 '''
@@ -40,14 +40,16 @@ reserved = r""" " ' \ > < ~ | & ; $ * ? # ( ) ` """.split()
 reserved.extend([' ', '\t', '\n'])
 '''
 
-def two_part_unescaper(s, reptable):
+
+def two_part_unescaper(string: str, reptable: ty.Dict[str, str]) -> str:
     "Scan @s two characters at a time and replace using @reptable"
-    if not s:
-        return s
+    if not string:
+        return string
+
     def _inner():
-        it = iter(zip(s, s[1:]))
+        it = iter(zip(string, string[1:]))
         for cur, nex in it:
-            key = cur+nex
+            key = cur + nex
             if key in reptable:
                 yield reptable[key]
                 try:
@@ -56,41 +58,52 @@ def two_part_unescaper(s, reptable):
                     return
             else:
                 yield cur
-        yield s[-1]
-    return ''.join(_inner())
 
-def custom_shlex_split(s, comments=False, posix=True):
+        yield string[-1]
+
+    return "".join(_inner())
+
+
+T = ty.TypeVar("T", str, bytes)
+
+
+def custom_shlex_split(
+    string: T, comments: bool = False, posix: bool = True
+) -> list[T]:
     """
     Wrapping shlex.split
     """
-    if isinstance(s, str):
-        is_unicode = True
-        #s = s.encode("UTF-8")
+    ustring: str
+    if isinstance(string, str):
+        ustring = string
+    elif isinstance(string, bytes):
+        ustring = string.decode("UTF-8", "replace")
     else:
-        s = s.decode("UTF-8", "replace")
-        is_unicode = False
+        raise TypeError
 
-    lex = shlex.shlex(s, posix=posix)
+    lex = shlex.shlex(ustring, posix=posix)
     lex.whitespace_split = True
     if not comments:
-        lex.commenters = ''
+        lex.commenters = ""
 
     try:
         lex_output = list(lex)
     except ValueError:
-        lex_output = [s]
+        lex_output = [ustring]
 
     ## extra-unescape  ` and $ that are not handled by shlex
-    quoted_shlex = {r'\`': '`', r'\$':'$'}
-    lex_output[:] = [two_part_unescaper(x, quoted_shlex) for x in lex_output]
-    if is_unicode:
-        return lex_output
+    quoted_shlex = {r"\`": "`", r"\$": "$"}
+    output = (two_part_unescaper(x, quoted_shlex) for x in lex_output)
+    if isinstance(string, str):
+        return list(output)
 
     return [x.encode("UTF-8") for x in lex_output]
 
-def unescape(s):
+
+def unescape(string: str) -> str:
     "Primary unescape of control sequences"
-    return two_part_unescaper(s, escape_table)
+    return two_part_unescaper(string, escape_table)
+
 
 def test_unescape():
     r"""
@@ -100,9 +113,9 @@ def test_unescape():
     >>> unescape(r'\t\s\\\\')
     '\t \\\\'
     """
-    pass
 
-def parse_argv(instr):
+
+def parse_argv(instr: T) -> list[T]:
     r"""
     Parse quoted @instr into an argv
 
@@ -155,7 +168,8 @@ def parse_argv(instr):
     """
     return custom_shlex_split(instr)
 
-def parse_unesc_argv(instr):
+
+def parse_unesc_argv(instr: str) -> list[str]:
     r"""
     Parse quoted @instr into an argv after unescaping it
 
@@ -175,4 +189,5 @@ def parse_unesc_argv(instr):
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
