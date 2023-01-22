@@ -41,7 +41,7 @@ class PluginSettings(GObject.GObject, pretty.OutputMixin):
 
     __gtype_name__ = "PluginSettings"
 
-    def __init__(self, *setdescs: dict[str, ty.Any]):
+    def __init__(self, *setdescs: dict[str, ty.Any]) -> None:
         """Create a settings collection by passing in dictionaries
         as arguments, where each dictionary must have the following keys:
             key

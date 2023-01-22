@@ -165,7 +165,7 @@ class LeafModel:
         self.rank_col = 5
 
         # only show in debug mode
-        show_rank_col = pretty.debug
+        show_rank_col = pretty.DEBUG
 
         # Name and description column
         # Expands to the rest of the space

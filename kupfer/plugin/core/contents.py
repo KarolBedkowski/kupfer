@@ -14,7 +14,7 @@ __all__ = __kupfer_sources__ + __kupfer_actions__
 
 def _is_debug():
     # Return True if Kupfer is in debug mode
-    return pretty.debug
+    return pretty.DEBUG
 
 class DebugRestart (RunnableLeaf):
     def __init__(self):

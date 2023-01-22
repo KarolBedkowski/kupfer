@@ -61,7 +61,7 @@ def _make_help_text(
     return options_string
 
 
-def _make_plugin_list():
+def _make_plugin_list() -> str:
     from kupfer.core import plugins
 
     plugin_header = _("Available plugins:")
@@ -167,7 +167,7 @@ def exec_helper(helpername: str) -> None:
 
 
 def gtkmain(
-    run_function: ty.Callable[[ty.Any], ty.Any],
+    run_function: ty.Callable[..., ty.Any],
     *args: ty.Any,
     **kwargs: ty.Any,
 ) -> ty.Any:
@@ -192,7 +192,7 @@ def browser_start(quiet: bool) -> None:
     wctrl.main(quiet=quiet)
 
 
-def main():
+def main() -> None:
     # parse commandline before importing UI
     cli_opts = get_options()
     print_banner()
@@ -200,7 +200,7 @@ def main():
     from kupfer import pretty, version
 
     if _DEBUG:
-        pretty.debug = _DEBUG
+        pretty.DEBUG = _DEBUG
         pretty.print_debug(
             __name__, "Version:", version.PACKAGE_NAME, version.VERSION
         )

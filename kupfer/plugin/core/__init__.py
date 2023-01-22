@@ -25,7 +25,7 @@ from kupfer import task
 
 def _is_debug():
     # Return True if Kupfer is in debug mode
-    return pretty.debug
+    return pretty.DEBUG
 
 def register_subplugin(module):
     attrs = (
