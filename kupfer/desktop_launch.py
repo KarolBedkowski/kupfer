@@ -406,7 +406,7 @@ def launch_app_info(
     return True
 
 
-def spawn_app_id(app_id, argv, workdir=None, startup_notify=True, screen=None):
+def spawn_app_id(app_id, argv, workdir=None, startup_notify=True, screen=None) -> bool:
     """
     Spawn @argv trying to notify it as if it is app_id
     """

@@ -1,3 +1,5 @@
+import typing as ty
+
 from kupfer.core import settings
 
 
@@ -10,7 +12,7 @@ def is_known_terminal_executable(exearg: str) -> bool:
     return False
 
 
-def get_configured_terminal() -> str:
+def get_configured_terminal() -> dict[str, ty.Any]:
     """
     Return the configured Terminal object
     """

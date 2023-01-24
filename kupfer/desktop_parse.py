@@ -115,7 +115,7 @@ def test_unescape():
     """
 
 
-def parse_argv(instr: T) -> list[T]:
+def parse_argv(instr: str) -> list[str]:
     r"""
     Parse quoted @instr into an argv
 

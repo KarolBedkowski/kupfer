@@ -47,9 +47,9 @@ class FileSource(Source):
 
     def get_items(self) -> ty.Iterable[Leaf]:
         for directory in self.dirlist:
-            files = utils.get_dirlist(
+            files = list(utils.get_dirlist(
                 directory, depth=self.depth, exclude=self._exclude_file
-            )
+            ))
             yield from map(ConstructFileLeaf, files)
 
     def should_sort_lexically(self) -> bool:
