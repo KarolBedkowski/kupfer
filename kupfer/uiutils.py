@@ -6,6 +6,10 @@ purpose), but care should be taken to only call UI functions from the main
 (default) thread.
 """
 
+import math
+import textwrap
+import typing as ty
+
 from gi.repository import Gtk, Gdk
 from gi.repository import Pango
 
@@ -13,7 +17,11 @@ from kupfer import pretty
 from kupfer import config, version
 from kupfer.ui import uievents
 
-def _window_close_on_escape(widget, event):
+if ty.TYPE_CHECKING:
+    from kupfer.core.commandexec import ExecutionToken
+
+
+def _window_close_on_escape(widget: Gtk.Widget, event: Gdk.Event) -> bool:
     """
     Callback function for Window's key press event, will destroy window
     on escape
@@ -22,7 +30,12 @@ def _window_close_on_escape(widget, event):
         widget.close()
         return True
 
-def builder_get_objects_from_file(fname, attrs, autoconnect_to=None):
+    return False
+
+
+def builder_get_objects_from_file(
+    fname: str, attrs: ty.Iterable[str], autoconnect_to: ty.Any = None
+) -> ty.Iterator[ty.Any]:
     """
     Open @fname with Gtk.Builder and yield objects named @attrs
 
@@ -35,26 +48,36 @@ def builder_get_objects_from_file(fname, attrs, autoconnect_to=None):
 
     ui_file = config.get_data_file(fname)
     builder.add_from_file(ui_file)
-    class Namespace :
+
+    class Namespace:
         pass
+
     names = Namespace()
     for attr in attrs:
         obj = builder.get_object(attr)
         setattr(names, attr, obj)
         yield obj
-    if autoconnect_to:
-        autoconnect_to.names = names
-        builder.connect_signals(autoconnect_to)
 
-def show_text_result(text, title=None, ctx=None):
+    if autoconnect_to:
+        assert hasattr(autoconnect_to, "names")
+        autoconnect_to.names = names
+        builder.connect_signals(autoconnect_to)  # pylint: disable=no-member
+
+
+def show_text_result(
+    text: str,
+    title: ty.Optional[str] = None,
+    ctx: ty.Optional["ExecutionToken"] = None,
+):
     """
     Show @text in a result window.
 
     Use @title to set a window title
     """
-    class ResultWindowBehavior :
+
+    class ResultWindowBehavior:
         def __init__(self):
-            self.names = None
+            self.names: ty.Any = None
 
         def on_text_result_window_key_press_event(self, widget, event):
             return _window_close_on_escape(widget, event)
@@ -62,6 +85,7 @@ def show_text_result(text, title=None, ctx=None):
         def on_close_button_clicked(self, widget):
             self.names.text_result_window.close()
             return True
+
         def on_copy_button_clicked(self, widget):
             clip = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
             textview = self.names.result_textview
@@ -69,9 +93,11 @@ def show_text_result(text, title=None, ctx=None):
             buf.select_range(*buf.get_bounds())
             buf.copy_clipboard(clip)
 
-    window, textview = builder_get_objects_from_file("result.ui",
-            ("text_result_window", "result_textview"),
-            autoconnect_to=ResultWindowBehavior())
+    window, textview = builder_get_objects_from_file(
+        "result.ui",
+        ("text_result_window", "result_textview"),
+        autoconnect_to=ResultWindowBehavior(),
+    )
 
     # Set up text buffer
     buf = Gtk.TextBuffer()
@@ -90,7 +116,7 @@ def show_text_result(text, title=None, ctx=None):
 
     # Find the size of one (monospace) letter
     playout = textview.create_pango_layout("X")
-    ink_r, logical_r = playout.get_pixel_extents()
+    ink_r, _logical_r = playout.get_pixel_extents()
 
     # Fix Sizing:
     # We want to size the window so that the
@@ -100,7 +126,7 @@ def show_text_result(text, title=None, ctx=None):
     oldwid, oldhei = tw_sr.width, tw_sr.height
     winwid, winhei = window.get_size()
 
-    #max_hsize, max_vsize = window.get_default_size()
+    # max_hsize, max_vsize = window.get_default_size()
     tw_sr = textview.size_request()
     wid, hei = tw_sr.width, tw_sr.height
     textview.set_wrap_mode(Gtk.WrapMode.WORD)
@@ -118,107 +144,128 @@ def show_text_result(text, title=None, ctx=None):
     else:
         window.present_with_time(uievents.current_event_time())
 
-def _wrap_paragraphs(text):
+
+def _wrap_paragraphs(text: str) -> str:
     """
     Return @text with linewrapped paragraphs
     """
-    import textwrap
     return "\n\n".join(textwrap.fill(par) for par in text.split("\n\n"))
 
-def show_large_type(text, ctx=None):
+
+def show_large_type(
+    text: str, ctx: ty.Optional["ExecutionToken"] = None
+) -> None:
     """
     Show @text, large, in a result window.
     """
-    import math
-
     text = text.strip()
+
     window = Gtk.Window()
     label = Gtk.Label()
     label.set_text(text)
+    label.show()
 
-    def set_font_size(label, fontsize=48.0):
+    def set_font_size(label: Gtk.Label, fontsize: float = 48.0) -> None:
         siz_attr = Pango.AttrFontDesc(
-                Pango.FontDescription.from_string(str(fontsize)), 0, -1)
+            Pango.FontDescription.from_string(str(fontsize)), 0, -1
+        )
         attrs = Pango.AttrList()
         attrs.insert(siz_attr)
         label.set_attributes(attrs)
-    label.show()
 
     size = 72.0
-    #set_font_size(label, size)
+    # set_font_size(label, size)
 
     if ctx:
         screen = ctx.environment.get_screen()
-        window.set_screen(screen)
+        window.set_screen(screen)  # pylint: disable=no-member
     else:
         screen = Gdk.Screen.get_default()
 
     maxwid = screen.get_width() - 50
     maxhei = screen.get_height() - 100
-    wid, hei = label.size_request()
+    wid, hei = label.size_request()  # pylint: disable=no-member
 
     # If the text contains long lines, we try to
     # hard-wrap the text
-    if ((wid > maxwid or hei > maxhei) and
-            any(len(L) > 100 for L in text.splitlines())):
+    if (wid > maxwid or hei > maxhei) and any(
+        len(L) > 100 for L in text.splitlines()
+    ):
         label.set_text(_wrap_paragraphs(text))
 
-    wid, hei = label.size_request()
-
+    wid, hei = label.size_request()  # pylint: disable=no-member
     if wid > maxwid or hei > maxhei:
         # Round size down to fit inside
-        wscale = maxwid * 1.0/wid
-        hscale = maxhei * 1.0/hei
-        set_font_size(label, math.floor(min(wscale, hscale)*size) or 1.0)
+        wscale = maxwid * 1.0 / wid
+        hscale = maxhei * 1.0 / hei
+        set_font_size(label, math.floor(min(wscale, hscale) * size) or 1.0)
 
-    window.add(label)
-    window.set_position(Gtk.WindowPosition.CENTER)
-    window.set_resizable(False)
+    window.add(label)  # pylint: disable=no-member
+    window.set_position(Gtk.WindowPosition.CENTER)  # pylint: disable=no-member
+    window.set_resizable(False)  # pylint: disable=no-member
     window.set_decorated(False)
     window.set_property("border-width", 10)
-    window.modify_bg(Gtk.StateType.NORMAL, Gdk.color_parse("black"))
-    label.modify_fg(Gtk.StateType.NORMAL, Gdk.color_parse("white"))
+    window.modify_bg(
+        Gtk.StateType.NORMAL, Gdk.color_parse("black")
+    )  # pylint: disable=no-member
+    label.modify_fg(
+        Gtk.StateType.NORMAL, Gdk.color_parse("white")
+    )  # pylint: disable=no-member
 
     def _window_destroy(widget, event):
         widget.destroy()
         return True
+
     window.connect("key-press-event", _window_destroy)
-    window.show_all()
+    window.show_all()  # pylint: disable=no-member
     if ctx:
         ctx.environment.present_window(window)
     else:
         window.present_with_time(uievents.current_event_time())
 
+
 SERVICE_NAME = "org.freedesktop.Notifications"
 OBJECT_PATH = "/org/freedesktop/Notifications"
 IFACE_NAME = "org.freedesktop.Notifications"
 
-def _get_notification_obj():
+
+def _get_notification_obj() -> ty.Any:
     "we will activate it over d-bus (start if not running)"
     import dbus
+
     try:
         bus = dbus.SessionBus()
         proxy_obj = bus.get_object(SERVICE_NAME, OBJECT_PATH)
-    except dbus.DBusException as e:
-        pretty.print_debug(__name__, e)
-        return
+    except dbus.DBusException as exc:
+        pretty.print_debug(__name__, exc)
+        return None
+
     return proxy_obj
 
-def show_notification(title, text="", icon_name="", nid=0):
+
+def show_notification(
+    title: str, text: str = "", icon_name: str = "", nid: int = 0
+) -> ty.Any:
     """
     @nid: If not 0, the id of the notification to replace.
 
     Returns the id of the displayed notification.
     """
-    notifications = _get_notification_obj()
-    if not notifications:
+    if not (notifications := _get_notification_obj()):
         return None
+
     hints = {
-        'desktop-entry': version.DESKTOP_ID,
+        "desktop-entry": version.DESKTOP_ID,
     }
-    rid = notifications.Notify("kupfer",
-                               nid, icon_name, title, text, (), hints, -1,
-                               dbus_interface=IFACE_NAME)
+    rid = notifications.Notify(
+        "kupfer",
+        nid,
+        icon_name,
+        title,
+        text,
+        (),
+        hints,
+        -1,
+        dbus_interface=IFACE_NAME,
+    )
     return rid
-
-
