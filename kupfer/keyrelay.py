@@ -14,8 +14,6 @@ gi.require_version("Keybinder", "3.0")
 
 from gi.repository import Gtk, Keybinder as keybinder
 
-
-
 SERV = "se.kaizer.kupfer"
 OBJ = "/interface"
 IFACE = "se.kaizer.kupfer.Listener"
@@ -57,7 +55,7 @@ def relay_key(key: str) -> None:
     iface.RelayKeysFromDisplay(key, os.getenv("DISPLAY", ":0"), s_id)
 
 
-def main() ->None:
+def main() -> None:
     DBusGMainLoop(set_as_default=True)
 
     relayed_keys = list(get_all_keys())

@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import typing as ty
+from contextlib import suppress
 
 from gi.repository import Gtk, Gdk, Gio, GLib
 
@@ -131,9 +132,9 @@ def create_desktop_info(
     name: str,
     icon: str,
     work_dir: str,
-    in_terminal: str,
-    startup_notify: str,
-) -> dict[str, str]:
+    in_terminal: bool,
+    startup_notify: bool,
+) -> dict[str, ty.Any]:
     return {
         "Terminal": in_terminal,
         "StartupNotify": startup_notify,
@@ -144,7 +145,48 @@ def create_desktop_info(
     }
 
 
-def replace_format_specs(argv, location, desktop_info, gfilelist):
+def _two_part_unescaper(
+    instr: str, repfunc: ty.Callable[[str], ty.Optional[str]]
+) -> str:
+    """
+    Handle embedded format codes
+
+    Scan @s two characters at a time and replace using @repfunc
+
+    TODO: already seen this somewhere
+    """
+    if not instr:
+        return instr
+
+    def _inner():
+        sit = zip(instr, instr[1:])
+        for cur, nex in sit:
+            key = cur + nex
+            if (rep := repfunc(key)) is not None:
+                yield rep
+                # skip a step in the iter
+                try:
+                    next(sit)
+                except StopIteration:
+                    return
+            else:
+                yield cur
+
+        yield instr[-1]
+
+    return "".join(_inner())
+
+
+def _get_file_path(gfile: Gio.File) -> str:
+    return (gfile.get_path() or gfile.get_uri()) if gfile else ""  # type: ignore
+
+
+def replace_format_specs(
+    argv: list[str],
+    location: str,
+    desktop_info: dict[str, ty.Any],
+    gfilelist: list[Gio.File],
+) -> tuple[bool, bool, list[str]]:
     """
     http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
 
@@ -182,22 +224,16 @@ def replace_format_specs(argv, location, desktop_info, gfilelist):
 
     fileiter = iter(gfilelist)
 
-    def get_file_path(gfile):
-        if not gfile:
-            return ""
-        return gfile.get_path() or gfile.get_uri()
+    def get_next_file_path() -> str:
+        with suppress(StopIteration):
+            file = next(fileiter)
+            return _get_file_path(file)
 
-    def get_next_file_path():
-        try:
-            f = next(fileiter)
-        except StopIteration:
-            return ""
-        return get_file_path(f)
+        return ""
 
-    def replace_single_code(key):
+    def replace_single_code(key: str) -> ty.Optional[str]:
         "Handle all embedded format codes, including those to be removed"
-        deprecated = {"%d", "%D", "%n", "%N", "%v", "%m"}
-        if key in deprecated:
+        if key in ("%d", "%D", "%n", "%N", "%v", "%m"):  # deprecated keys
             return ""
 
         if key == "%%":
@@ -219,7 +255,9 @@ def replace_format_specs(argv, location, desktop_info, gfilelist):
 
         return None
 
-    def replace_array_format(elem):
+    def replace_array_format(
+        elem: str,
+    ) -> tuple[bool, ty.Union[str, list[str]]]:
         """
         Handle array format codes -- only recognized as single arguments
 
@@ -230,10 +268,9 @@ def replace_format_specs(argv, location, desktop_info, gfilelist):
             if Flags.did_see_large_f or Flags.did_see_small_f:
                 warning_log("Warning, multiple file format specs!")
                 return True, []
+
             Flags.did_see_large_f = True
-            return True, list(
-                filter(bool, [get_file_path(f) for f in gfilelist])
-            )
+            return True, list(filter(bool, map(_get_file_path, gfilelist)))
 
         if elem == "%i":
             if desktop_info["Icon"]:
@@ -243,89 +280,64 @@ def replace_format_specs(argv, location, desktop_info, gfilelist):
 
         return False, elem
 
-    def two_part_unescaper(s, repfunc):
-        """
-        Handle embedded format codes
-
-        Scan @s two characters at a time and replace using @repfunc
-        """
-        if not s:
-            return s
-
-        def _inner():
-            it = iter(zip(s, s[1:]))
-            for cur, nex in it:
-                key = cur + nex
-                rep = repfunc(key)
-                if rep is not None:
-                    yield rep
-                    # skip a step in the iter
-                    try:
-                        next(it)
-                    except StopIteration:
-                        return
-                else:
-                    yield cur
-            yield s[-1]
-
-        return "".join(_inner())
-
-    new_argv = []
+    new_argv: list[str] = []
     for x in argv:
         if not x:
             # the arg is an empty string, we don't need extra processing
             new_argv.append(x)
             continue
+
         succ, newargs = replace_array_format(x)
         if succ:
             new_argv.extend(newargs)
         else:
-            arg = two_part_unescaper(x, replace_single_code)
-            if arg:
+            if arg := _two_part_unescaper(x, replace_single_code):
                 new_argv.append(arg)
 
     if len(gfilelist) > 1 and not Flags.did_see_large_f:
         supports_single_file = True
-    if (
-        not Flags.did_see_small_f
-        and not Flags.did_see_large_f
-        and len(gfilelist)
-    ):
+
+    if not Flags.did_see_small_f and not Flags.did_see_large_f and gfilelist:
         files_added_at_end = True
         new_argv.append(get_next_file_path())
 
     return supports_single_file, files_added_at_end, new_argv
 
 
-def _file_for_app_info(app_info):
+def _file_for_app_info(app_info: Gio.AppInfo) -> ty.Optional[str]:
     try:
         desktop_file = find_desktop_file(app_info.get_id())
     except ResourceLookupError:
         exc_log()
         desktop_file = None
+
     return desktop_file
 
 
-def _info_for_desktop_file(desktop_file):
-    if not desktop_file:
-        return None
-    try:
-        desktop_info = read_desktop_info(desktop_file)
-    except ResourceReadError:
-        desktop_info = None
-        exc_log()
-    return desktop_info
+def _info_for_desktop_file(
+    desktop_file: ty.Optional[str],
+) -> ty.Optional[dict[str, str]]:
+    if desktop_file:
+        try:
+            return read_desktop_info(desktop_file)
+        except ResourceReadError:
+            exc_log()
+
+    return None
+
+
+LaunchCallback = ty.Callable[[list[str], int, int, list[str], int], None]
 
 
 def launch_app_info(
-    app_info,
-    gfiles=[],
-    in_terminal=None,
-    timestamp=None,
-    desktop_file=None,
-    launch_cb=None,
-    screen=None,
-):
+    app_info: Gio.AppInfo,  # TODO: check
+    gfiles: ty.Optional[list[Gio.File]] = None,
+    in_terminal: ty.Optional[bool] = None,
+    timestamp: ty.Optional[float] = None,
+    desktop_file: ty.Optional[str] = None,
+    launch_cb: ty.Optional[LaunchCallback] = None,
+    screen: ty.Optional[str] = None,
+) -> bool:
     """
     Launch @app_info, opening @gfiles
 
@@ -337,6 +349,7 @@ def launch_app_info(
 
     Will pass on exceptions from spawn_app
     """
+    gfiles = gfiles or []
     desktop_file = desktop_file or _file_for_app_info(app_info)
     desktop_info = _info_for_desktop_file(desktop_file)
     if not desktop_file or not desktop_info:
@@ -355,46 +368,49 @@ def launch_app_info(
     else:
         # In the normal case, we must first escape one round
         argv = desktop_parse.parse_unesc_argv(desktop_info["Exec"])
+
     assert argv and argv[0]
 
     # Now Resolve the %f etc format codes
-    multiple_needed, missing_format, launch_argv = replace_format_specs(
+    multiple_needed, _missing_format, launch_argv = replace_format_specs(
         argv, desktop_file, desktop_info, gfiles
     )
 
     if not multiple_needed:
         # Launch 1 process
         launch_records = [(launch_argv, gfiles)]
-
     else:
         # Launch one process per file
         launch_records = [(launch_argv, [gfiles[0]])]
-        for f in gfiles[1:]:
+        for file in gfiles[1:]:
             _ignore1, _ignore2, launch_argv = replace_format_specs(
-                argv, desktop_file, desktop_info, [f]
+                argv, desktop_file, desktop_info, [file]
             )
-            launch_records.append((launch_argv, [f]))
+            launch_records.append((launch_argv, [file]))
 
     notify = desktop_info["StartupNotify"]
     workdir = desktop_info["Path"] or None
 
     if in_terminal is None:
-        in_terminal = desktop_info["Terminal"]
+        in_terminal = desktop_info["Terminal"]  # type: ignore
+
     if in_terminal:
         term = terminal.get_configured_terminal()
         notify = notify or term["startup_notify"]
 
-    for argv, gfiles in launch_records:
+    for argv, files in launch_records:
         if in_terminal:
             term = terminal.get_configured_terminal()
             targv = list(term["argv"])
-            if term["exearg"]:
-                targv.append(term["exearg"])
+            if exearg := term["exearg"]:
+                targv.append(exearg)
+
             argv = targv + argv
+
         ret = spawn_app(
             app_info,
             argv,
-            gfiles,
+            files,
             workdir,
             notify,
             timestamp=timestamp,
@@ -403,10 +419,17 @@ def launch_app_info(
         )
         if not ret:
             return False
+
     return True
 
 
-def spawn_app_id(app_id, argv, workdir=None, startup_notify=True, screen=None) -> bool:
+def spawn_app_id(
+    app_id: str,
+    argv: list[str],
+    workdir: ty.Optional[str] = None,
+    startup_notify: bool = True,
+    screen: ty.Optional[str] = None,
+) -> bool:
     """
     Spawn @argv trying to notify it as if it is app_id
     """
@@ -415,21 +438,22 @@ def spawn_app_id(app_id, argv, workdir=None, startup_notify=True, screen=None) -
     except (TypeError, RuntimeError):
         app_info = None
         startup_notify = False
-    return spawn_app(
+
+    return spawn_app(  # type: ignore
         app_info, argv, [], workdir, startup_notify, screen=screen
     )
 
 
 def spawn_app(
-    app_info,
-    argv,
-    filelist,
-    workdir=None,
-    startup_notify=True,
-    timestamp=None,
-    launch_cb=None,
-    screen=None,
-):
+    app_info: Gio.AppInfo,
+    argv: list[str],
+    filelist: list[str],
+    workdir: ty.Optional[str] = None,
+    startup_notify: bool = True,
+    timestamp: ty.Optional[float] = None,
+    launch_cb: ty.Optional[LaunchCallback] = None,
+    screen: ty.Optional[str] = None,
+) -> int:
     """
     Spawn app.
 
@@ -459,6 +483,7 @@ def spawn_app(
         child_env_add = {STARTUP_ENV: notify_id}
     else:
         child_env_add = {}
+
     if screen:
         # FIXME: Not sure we can do anything here
         pass
@@ -466,40 +491,44 @@ def spawn_app(
     if not workdir or not Path(workdir).exists():
         workdir = "."
 
-    argv = list(locale_encode_argv(argv))
+    argvb = list(locale_encode_argv(argv))
 
     try:
         # FIXME: Support paths as bytes
-        argv_ = list(map(kupferstring.tounicode, argv))
-        (pid, _ig1, _ig2, _ig3) = GLib.spawn_async(
+        argv_ = list(map(kupferstring.tounicode, argvb))
+        (pid, *_ig) = GLib.spawn_async(
             argv_,
             flags=GLib.SpawnFlags.SEARCH_PATH,
             working_directory=workdir,
             child_setup=child_setup,
             user_data=child_env_add,
         )
-        debug_log("Launched", argv, notify_id, "pid:", pid)
+        debug_log("Launched", argvb, notify_id, "pid:", pid)
     except GLib.GError as exc:
-        error_log("Error Launching ", argv, str(exc))
+        error_log("Error Launching ", argvb, str(exc))
         if notify_id:
             Gdk.notify_startup_complete_with_id(notify_id)
-        raise SpawnError(exc.message)
+
+        raise SpawnError(exc.message)  # pylint: disable=no-member
+
     if launch_cb:
-        launch_cb(argv, pid, notify_id, filelist, timestamp)
-    return pid
+        launch_cb(argv, pid, notify_id, filelist, timestamp)  # type: ignore
+
+    return pid  # type: ignore
 
 
-def child_setup(add_environ):
+def child_setup(add_environ: dict[str, str]) -> None:
     """Called to setup the child process before exec()
     @add_environ is a dict for extra env variables
     """
-    for key, v in add_environ.items():
-        if v is None:
-            v = ""
-        os.putenv(key, v)
+    for key, val in add_environ.items():
+        if val is None:
+            val = ""
+
+        os.putenv(key, val)
 
 
-def locale_encode_argv(argv):
+def locale_encode_argv(argv: list[ty.AnyStr]) -> ty.Iterator[bytes]:
     for x in argv:
         if isinstance(x, str):
             yield kupferstring.tolocale(x)
@@ -507,8 +536,8 @@ def locale_encode_argv(argv):
             yield x
 
 
-def get_info_for_id(id_):
-    return Gio.DesktopAppInfo.new(id_)
+def get_info_for_id(app_id: str) -> Gio.DesktopAppInfo:
+    return Gio.DesktopAppInfo.new(app_id)
 
 
 if __name__ == "__main__":

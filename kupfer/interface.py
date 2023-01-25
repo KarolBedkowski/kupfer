@@ -66,7 +66,7 @@ def copy_to_clipboard(
     # def clear(clipboard, udata):
     #     pass
 
-    data = {}
+    data : list[str, ty.Any] = {}
     try:
         urilist = obj.get_urilist_representation()  # type: ignore
     except AttributeError:
