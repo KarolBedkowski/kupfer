@@ -26,9 +26,9 @@ class Rankable:
     # To save memory with (really) many Rankables
     __slots__ = ("rank", "value", "object", "aliases")
 
-    def __init__(self, value: ty.Any, obj: ty.Any, rank: float = 0) -> None:
+    def __init__(self, value: str, obj: Leaf, rank: float = 0) -> None:
         self.rank = rank
-        self.value = value
+        self.value : str = value
         self.object = obj
         self.aliases = getattr(obj, "name_aliases", ())
 

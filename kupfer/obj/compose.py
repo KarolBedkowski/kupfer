@@ -18,7 +18,7 @@ class TimedPerform(Perform):
     action_accelerator: ty.Optional[str] = None
 
     def __init__(self) -> None:
-        super().__init__(self, _("Run after Delay..."))
+        super().__init__(_("Run after Delay..."))
 
     def activate(
         self, leaf: ty.Any, iobj: ty.Any = None, ctx: ty.Any = None

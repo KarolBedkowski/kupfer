@@ -143,9 +143,7 @@ class KupferObject(metaclass=_BuiltinObject):
         """
         return None
 
-    def get_pixbuf(
-        self, icon_size: ty.Tuple[int, int]
-    ) -> ty.Optional[GdkPixbuf]:
+    def get_pixbuf(self, icon_size: int) -> ty.Optional[GdkPixbuf]:
         """
         Returns an icon in pixbuf format with dimension @icon_size
 
@@ -226,7 +224,9 @@ class Leaf(KupferObject):
         """Represented object @obj and its @name"""
         super().__init__(name)
         self.object = obj
-        self._content_source: ty.Union[_NonpersistentToken, Source, None] = None
+        self._content_source: ty.Union[
+            _NonpersistentToken, Source, None
+        ] = None
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -244,7 +244,7 @@ class Leaf(KupferObject):
     def content_source(self, alternate: bool = False) -> ty.Optional[Source]:
         """Content of leaf. it MAY alter behavior with @alternate,
         as easter egg/extra mode"""
-        return self._content_source and self._content_source.object # type: ignore
+        return self._content_source and self._content_source.object  # type: ignore
 
     def get_actions(self) -> ty.Iterable[Action]:
         """Default (builtin) actions for this Leaf"""
