@@ -517,7 +517,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
 
         return self._set_raw_config(plug_section, key, value_repr)
 
-    def get_accelerator(self, name: str) -> str:
+    def get_accelerator(self, name: str|None) -> str|None:
         return self.get_config("Keybindings", name)  # type: ignore
 
     def set_accelerator(self, name: str, key: str) -> bool:

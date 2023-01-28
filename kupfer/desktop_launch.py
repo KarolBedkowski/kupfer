@@ -103,7 +103,7 @@ def find_desktop_file(desk_id: str) -> str:
     raise ResourceLookupError(f"Cannot locate '{desk_id}'")
 
 
-def read_desktop_info(desktop_file: str) -> dict[str, str]:
+def read_desktop_info(desktop_file: str) -> dict[str, ty.Any]:
     """
     Get the keys StartupNotify, Terminal, Exec, Path, Icon
     Return dict with bool and unicode values
@@ -316,7 +316,7 @@ def _file_for_app_info(app_info: Gio.AppInfo) -> ty.Optional[str]:
 
 def _info_for_desktop_file(
     desktop_file: ty.Optional[str],
-) -> ty.Optional[dict[str, str]]:
+) -> ty.Optional[dict[str, ty.Any]]:
     if desktop_file:
         try:
             return read_desktop_info(desktop_file)
@@ -331,12 +331,12 @@ LaunchCallback = ty.Callable[[list[str], int, int, list[str], int], None]
 
 def launch_app_info(
     app_info: Gio.AppInfo,  # TODO: check
-    gfiles: ty.Optional[list[Gio.File]] = None,
+    gfiles: ty.Optional[ty.Iterable[Gio.File]] = None,
     in_terminal: ty.Optional[bool] = None,
     timestamp: ty.Optional[float] = None,
     desktop_file: ty.Optional[str] = None,
     launch_cb: ty.Optional[LaunchCallback] = None,
-    screen: ty.Optional[str] = None,
+    screen: ty.Optional[Gdk.Screen] = None,
 ) -> bool:
     """
     Launch @app_info, opening @gfiles
@@ -349,7 +349,7 @@ def launch_app_info(
 
     Will pass on exceptions from spawn_app
     """
-    gfiles = gfiles or []
+    gfiles = list(gfiles or [])
     desktop_file = desktop_file or _file_for_app_info(app_info)
     desktop_info = _info_for_desktop_file(desktop_file)
     if not desktop_file or not desktop_info:
@@ -388,7 +388,7 @@ def launch_app_info(
             )
             launch_records.append((launch_argv, [file]))
 
-    notify = desktop_info["StartupNotify"]
+    notify = bool(desktop_info["StartupNotify"])
     workdir = desktop_info["Path"] or None
 
     if in_terminal is None:
@@ -396,7 +396,7 @@ def launch_app_info(
 
     if in_terminal:
         term = terminal.get_configured_terminal()
-        notify = notify or term["startup_notify"]
+        notify = notify or bool(term["startup_notify"])
 
     for argv, files in launch_records:
         if in_terminal:
@@ -428,7 +428,7 @@ def spawn_app_id(
     argv: list[str],
     workdir: ty.Optional[str] = None,
     startup_notify: bool = True,
-    screen: ty.Optional[str] = None,
+    screen: ty.Optional[Gdk.Screen] = None,
 ) -> bool:
     """
     Spawn @argv trying to notify it as if it is app_id
@@ -452,7 +452,7 @@ def spawn_app(
     startup_notify: bool = True,
     timestamp: ty.Optional[float] = None,
     launch_cb: ty.Optional[LaunchCallback] = None,
-    screen: ty.Optional[str] = None,
+    screen: ty.Optional[Gdk.Screen] = None,
 ) -> int:
     """
     Spawn app.

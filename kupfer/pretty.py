@@ -6,7 +6,11 @@ import types
 
 DEBUG = False
 
-ExecInfo = tuple[ty.Type[Exception], Exception, types.TracebackType]
+ExecInfo = ty.Union[
+    tuple[ty.Type[BaseException], BaseException, types.TracebackType],
+    tuple[None, None, None],
+]
+
 
 class OutputMixin:
     """
@@ -37,7 +41,7 @@ class OutputMixin:
         end = kwargs.get("end", "\n")
         self._output_core("", sep, end, sys.stdout, *items)
 
-    def output_exc(self, exc_info: ty.Optional[ExecInfo]=None) -> None:
+    def output_exc(self, exc_info: ty.Optional[ExecInfo] = None) -> None:
         """Output current exception, or use @exc_info if given"""
         etype, value, tb = exc_info or sys.exc_info()
         assert etype
@@ -62,20 +66,26 @@ class OutputMixin:
 
 
 class _StaticOutput(OutputMixin):
-    current_calling_module : ty.Optional[str]= None
+    current_calling_module: ty.Optional[str] = None
 
     def _output_category(self) -> str:
         return f"[{self.current_calling_module}]:"
 
-    def print_info(self, modulename: str, *args: ty.Any, **kwargs: ty.Any) -> None:
+    def print_info(
+        self, modulename: str, *args: ty.Any, **kwargs: ty.Any
+    ) -> None:
         self.current_calling_module = modulename
         self.output_info(*args, **kwargs)
 
-    def print_error(self, modulename: str, *args: ty.Any, **kwargs: ty.Any) -> None:
+    def print_error(
+        self, modulename: str, *args: ty.Any, **kwargs: ty.Any
+    ) -> None:
         self.current_calling_module = modulename
         self.output_error(*args, **kwargs)
 
-    def print_exc(self, modulename: str, *args: ty.Any, **kwargs: ty.Any) -> None:
+    def print_exc(
+        self, modulename: str, *args: ty.Any, **kwargs: ty.Any
+    ) -> None:
         self.current_calling_module = modulename
         self.output_exc(*args, **kwargs)
 
@@ -102,7 +112,9 @@ def timing_start() -> ty.Optional[list[float]]:
     return None
 
 
-def timing_step(modulename: str, start: ty.Optional[list[float]], label: str) -> None:
+def timing_step(
+    modulename: str, start: ty.Optional[list[float]], label: str
+) -> None:
     if DEBUG and start:
         cts = timestamp()
         print_debug(modulename, label, f"in {cts - start[0]:.6f} s")

@@ -13,7 +13,7 @@ import zlib
 from contextlib import suppress
 import typing as ty
 
-from gi.repository import GLib, Gio
+from gi.repository import GLib, Gio, Gdk
 from gi.repository import GdkPixbuf
 
 from kupfer import icons, launch, utils

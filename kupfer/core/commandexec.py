@@ -52,7 +52,11 @@ _MAX_LAST_RESULTS = 10
 
 _ACTION_EXEC_CONTEXT = None
 
-ExecInfo = tuple[ty.Optional[ty.Type[Exception]], ty.Optional[Exception], ty.Optional[types.TracebackType]]
+ExecInfo = ty.Union[
+    tuple[ty.Type[BaseException], BaseException, types.TracebackType],
+    tuple[None, None, None],
+]
+CmdTuple = tuple[Leaf, Action, ty.Optional[Leaf]]
 
 
 class ActionExecutionError(Exception):
@@ -90,7 +94,7 @@ class ExecutionToken:
     def __init__(
         self,
         aectx: ActionExecutionContext,
-        async_token: ty.Any,
+        async_token: tuple[ty.Any, CmdTuple],
         ui_ctx: GUIEnvironmentContext | None,
     ) -> None:
         self._aectx: ActionExecutionContext = aectx
@@ -108,7 +112,6 @@ class ExecutionToken:
         self._aectx.register_late_error(self._token, exc_info)
 
     def delegated_run(self, *objs: ty.Any) -> tuple[ty.Any, ty.Any]:
-        ic(objs)
         return self._aectx.run(*objs, delegate=True, ui_ctx=self._ui_ctx)
 
     @property
@@ -166,12 +169,14 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         except OperationError:
             self._do_error_conversion(cmdtuple, sys.exc_info())
 
-    def _do_error_conversion(self, cmdtuple, exc_info: ExecInfo) -> None:
+    def _do_error_conversion(
+        self, cmdtuple: tuple[ty.Any, ...], exc_info: ExecInfo
+    ) -> None:
         if not self.operation_error(exc_info, cmdtuple):
             raise exc_info[1]
 
-        _etype, value, tb = exc_info
-        raise ActionExecutionError(value).with_traceback(tb)
+        _etype, value, traceback = exc_info
+        raise ActionExecutionError(value).with_traceback(traceback)
 
     def get_async_token(self):
         """Get an action execution for current execution
@@ -187,10 +192,12 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         """
         return ExecutionToken(self, self.get_async_token(), ui_ctx)
 
-    def operation_error(self, exc_info: ExecInfo, cmdtuple) -> int | None:
+    def operation_error(
+        self, exc_info: ExecInfo, cmdtuple: CmdTuple
+    ) -> int | None:
         "Error when executing action. Return True when error was handled"
         if self._is_nested():
-            return
+            return None
 
         _etype, value, _tb = exc_info
         _obj, action, _iobj = cmdtuple
@@ -202,7 +209,9 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
             icon_name="kupfer",
         )
 
-    def register_late_error(self, token, exc_info: ExecInfo = None) -> None:
+    def register_late_error(
+        self, token: tuple[ty.Any, CmdTuple], exc_info: ExecInfo | None = None
+    ) -> None:
         "Register an error in exc_info. The error must be an OperationError"
         if exc_info is None:
             exc_info = sys.exc_info()
@@ -210,6 +219,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         if isinstance(exc_info, Exception):
             exc_info = (type(exc_info), exc_info, None)
 
+        assert exc_info
         _command_id, cmdtuple = token
         self._do_error_conversion(cmdtuple, exc_info)
 
@@ -260,8 +270,13 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
             self.last_results.append(result)
 
     def run(
-        self, obj, action, iobj, delegate=False, ui_ctx=None
-    ) -> tuple[ty.Any, ty.Any]:
+        self,
+        obj: Leaf,
+        action: Action,
+        iobj: Leaf | None,
+        delegate: bool = False,
+        ui_ctx: GUIEnvironmentContext | None = None,
+    ) -> tuple[int, ty.Any]:
         """
         Activate the command (obj, action, iobj), where @iobj may be None
 
@@ -294,7 +309,8 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         # Delegated command execution was previously requested: we take
         # the result of the nested execution context
         if self._delegate:
-            res, ret = ret
+            # K: added; ret can be None
+            res, ret = ret if ret else (0, None)
             return self._return_result(res, ret, ui_ctx)
 
         res = parse_action_result(action, ret)
@@ -311,7 +327,9 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
 
         return self._return_result(res, ret, ui_ctx)
 
-    def _return_result(self, res, ret, ui_ctx):
+    def _return_result(
+        self, res: int, ret: ty.Any, ui_ctx: GUIEnvironmentContext | None
+    ) -> tuple[int, ty.Any]:
         if not self._is_nested():
             self._append_result(res, ret)
             self.emit("command-result", res, ret, ui_ctx)
@@ -427,14 +445,18 @@ def activate_action(
     return _activate_action_multiple(obj, action, iobj, kwargs)
 
 
-def _activate_action_single(obj, action: Action, iobj, kwargs):
+def _activate_action_single(
+    obj: Leaf, action: Action, iobj: Leaf | None, kwargs: dict[str, ty.Any]
+) -> ty.Any:
     if action.requires_object():
         return action.activate(obj, iobj, **kwargs)
 
     return action.activate(obj, **kwargs)
 
 
-def _activate_action_multiple(obj, action: Action, iobj, kwargs):
+def _activate_action_multiple(
+    obj: Leaf, action: Action, iobj: Leaf | None, kwargs: dict[str, ty.Any]
+) -> ty.Any:
     if not hasattr(action, "activate_multiple"):
         iobjs = (None,) if iobj is None else _get_leaf_members(iobj)
         return _activate_action_multiple_multiplied(
@@ -442,15 +464,19 @@ def _activate_action_multiple(obj, action: Action, iobj, kwargs):
         )
 
     if action.requires_object():
+        iobjs = (None,) if iobj is None else _get_leaf_members(iobj)
         return action.activate_multiple(
-            _get_leaf_members(obj), _get_leaf_members(iobj), **kwargs
+            _get_leaf_members(obj), iobjs, **kwargs
         )
 
     return action.activate_multiple(_get_leaf_members(obj), **kwargs)
 
 
 def _activate_action_multiple_multiplied(
-    objs, action: Action, iobjs, kwargs
+    objs: ty.Iterable[Leaf],
+    action: Action,
+    iobjs: ty.Iterable[Leaf | None],
+    kwargs: dict[str, ty.Any],
 ) -> ty.Any:
     """
     Multiple dispatch by "mulitplied" invocation of the simple activation

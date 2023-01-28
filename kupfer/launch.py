@@ -6,7 +6,7 @@ import pickle
 import typing as ty
 from pathlib import Path
 
-from gi.repository import GLib, Gio
+from gi.repository import GLib, Gio, Gdk
 
 from kupfer import pretty, config
 from kupfer import scheduler
@@ -63,7 +63,7 @@ def launch_application(
     track: bool = True,
     activate: bool = True,
     desktop_file: ty.Optional[str] = None,
-    screen: ty.Optional[str] = None,
+    screen: ty.Optional[Gdk.Screen] = None,
 ) -> bool:
     """
     Launch @app_rec correctly, using a startup notification
@@ -243,7 +243,7 @@ class ApplicationsMatcherService(pretty.OutputMixin):
             30, self._find_application, app_id, pid, timeout
         )
 
-    def _find_application(self, app_id: str, pid: int, timeout: int) -> bool:
+    def _find_application(self, app_id: str, pid: int, timeout: float) -> bool:
         if self._has_match(app_id):
             return False
 

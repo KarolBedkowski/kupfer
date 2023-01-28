@@ -304,9 +304,10 @@ def spawn_async_raise(argv: list[str], workdir: str = ".") -> bool:
     # argv = _argv_to_locale(argv)
     pretty.print_debug(__name__, "spawn_async", argv, workdir)
     try:
-        return GLib.spawn_async(  # type: ignore
+        res = GLib.spawn_async(
             argv, working_directory=workdir, flags=GLib.SPAWN_SEARCH_PATH
         )
+        return bool(res)
     except GLib.GError as exc:
         raise SpawnError(exc.message)
 

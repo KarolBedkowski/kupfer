@@ -11,7 +11,12 @@ from kupfer import scheduler, pretty
 
 
 TaskCallback = ty.Callable[[ty.Any], None]
-ExecInfo = tuple[ty.Type[Exception], Exception, types.TracebackType]
+ExecInfo = ty.Union[
+    tuple[ty.Type[BaseException], BaseException, types.TracebackType],
+    tuple[None, None, None],
+]
+
+
 
 class Task:
     """Represent a task that can be done in the background
@@ -26,10 +31,10 @@ class Task:
         finish_callback(self)
     """
 
-    def __init__(self, name: ty.Optional[str]=None)->None:
+    def __init__(self, name: ty.Optional[str] = None) -> None:
         self.name = name
 
-    def __repr__(self)->str:
+    def __repr__(self) -> str:
         name = repr(getattr(self, "name", None))
         return f"<{type(self).__module__}.{type(self).__name__} name={name}>"
 
@@ -40,27 +45,28 @@ class Task:
 class ThreadTask(Task):
     """Run in a thread"""
 
-    def __init__(self, name: ty.Optional[str]=None):
+    def __init__(self, name: ty.Optional[str] = None):
         Task.__init__(self, name)
-        self._finish_callback : ty.Optional[TaskCallback] = None
+        self._finish_callback: ty.Optional[TaskCallback] = None
 
     def thread_do(self) -> None:
         """Override this to run what should be done in the thread"""
         raise NotImplementedError
 
-    def thread_finish(self)->None:
+    def thread_finish(self) -> None:
         """This finish function runs in the main thread after thread
         completion, and can be used to communicate with the GUI.
         """
 
         pass
-    def thread_finally(self, exc_info: ExecInfo|None) -> None:
+
+    def thread_finally(self, exc_info: ExecInfo | None) -> None:
         """Always run at thread finish"""
         if exc_info is not None:
             etype, value, tb = exc_info
             raise etype(value).with_traceback(tb)
 
-    def _thread_finally(self, exc_info: ExecInfo|None) -> None:
+    def _thread_finally(self, exc_info: ExecInfo | None) -> None:
         try:
             self.thread_finally(exc_info)
         finally:
@@ -87,7 +93,7 @@ class TaskRunner(pretty.OutputMixin):
     """Run Tasks in the idle Loop"""
 
     def __init__(self, end_on_finish: bool) -> None:
-        self.tasks :set[Task] = set()
+        self.tasks: set[Task] = set()
         self.end_on_finish = end_on_finish
         scheduler.GetScheduler().connect("finish", self._finish_cleanup)
 
@@ -95,12 +101,12 @@ class TaskRunner(pretty.OutputMixin):
         self.output_debug("Task finished", task)
         self.tasks.remove(task)
 
-    def add_task(self, task: Task)->None:
+    def add_task(self, task: Task) -> None:
         """Register @task to be run"""
         self.tasks.add(task)
         task.start(self._task_finished)
 
-    def _finish_cleanup(self, _sched: ty.Any)->None:
+    def _finish_cleanup(self, _sched: ty.Any) -> None:
         if self.end_on_finish:
             self.tasks.clear()
             return

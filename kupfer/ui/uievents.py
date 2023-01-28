@@ -1,36 +1,48 @@
+from __future__ import annotations
+
 import contextlib
 import os
+import typing as ty
 
 from gi.repository import Gtk, Gdk
 
 from kupfer import pretty
 from kupfer.ui import keybindings
 
+
 def gui_context_from_widget(timestamp, widget):
     return GUIEnvironmentContext(timestamp, widget.get_screen())
 
+
 def gui_context_from_timestamp(timestamp):
     return GUIEnvironmentContext(timestamp, None)
+
 
 def gui_context_from_keyevent(timestamp, display):
     new_display = GUIEnvironmentContext.ensure_display_open(display)
     screen, x, y, modifiers = new_display.get_pointer()
     return GUIEnvironmentContext(timestamp, screen)
 
-class GUIEnvironmentContext :
+
+class GUIEnvironmentContext:
     """
     Context object for action execution
     in the current GUI context
     """
-    _open_displays = set()
 
-    def __init__(self, timestamp, screen=None):
+    # _open_displays = set() # FIXME: not used
+
+    def __init__(self, timestamp:float, screen: Gdk.Screen | None = None):
         self._timestamp = timestamp
-        self._screen = screen or Gdk.Screen.get_default()
+        self._screen: ty.Optional[Gdk.Screen] = (
+            screen or Gdk.Screen.get_default()
+        )
 
     def __repr__(self):
-        return (f"<{type(self).__name__} "
-            f"time={self._timestamp!r} screen={self._screen!r}>")
+        return (
+            f"<{type(self).__name__} "
+            f"time={self._timestamp!r} screen={self._screen!r}>"
+        )
 
     @classmethod
     def ensure_display_open(cls, display):
@@ -40,10 +52,11 @@ class GUIEnvironmentContext :
         Return default if @display is None.
         """
         return Gdk.DisplayManager.get().get_default_display()
+
         def norm_name(name):
             "normalize display name"
             if name[-2] == ":":
-                return name+".0"
+                return name + ".0"
 
             return name
 
@@ -56,14 +69,15 @@ class GUIEnvironmentContext :
                     break
 
             if new_display is None:
-                pretty.print_debug(__name__,
-                        "Opening display in ensure_display_open", display)
+                pretty.print_debug(
+                    __name__, "Opening display in ensure_display_open", display
+                )
                 new_display = Gdk.Display(display)
         else:
             new_display = Gdk.Display.get_default()
 
         ## Hold references to all open displays
-        cls._open_displays = set(dm.list_displays())
+        # cls._open_displays = set(dm.list_displays())
         return new_display
 
     @classmethod
@@ -75,6 +89,7 @@ class GUIEnvironmentContext :
         current screen. If no windows remain then we close
         the display, but we never close the default display.
         """
+
         def debug(*x):
             pretty.print_debug(__name__, *x)
 
@@ -100,7 +115,6 @@ class GUIEnvironmentContext :
                 if not open_windows:
                     debug("Closing display", disp.get_name())
                     disp.close()
-
 
     def get_timestamp(self) -> int:
         return self._timestamp
@@ -132,7 +146,7 @@ class GUIEnvironmentContext :
         window.present_with_time(self.get_timestamp())
 
 
-class _internal_data :
+class _internal_data:
     seq = 0
     current_event_time = 0
 
@@ -145,10 +159,14 @@ def _make_startup_notification_id(time):
     _internal_data.inc_seq()
     return f"kupfer-%{os.getpid()}-{_internal_data.seq}_TIME{time}"
 
+
 def current_event_time():
-    return (Gtk.get_current_event_time() or
-            keybindings.get_current_event_time() or
-            _internal_data.current_event_time)
+    return (
+        Gtk.get_current_event_time()
+        or keybindings.get_current_event_time()
+        or _internal_data.current_event_time
+    )
+
 
 def _parse_notify_id(startup_notification_id):
     """
@@ -161,6 +179,7 @@ def _parse_notify_id(startup_notification_id):
             time = abs(int(bstime))
 
     return time
+
 
 @contextlib.contextmanager
 def using_startup_notify_id(notify_id):
@@ -176,8 +195,9 @@ def using_startup_notify_id(notify_id):
     if timestamp:
         Gdk.notify_startup_complete_with_id(notify_id)
     try:
-        pretty.print_debug(__name__, "Using startup id",
-                           repr(notify_id), timestamp)
+        pretty.print_debug(
+            __name__, "Using startup id", repr(notify_id), timestamp
+        )
         _internal_data.current_event_time = timestamp
         yield timestamp
     finally:
