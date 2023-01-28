@@ -10,19 +10,6 @@ from kupfer import pretty
 from kupfer.ui import keybindings
 
 
-def gui_context_from_widget(timestamp, widget):
-    return GUIEnvironmentContext(timestamp, widget.get_screen())
-
-
-def gui_context_from_timestamp(timestamp):
-    return GUIEnvironmentContext(timestamp, None)
-
-
-def gui_context_from_keyevent(timestamp, display):
-    new_display = GUIEnvironmentContext.ensure_display_open(display)
-    screen, x, y, modifiers = new_display.get_pointer()
-    return GUIEnvironmentContext(timestamp, screen)
-
 
 class GUIEnvironmentContext:
     """
@@ -45,7 +32,7 @@ class GUIEnvironmentContext:
         )
 
     @classmethod
-    def ensure_display_open(cls, display):
+    def ensure_display_open(cls, _display: Gdk.Display|None) -> Gdk.Display:
         """
         Return GdkDisplay for name @display.
 
@@ -53,35 +40,35 @@ class GUIEnvironmentContext:
         """
         return Gdk.DisplayManager.get().get_default_display()
 
-        def norm_name(name):
-            "normalize display name"
-            if name[-2] == ":":
-                return name + ".0"
+        # def norm_name(name):
+        #     "normalize display name"
+        #     if name[-2] == ":":
+        #         return name + ".0"
 
-            return name
+        #     return name
 
-        dm = Gdk.display_manager_get()
-        if display:
-            new_display = None
-            for disp in dm.list_displays():
-                if norm_name(disp.get_name()) == norm_name(display):
-                    new_display = disp
-                    break
+        # dm = Gdk.display_manager_get()
+        # if display:
+        #     new_display = None
+        #     for disp in dm.list_displays():
+        #         if norm_name(disp.get_name()) == norm_name(display):
+        #             new_display = disp
+        #             break
 
-            if new_display is None:
-                pretty.print_debug(
-                    __name__, "Opening display in ensure_display_open", display
-                )
-                new_display = Gdk.Display(display)
-        else:
-            new_display = Gdk.Display.get_default()
+        #     if new_display is None:
+        #         pretty.print_debug(
+        #             __name__, "Opening display in ensure_display_open", display
+        #         )
+        #         new_display = Gdk.Display(display)
+        # else:
+        #     new_display = Gdk.Display.get_default()
 
-        ## Hold references to all open displays
-        # cls._open_displays = set(dm.list_displays())
-        return new_display
+        # ## Hold references to all open displays
+        # # cls._open_displays = set(dm.list_displays())
+        # return new_display
 
     @classmethod
-    def _try_close_unused_displays(cls, screen):
+    def try_close_unused_displays(cls, screen):
         """@screen is current GdkScreen
 
         Try to close inactive displays...
@@ -144,6 +131,19 @@ class GUIEnvironmentContext:
         """
         window.set_screen(self.get_screen())
         window.present_with_time(self.get_timestamp())
+
+def gui_context_from_widget(timestamp, widget) -> GUIEnvironmentContext:
+    return GUIEnvironmentContext(timestamp, widget.get_screen())
+
+
+def gui_context_from_timestamp(timestamp) -> GUIEnvironmentContext:
+    return GUIEnvironmentContext(timestamp, None)
+
+
+def gui_context_from_keyevent(timestamp, display) -> GUIEnvironmentContext:
+    new_display = GUIEnvironmentContext.ensure_display_open(display)
+    screen, x, y, modifiers = new_display.get_pointer()
+    return GUIEnvironmentContext(timestamp, screen)
 
 
 class _internal_data:

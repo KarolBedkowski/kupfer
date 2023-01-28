@@ -1,9 +1,7 @@
 import typing as ty
 
 from gi.repository import Gtk, Gdk
-
-if ty.TYPE_CHECKING:
-    from kupfer.obj.objects import FileLeaf
+from kupfer.obj.base import KupferObject
 
 
 class TextRepresentation:
@@ -14,7 +12,7 @@ class TextRepresentation:
 
     def get_text_representation(self) -> str:
         """The default implementation returns the represented object"""
-        return self.object  # type: ignore
+        return self.object  # pylint: disable=no-member; type: ignore
 
 
 class UriListRepresentation:
@@ -33,15 +31,12 @@ class UriListRepresentation:
 
 def get_text_representation(obj: ty.Any) -> ty.Optional[str]:
     try:
-        return obj.get_text_representation()
+        return obj.get_text_representation()  # type: ignore
     except AttributeError:
         return None
 
 
-def copy_to_clipboard(
-    obj: ty.Union[TextRepresentation, UriListRepresentation],
-    clipboard: Gtk.Clipboard,
-) -> bool:
+def copy_to_clipboard( obj: KupferObject, clipboard: Gtk.Clipboard) -> bool:
     """
     Copy @obj to @clipboard, a Gtk.Clipboard
 

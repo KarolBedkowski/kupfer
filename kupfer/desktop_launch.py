@@ -439,15 +439,15 @@ def spawn_app_id(
         app_info = None
         startup_notify = False
 
-    return spawn_app(  # type: ignore
+    return bool(spawn_app(  # type: ignore
         app_info, argv, [], workdir, startup_notify, screen=screen
-    )
+    ))
 
 
 def spawn_app(
-    app_info: Gio.AppInfo,
+    app_info: Gio.AppInfo|None,
     argv: list[str],
-    filelist: list[str],
+    filelist: list[ty.Any],  # TODO: check
     workdir: ty.Optional[str] = None,
     startup_notify: bool = True,
     timestamp: ty.Optional[float] = None,

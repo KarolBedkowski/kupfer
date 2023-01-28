@@ -33,6 +33,7 @@ from kupfer.ui import keybindings
 from kupfer.ui import listen
 from kupfer.ui import uievents
 from kupfer.core import data, relevance, learn, search
+from kupfer.core.search import Rankable
 from kupfer.core import settings, actionaccel
 from kupfer.obj.base import Leaf, Source, Action, KupferObject, AnySource
 from kupfer import icons
@@ -52,8 +53,10 @@ _escape_table = {
     ord(">"): "&gt;",
 }
 
+AccelFunc = ty.Callable[[], ty.Any]
 
-def tounicode(ustr: ty.AnyStr|None) -> str:
+
+def tounicode(ustr: ty.AnyStr | None) -> str:
     if isinstance(ustr, str):
         return ustr
 
@@ -168,7 +171,7 @@ class LeafModel:
         columns = (GObject.TYPE_OBJECT, str, str, str, str)
         self.store = Gtk.ListStore(GObject.TYPE_PYOBJECT, *columns)
         self.object_column = 0
-        self.base: ty.Optional[ty.Iterator[search.Rankable]] = None
+        self.base: ty.Optional[ty.Iterator[Rankable]] = None
         self._setup_columns()
         self.icon_size = 32
         self.aux_info_callback = aux_info_callback
@@ -243,10 +246,12 @@ class LeafModel:
         self.store.clear()
         self.base = None
 
-    def set_base(self, baseiter: ty.Iterable[search.Rankable]) -> None:
+    def set_base(self, baseiter: ty.Iterable[Rankable]) -> None:
         self.base = iter(baseiter)
 
-    def populate(self, num: ty.Optional[int] = None) -> ty.Optional[KupferObject]:
+    def populate(
+        self, num: ty.Optional[int] = None
+    ) -> ty.Optional[KupferObject]:
         """
         populate model with num items from its base
         and return first item inserted
@@ -257,7 +262,7 @@ class LeafModel:
             return None
 
         # FIXME: there is now path for num=None, added this; check
-        iterator: ty.Iterable[search.Rankable] = self.base
+        iterator: ty.Iterable[Rankable] = self.base
         if num:
             iterator = itertools.islice(self.base, num)
 
@@ -271,8 +276,8 @@ class LeafModel:
         return first
 
     def _get_row(
-        self, rankable: search.Rankable
-    ) -> tuple[search.Rankable, ty.Optional[GdkPixbuf], str, str, str, str]:
+        self, rankable: Rankable
+    ) -> tuple[Rankable, ty.Optional[GdkPixbuf], str, str, str, str]:
         """Use the UI description functions get_*
         to initialize @rankable into the model
         """
@@ -284,10 +289,10 @@ class LeafModel:
         rank_str = self.get_rank_str(rank)
         return (rankable, icon, markup, fav, info, rank_str)
 
-    def add(self, rankable: search.Rankable) -> None:
+    def add(self, rankable: Rankable) -> None:
         self.store.append(self._get_row(rankable))
 
-    def add_first(self, rankable: search.Rankable) -> None:
+    def add_first(self, rankable: Rankable) -> None:
         self.store.prepend(self._get_row(rankable))
 
     def get_icon(self, leaf: KupferObject) -> ty.Optional[GdkPixbuf]:
@@ -296,7 +301,7 @@ class LeafModel:
 
         return None
 
-    def get_label_markup(self, rankable: search.Rankable) -> str:
+    def get_label_markup(self, rankable: Rankable) -> str:
         leaf = rankable.object
         # Here we use the items real name
         # Previously we used the alias that was matched,
@@ -767,7 +772,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
     def get_match_state(self) -> State:
         return self.match_state
 
-    def get_match_text(self) -> str:
+    def get_match_text(self) -> str | None:
         return self.text
 
     def get_table_visible(self) -> bool:
@@ -911,7 +916,9 @@ class Search(GObject.GObject, pretty.OutputMixin):
         if self.get_table_visible():
             self._table_set_cursor_at_row(0)
 
-    def _window_config(self, widget: Gtk.Widget, event: Gdk.EventConfigure) -> None:
+    def _window_config(
+        self, widget: Gtk.Widget, event: Gdk.EventConfigure
+    ) -> None:
         """
         When the window moves
         """
@@ -935,13 +942,11 @@ class Search(GObject.GObject, pretty.OutputMixin):
         self.emit("activate", obj)
 
     def _cursor_changed(self, treeview: Gtk.TreeView) -> None:
-        path, col = treeview.get_cursor()
+        path, _col = treeview.get_cursor()
         match = self.model.get_object(path)
         self._set_match(match)
 
-    def _set_match(
-        self, rankable: ty.Optional[search.Rankable] = None
-    ) -> None:
+    def _set_match(self, rankable: ty.Optional[Rankable] = None) -> None:
         """
         Set the currently selected (represented) object, either as
         @rankable or KupferObject @obj
@@ -960,7 +965,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
                 match_text, pbuf, match=self.text, state=self.match_state
             )
 
-    def set_match_plain(self, obj: search.Rankable) -> None:
+    def set_match_plain(self, obj: Rankable) -> None:
         """Set match to object @obj, without search or matches"""
         self.text = None
         self._set_match(obj)
@@ -985,9 +990,9 @@ class Search(GObject.GObject, pretty.OutputMixin):
 
     def update_match(
         self,
-        key: str|None,
-        matchrankable: ty.Optional[search.Rankable],
-        matches: ty.Iterable[search.Rankable],
+        key: str | None,
+        matchrankable: ty.Optional[Rankable],
+        matches: ty.Iterable[Rankable],
     ) -> None:
         """
         @matchrankable: Rankable first match or None
@@ -1024,7 +1029,9 @@ class Search(GObject.GObject, pretty.OutputMixin):
     def handle_no_matches(self, empty: bool = False) -> None:
         """if @empty, there were no matches to find"""
         assert hasattr(self, "get_nomatch_name_icon")
-        name, icon = self.get_nomatch_name_icon(empty=empty)
+        name, icon = self.get_nomatch_name_icon(  # pylint: disable=no-member
+            empty=empty
+        )
         self.match_state = State.NO_MATCH
         self.match_view.set_match_state(name, icon, state=State.NO_MATCH)
 
@@ -1053,7 +1060,7 @@ class LeafSearch(Search):
     """
 
     def get_aux_info(self, leaf: KupferObject) -> str:
-        if hasattr(leaf, "has_content") and leaf.has_content():
+        if hasattr(leaf, "has_content") and leaf.has_content():  # type: ignore
             if text_direction_is_ltr():
                 return "\N{BLACK RIGHT-POINTING SMALL TRIANGLE} "
 
@@ -1109,8 +1116,7 @@ def _accel_for_action(
     if action_accel_config is None:
         return None
 
-    config_accel = action_accel_config.get(action)
-    if config_accel is not None:
+    if (config_accel := action_accel_config.get(action)) is not None:
         return config_accel
 
     return action.action_accelerator
@@ -1225,6 +1231,12 @@ class ActionSearch(Search):
         return False, False
 
 
+def _trunc_long_str(instr: ty.Any) -> str:
+    "truncate long object names"
+    ustr = str(instr)
+    return ustr[:25] + "…" if len(ustr) > 27 else ustr
+
+
 _SLOW_INPUT_INTERVAL = 2
 _KEY_PRESS_INTERVAL = 0.3
 _KEY_PRESS_REPEAT_THRESHOLD = 0.02
@@ -1263,7 +1275,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         ## make sure we lose the preedit focus ring
         self.preedit.set_name("kupfer-preedit")
 
-        self.current : ty.Optional[Search] = None
+        self.current: ty.Optional[Search] = None
 
         self._widget: ty.Optional[Gtk.Widget] = None
         self._ui_transition_timer = scheduler.Timer()
@@ -1271,8 +1283,8 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self._is_text_mode = False
         self._latest_input_timer = scheduler.Timer()
         # self._key_press_time = None
-        self._key_repeat_key = None  # TODO: check; not set
-        self._key_repeat_active = False  # TODO: check: not set
+        # self._key_repeat_key = None  # TODO: check; not set
+        # self._key_repeat_active = False  # TODO: check: not set
         self._reset_to_toplevel = False
         self._reset_when_back = False
         self.entry.connect("realize", self._entry_realized)
@@ -1386,7 +1398,9 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             return (
                 mod == 0
                 and keyv != 0
-                and Gtk.accelerator_valid(keyv, Gdk.ModifierType.MOD1_MASK)
+                and Gtk.accelerator_valid(
+                    keyv, Gdk.ModifierType.MOD1_MASK
+                )  # pylint: disable=no-member
             )
 
         self.action_accel_config.load(validate)
@@ -1424,7 +1438,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             map(Gdk.keyval_from_name, ("slash", "equal", "question"))
         )
         init_text_keys.append(direct_text_key)
-        keymap = Gdk.Keymap.get_default()
+        event_state = event.get_state()
         # translate keys properly
         (
             _was_bound,
@@ -1432,24 +1446,14 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             _egroup,
             _level,
             consumed,
-        ) = keymap.translate_keyboard_state(
-            event.hardware_keycode, event.get_state(), event.group
+        ) = Gdk.Keymap.get_default().translate_keyboard_state(
+            event.hardware_keycode, event_state, event.group
         )
         all_modifiers = Gtk.accelerator_get_default_mod_mask()
-        modifiers = all_modifiers & ~consumed
-        # MOD1_MASK is alt/option
-        mod1_mask = (
-            event.get_state() & modifiers
-        ) == Gdk.ModifierType.MOD1_MASK
-        action_accel_mask = (
-            event.get_state() & modifiers
-        ) == self.action.accel_modifier
         shift_mask = (
-            event.get_state() & all_modifiers
+            event_state & all_modifiers
         ) == Gdk.ModifierType.SHIFT_MASK
-
-        text_mode = self.get_in_text_mode()
-        has_input = bool(self.entry.get_text())
+        event_state &= all_modifiers & ~consumed
 
         # curtime = time.time()
         self._reset_input_timer()
@@ -1458,11 +1462,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         # process accelerators
         for action, accel in setctl.get_accelerators().items():
             akeyv, amodf = Gtk.accelerator_parse(accel)
-            if (
-                akeyv
-                and akeyv == keyv
-                and (amodf == (event.get_state() & modifiers))
-            ):
+            if akeyv and akeyv == keyv and amodf == event_state:
                 if action_method := getattr(self, action, None):
                     action_method()
                 else:
@@ -1471,7 +1471,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
                 return True
 
         # look for action accelerators
-        if action_accel_mask:
+        if event_state == self.action.accel_modifier:
             keystr = Gtk.accelerator_name(keyv, 0)
             if self.action_accelerator(keystr):
                 return True
@@ -1482,14 +1482,11 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         key_book = self.key_book
         use_command_keys = setctl.get_use_command_keys()
         has_selection = self.current.get_match_state() == State.MATCH
-        if not text_mode and use_command_keys:
+        if not self._is_text_mode and use_command_keys:
             # translate extra commands to normal commands here
             # and remember skipped chars
             if keyv == key_book["space"]:
-                if shift_mask:
-                    keyv = key_book["Up"]
-                else:
-                    keyv = key_book["Down"]
+                keyv = key_book["Up" if shift_mask else "Down"]
 
             elif keyv == ord("/") and has_selection:
                 keyv = key_book["Right"]
@@ -1501,10 +1498,10 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             elif keyv in init_text_keys:
                 if self.try_enable_text_mode():
                     # swallow if it is the direct key
-                    swallow : bool = keyv == direct_text_key
+                    swallow: bool = keyv == direct_text_key
                     return swallow
 
-        if text_mode and keyv in (
+        if self._is_text_mode and keyv in (
             key_book["Left"],
             key_book["Right"],
             key_book["Home"],
@@ -1589,12 +1586,17 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             self.current.go_page_down()
 
         elif keyv == key_book["Right"]:
+            # MOD1_MASK is alt/option
+            mod1_mask = (
+                event_state
+                == Gdk.ModifierType.MOD1_MASK  # pylint: disable=no-member
+            )
             self._browse_down(alternate=mod1_mask)
 
         elif keyv == key_book["BackSpace"]:
-            if not has_input:
+            if not self.entry.get_text():  # not has_input
                 self._backspace_key_press()
-            elif not text_mode:
+            elif not self._is_text_mode:
                 self.entry.delete_text(self.entry.get_text_length() - 1, -1)
             else:
                 return False
@@ -1618,7 +1620,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         # Copy current selection to clipboard
         # delegate to text entry when in text mode
 
-        if self.get_in_text_mode():
+        if self._is_text_mode:
             return False
 
         assert self.current
@@ -1632,7 +1634,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         return interface.copy_to_clipboard(selection, clip)
 
-    def _entry_cut_clipboard(self, entry: Gtk.Entry)->bool:
+    def _entry_cut_clipboard(self, entry: Gtk.Entry) -> bool:
         if not self._entry_copy_clipboard(entry):
             return False
 
@@ -1640,7 +1642,13 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self.reset()
         return False  # TODO: check, was no return
 
-    def _entry_paste_data_received(self, clipboard, targets, _extra, entry):
+    def _entry_paste_data_received(
+        self,
+        clipboard: Gtk.Clipboard,
+        targets: ty.Iterable[str],
+        _extra: ty.Any,
+        entry: Gtk.Widget,
+    ) -> None:
         uri_target = Gdk.Atom.intern("text/uri-list", False)
         ### check if we can insert files
         if uri_target in targets:
@@ -1653,11 +1661,11 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         else:
             # enable text mode and reemit to paste text
             self.try_enable_text_mode()
-            if self.get_in_text_mode():
+            if self._is_text_mode:
                 entry.emit("paste-clipboard")
 
-    def _entry_paste_clipboard(self, entry):
-        if not self.get_in_text_mode():
+    def _entry_paste_clipboard(self, entry: Gtk.Widget) -> None:
+        if not self._is_text_mode:
             self.reset()
             ## when not in text mode,
             ## stop signal emission so we can handle it
@@ -1667,27 +1675,30 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             clipboard.request_targets(self._entry_paste_data_received, entry)
             entry.emit_stop_by_name("paste-clipboard")
 
-    def reset_text(self):
+    def reset_text(self) -> None:
         self.entry.set_text("")
 
-    def reset(self):
+    def reset(self) -> None:
         self.reset_text()
+        assert self.current
         self.current.hide_table()
 
-    def reset_current(self, populate=False):
+    def reset_current(self, populate: bool = False) -> None:
         """
         Reset the source or action view
 
         Corresponds to backspace
         """
+        assert self.current
         if self.current.get_match_state() is State.WAIT:
             self.toggle_text_mode(False)
+
         if self.current is self.action or populate:
             self._populate_search()
         else:
             self.current.reset()
 
-    def reset_all(self):
+    def reset_all(self) -> None:
         """Reset all panes and focus the first"""
         self.switch_to_source()
         while self._browse_up():
@@ -1698,30 +1709,34 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self.reset_current()
         self.reset()
 
-    def _populate_search(self):
+    def _populate_search(self) -> None:
         """Do a blanket search/empty search to populate current pane"""
         pane = self._pane_for_widget(self.current)
         self.data_controller.search(pane, interactive=True)
 
-    def soft_reset(self, pane:ty.Optional[int]=None) ->None:
+    def soft_reset(self, pane: ty.Optional[int] = None) -> None:
         """Reset @pane or current pane context/source
         softly (without visible update), and unset _reset_to_toplevel marker.
         """
         pane = pane or self._pane_for_widget(self.current)
+        assert pane is not None
         if newsrc := self.data_controller.soft_reset(pane):
+            assert self.current
             self.current.set_source(newsrc)
 
         self._reset_to_toplevel = False
 
-    def _escape_key_press(self):
+    def _escape_key_press(self) -> None:
         """Handle escape if first pane is reset, cancel (put away) self."""
+        assert self.current
+
         if self.current.has_result():
             if self.current.is_showing_result():
                 self.reset_current(populate=True)
             else:
                 self.reset_current()
         else:
-            if self.get_in_text_mode():
+            if self._is_text_mode:
                 self.toggle_text_mode(False)
             elif not self.current.get_table_visible():
                 pane = self._pane_for_widget(self.current)
@@ -1733,7 +1748,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         self.reset_text()
 
-    def _backspace_key_press(self):
+    def _backspace_key_press(self) -> None:
         # backspace: delete from stack
         pane = self._pane_for_widget(self.current)
         if self.data_controller.get_object_stack(pane):
@@ -1743,30 +1758,29 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         self._back_key_press()
 
-    def _back_key_press(self):
+    def _back_key_press(self) -> None:
         # leftarrow (or backspace without object stack)
         # delete/go up through stource stack
+        assert self.current
+
         if self.current.is_showing_result():
             self.reset_current(populate=True)
-        else:
-            if not self._browse_up():
-                self.reset()
-                self.reset_current()
-                self._reset_to_toplevel = True
+        elif not self._browse_up():
+            self.reset()
+            self.reset_current()
+            self._reset_to_toplevel = True
 
         self.reset_text()
 
-    def _relax_search_terms(self):
-        if self.get_in_text_mode():
+    def _relax_search_terms(self) -> None:
+        if self._is_text_mode:
             return
 
+        assert self.current
         self.reset_text()
         self.current.relax_match()
 
-    def get_in_text_mode(self):
-        return self._is_text_mode
-
-    def get_can_enter_text_mode(self):
+    def get_can_enter_text_mode(self) -> bool:
         """We can enter text mode if the data backend allows,
         and the text entry is ready for input (empty)
         """
@@ -1775,7 +1789,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         entry_text = self.entry.get_text()
         return val and not entry_text
 
-    def try_enable_text_mode(self):
+    def try_enable_text_mode(self) -> bool:
         """Perform a soft reset if possible and then try enabling text mode"""
         if self._reset_to_toplevel:
             self.soft_reset()
@@ -1785,28 +1799,28 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         return False
 
-    def toggle_text_mode(self, val):
+    def toggle_text_mode(self, val: bool) -> bool:
         """Toggle text mode on/off per @val,
         and return the subsequent on/off state.
         """
-        val = bool(val) and self.get_can_enter_text_mode()
+        val = val and self.get_can_enter_text_mode()
         self._is_text_mode = val
         self.update_text_mode()
         self.reset()
         return val
 
-    def toggle_text_mode_quick(self):
+    def toggle_text_mode_quick(self) -> None:
         """Toggle text mode or not, if we can or not, without reset"""
         self._is_text_mode = not self._is_text_mode
         self.update_text_mode()
 
-    def disable_text_mode_quick(self):
+    def disable_text_mode_quick(self) -> None:
         """Toggle text mode or not, if we can or not, without reset"""
         if self._is_text_mode:
             self._is_text_mode = False
             self.update_text_mode()
 
-    def update_text_mode(self):
+    def update_text_mode(self) -> None:
         """update appearance to whether text mode enabled or not"""
         if self._is_text_mode:
             self.entry.show()
@@ -1819,91 +1833,93 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         self._update_active()
 
-    def switch_to_source_init(self):
+    def switch_to_source_init(self) -> None:
         # Initial switch to source
         self.current = self.search
         self._update_active()
-        if self.get_in_text_mode():
+        if self._is_text_mode:
             self.toggle_text_mode_quick()
 
-    def switch_to_source(self):
+    def switch_to_source(self) -> None:
         self.switch_current_to(0)
 
-    def switch_to_2(self):
+    def switch_to_2(self) -> None:
         self.switch_current_to(1)
 
-    def switch_to_3(self):
+    def switch_to_3(self) -> None:
         self.switch_current_to(2)
 
-    def focus(self):
+    def focus(self) -> None:
         """called when the interface is focus (after being away)"""
         if self._reset_when_back:
             self._reset_when_back = False
             self.toggle_text_mode(False)
         # preserve text mode, but switch to source if we are not in it
-        if not self.get_in_text_mode():
+        if not self._is_text_mode:
             self.switch_to_source()
         # Check that items are still valid when "coming back"
         self.data_controller.validate()
 
-    def did_launch(self):
+    def did_launch(self) -> None:
         "called to notify that 'activate' was successful"
         self._reset_when_back = True
 
-    def did_get_result(self):
+    def did_get_result(self) -> None:
         "called when a command result has come in"
         self._reset_when_back = False
 
-    def put_away(self):
+    def put_away(self) -> None:
         """Called when the interface is hidden"""
         self._relax_search_terms()
         self._reset_to_toplevel = True
         # no hide / show pane three on put away -> focus anymore
 
-    def select_selected_file(self):
+    def select_selected_file(self) -> None:
         # Add optional lookup data to narrow the search
         self.data_controller.find_object("qpfer:selectedfile#any.FileLeaf")
 
-    def select_clipboard_file(self):
+    def select_clipboard_file(self) -> None:
         # Add optional lookup data to narrow the search
         self.data_controller.find_object("qpfer:clipboardfile#any.FileLeaf")
 
-    def select_selected_text(self):
+    def select_selected_text(self) -> None:
         self.data_controller.find_object("qpfer:selectedtext#any.TextLeaf")
 
-    def select_clipboard_text(self):
+    def select_clipboard_text(self) -> None:
         # Add optional lookup data to narrow the search
         self.data_controller.find_object("qpfer:clipboardtext#any.FileLeaf")
 
-    def select_quit(self):
+    def select_quit(self) -> None:
         self.data_controller.find_object("qpfer:quit")
 
-    def show_help(self):
+    def show_help(self) -> None:
         kupferui.show_help(self._make_gui_ctx())
         self.emit("launched-action")
 
-    def show_preferences(self):
+    def show_preferences(self) -> None:
         kupferui.show_preferences(self._make_gui_ctx())
         self.emit("launched-action")
 
-    def compose_action(self):
+    def compose_action(self) -> None:
         self.data_controller.compose_selection()
 
-    def mark_as_default(self):
+    def mark_as_default(self) -> bool:
         if self.action.get_match_state() != State.MATCH:
             return False
 
         self.data_controller.mark_as_default(data.ActionPane)
         return True
 
-    def erase_affinity_for_first_pane(self):
+    def erase_affinity_for_first_pane(self) -> bool:
         if self.search.get_match_state() != State.MATCH:
             return False
 
         self.data_controller.erase_object_affinity(data.SourcePane)
         return True
 
-    def comma_trick(self):
+    def comma_trick(self) -> bool:
+        assert self.current
+
         if self.current.get_match_state() != State.MATCH:
             return False
 
@@ -1911,14 +1927,14 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         curpane = self._pane_for_widget(self.current)
         if self.data_controller.object_stack_push(curpane, cur):
             self._relax_search_terms()
-            if self.get_in_text_mode():
+            if self._is_text_mode:
                 self.reset_text()
 
             return True
 
         return False
 
-    def action_accelerator(self, keystr):
+    def action_accelerator(self, keystr: str) -> bool:
         """
         keystr: accelerator name string
 
@@ -1938,15 +1954,16 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         else:
             self.output_debug("No action found for", keystr)
             return False
+
         return True
 
-    def assign_action_accelerator(self):
+    def assign_action_accelerator(self) -> None:
         from kupfer.ui import getkey_dialog
 
         if self.action.get_match_state() != State.MATCH:
             raise RuntimeError("No Action Selected")
 
-        def is_good_keystr(k):
+        def is_good_keystr(k: str) -> bool:
             keyv, mods = Gtk.accelerator_parse(k)
             return keyv != 0 and mods in (0, self.action.accel_modifier)
 
@@ -1966,22 +1983,19 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         keystr = Gtk.accelerator_name(keyv, 0)
         self.action_accel_config.set(action, keystr)
 
-    def get_context_actions(self):
+    def get_context_actions(self) -> ty.Iterable[tuple[str, AccelFunc]]:
         """
         Get a list of (name, function) currently
         active context actions
         """
+        assert self.current
 
-        def get_accel(key):
+        def get_accel(key: str) -> tuple[str, AccelFunc]:
             """Return name, method pair for @key"""
             if key not in accelerators.ACCELERATOR_NAMES:
                 raise RuntimeError(f"Missing accelerator: {key}")
 
             return (accelerators.ACCELERATOR_NAMES[key], getattr(self, key))
-
-        def trunc(ustr):
-            "truncate long object names"
-            return ustr[:25] + "…" if len(ustr) > 27 else ustr
 
         has_match = self.current.get_match_state() == State.MATCH
         if has_match:
@@ -1997,41 +2011,46 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             amatch = self.action.get_current()
 
             label = _('Assign Accelerator to "%(action)s"') % {
-                "action": trunc(str(amatch))
+                "action": _trunc_long_str(amatch)
             }
             w_label = textwrap.wrap(label, width=40, subsequent_indent="    ")
             yield ("\n".join(w_label), self.assign_action_accelerator)
 
             label = _('Make "%(action)s" Default for "%(object)s"') % {
-                "action": trunc(str(amatch)),
-                "object": trunc(str(smatch)),
+                "action": _trunc_long_str(amatch),
+                "object": _trunc_long_str(smatch),
             }
             w_label = textwrap.wrap(label, width=40, subsequent_indent="    ")
             yield ("\n".join(w_label), self.mark_as_default)
 
         if has_match:
             if self.data_controller.get_object_has_affinity(data.SourcePane):
-                match = self.search.get_current()
                 # TRANS: Removing learned and/or configured bonus search score
                 yield (
-                    _('Forget About "%s"') % trunc(str(match)),
+                    _('Forget About "%s"')
+                    % _trunc_long_str(self.search.get_current()),
                     self.erase_affinity_for_first_pane,
                 )
-        if has_match:
+
             yield get_accel("reset_all")
 
-    def _pane_reset(self, controller, pane, item):
+    def _pane_reset(
+        self, _controller: ty.Any, pane: int, item: Rankable | None
+    ) -> None:
         wid = self._widget_for_pane(pane)
         if not item:
             wid.reset()
-        else:
-            wid.set_match_plain(item)
-            if wid is self.search:
-                self.reset()
-                self.toggle_text_mode(False)
-                self.switch_to_source()
+            return
 
-    def _new_source(self, sender, pane, source, at_root):
+        wid.set_match_plain(item)
+        if wid is self.search:
+            self.reset()
+            self.toggle_text_mode(False)
+            self.switch_to_source()
+
+    def _new_source(
+        self, _sender: ty.Any, pane: int, source: AnySource, at_root: bool
+    ) -> None:
         """Notification about a new data source,
         (represented object for the self.search object
         """
@@ -2049,13 +2068,15 @@ class Interface(GObject.GObject, pretty.OutputMixin):
                 self.reset_current(populate=True)
                 wid.show_table_quirk()
 
-    def update_third(self):
+    def update_third(self) -> None:
         if self._pane_three_is_visible:
             self._ui_transition_timer.set_ms(200, self._show_third_pane, True)
         else:
             self._show_third_pane(False)
 
-    def _show_hide_third(self, ctr, mode, ignored):
+    def _show_hide_third(
+        self, _ctr: ty.Any, mode: int, _ignored: ty.Any
+    ) -> None:
         if mode is data.SourceActionObjectMode:
             # use a delay before showing the third pane,
             # but set internal variable to "shown" already now
@@ -2065,18 +2086,20 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             self._pane_three_is_visible = False
             self._show_third_pane(False)
 
-    def _show_third_pane(self, show):
+    def _show_third_pane(self, show: bool) -> None:
         self._ui_transition_timer.invalidate()
         self.third.set_visible(show)
 
-    def _update_active(self):
+    def _update_active(self) -> None:
         for panewidget in (self.action, self.search, self.third):
             if panewidget is not self.current:
                 panewidget.set_state(Gtk.StateType.NORMAL)
 
             panewidget.match_view.inject_preedit(None)
 
-        if self._is_text_mode or self._key_repeat_active:
+        assert self.current
+
+        if self._is_text_mode:  # or self._key_repeat_active:
             self.current.set_state(Gtk.StateType.ACTIVE)
         else:
             self.current.set_state(Gtk.StateType.SELECTED)
@@ -2084,27 +2107,30 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         self._description_changed()
 
-    def switch_current(self, reverse=False):
+    def switch_current(self, reverse: bool = False) -> None:
         # Only allow switch if we have match
-        order = [self.search, self.action]
         if self._pane_three_is_visible:
-            order.append(self.third)
+            curidx = (self.search, self.action, self.third).index(self.current)
+            newidx = (curidx - 1 if reverse else curidx + 1) % 3
+        else:
+            # for 2 panels simple switch to other one
+            newidx = 0 if self.current == self.action else 1
 
-        curidx = order.index(self.current)
-        newidx = curidx - 1 if reverse else curidx + 1
-        newidx %= len(order)
         self.switch_current_to(newidx)
 
-    def switch_current_to(self, index):
+    def switch_current_to(self, index: int) -> bool:
         """
         Switch selected pane
 
         index: index (0, 1, or 2) of the pane to select.
         """
         assert index in (0, 1, 2)
-        order = [self.search, self.action]
+        assert self.current
+
         if self._pane_three_is_visible:
-            order.append(self.third)
+            order = (self.search, self.action, self.third)
+        else:
+            order = (self.search, self.action)  # type: ignore
 
         if index >= len(order):
             return False
@@ -2127,26 +2153,29 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         return True
 
-    def _browse_up(self):
+    def _browse_up(self) -> bool:
         pane = self._pane_for_widget(self.current)
         return self.data_controller.browse_up(pane)
 
-    def _browse_down(self, alternate=False):
+    def _browse_down(self, alternate: bool = False) -> None:
         pane = self._pane_for_widget(self.current)
+        assert pane is not None
         self.data_controller.browse_down(pane, alternate=alternate)
 
-    def _make_gui_ctx(self):
+    def _make_gui_ctx(self) -> uievents.GUIEnvironmentContext:
         event_time = Gtk.get_current_event_time()
         return uievents.gui_context_from_widget(event_time, self._widget)
 
-    def _activate(self, pane_owner, current):
+    def _activate(self, _pane_owner: ty.Any, _current: ty.Any) -> None:
         self.data_controller.activate(ui_ctx=self._make_gui_ctx())
 
-    def activate(self):
+    def activate(self) -> None:
         """Activate current selection (Run action)"""
         self._activate(None, None)
 
-    def execute_file(self, filepath, display, event_time):
+    def execute_file(
+        self, filepath: str, display: Gdk.Display, event_time: float
+    ) -> None:
         """Execute a .kfcom file"""
 
         def _handle_error(exc_info):
@@ -2159,11 +2188,17 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         ctxenv = uievents.gui_context_from_keyevent(event_time, display)
         self.data_controller.execute_file(filepath, ctxenv, _handle_error)
 
-    def _search_result(self, sender, pane, matchrankable, matches, context):
+    def _search_result(
+        self,
+        _sender: ty.Any,
+        pane: int,
+        matchrankable: Rankable | None,
+        matches: ty.Iterable[Rankable],
+        key: str | None,
+    ) -> None:
         # NOTE: "Always-matching" search.
         # If we receive an empty match, we ignore it, to retain the previous
         # results. The user is not served by being met by empty results.
-        key = context
         if key and len(key) > 1 and matchrankable is None:
             # with typos or so, reset quicker
             self._latest_input_timer.set(
@@ -2174,35 +2209,43 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         wid = self._widget_for_pane(pane)
         wid.update_match(key, matchrankable, matches)
 
-    def _widget_for_pane(self, pane):
+    def _widget_for_pane(self, pane: int) -> Search:
         return self.pane_to_widget[pane]
 
     def _pane_for_widget(self, widget: GObject.GObject) -> int | None:
         return self.widget_to_pane[id(widget)]
 
-    def _object_stack_changed(self, controller, pane):
+    def _object_stack_changed(
+        self, controller: data.DataController, pane: int
+    ) -> None:
         """
         Stack of objects (for comma trick) changed in @pane
         """
         wid = self._widget_for_pane(pane)
         wid.set_object_stack(controller.get_object_stack(pane))
 
-    def _panewidget_button_press(self, widget, event):
+    def _panewidget_button_press(
+        self, widget: Gtk.Widget, event: Gdk.EventButton
+    ) -> bool:
         "mouse clicked on a pane widget"
         # activate on double-click
         if event.type == Gdk.EventType._2BUTTON_PRESS:
             self.activate()
             return True
 
-    def _selection_changed(self, pane_owner, match):
+        return False
+
+    def _selection_changed(
+        self, pane_owner: Search, match: Rankable | None
+    ) -> None:
         pane = self._pane_for_widget(pane_owner)
         self.data_controller.select(pane, match)
-        if not pane_owner is self.current:
+        if pane_owner is not self.current:
             return
 
         self._description_changed()
 
-    def _description_changed(self):
+    def _description_changed(self) -> None:
         assert self.current
         match = self.current.get_current()
         # Use invisible WORD JOINER instead of empty, to maintain vertical size
@@ -2210,7 +2253,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         markup = f"<small>{_escape_markup_str(desc)}</small>"
         self.label.set_markup(markup)
 
-    def put_text(self, text):
+    def put_text(self, text: str) -> None:
         """
         Put @text into the interface to search, to use
         for "queries" from other sources
@@ -2219,7 +2262,9 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self.entry.set_text(text)
         self.entry.set_position(-1)
 
-    def put_files(self, fileuris, paths):
+    def put_files(
+        self, fileuris: ty.Iterable[str], paths: ty.Iterable[str]
+    ) -> None:
         self.output_debug("put-files:", list(fileuris))
         if paths:
             objs = (Gio.File.new_for_path(U).get_path() for U in fileuris)
@@ -2230,24 +2275,29 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         if leaves:
             self.data_controller.insert_objects(data.SourcePane, leaves)
 
-    def _reset_input_timer(self):
+    def _reset_input_timer(self) -> None:
         # if input is slow/new, we reset
         self._latest_input_timer.set(
             _SLOW_INPUT_INTERVAL, self._relax_search_terms
         )
 
-    def _preedit_im_changed(self, editable, preedit_string):
+    def _preedit_im_changed(
+        self, _editable: ty.Any, preedit_string: str
+    ) -> None:
         """
         This is called whenever the input method changes its own preedit box.
         We take this opportunity to expand it.
         """
         if preedit_string:
+            assert self.current
             self.current.match_view.expand_preedit(self.preedit)
             self._reset_input_timer()
 
         self._preedit_text = preedit_string
 
-    def _preedit_insert_text(self, editable, text, byte_length, position):
+    def _preedit_insert_text(
+        self, editable: Gtk.Entry, text: str, byte_length: int, position: int
+    ) -> bool:
         # New text about to be inserted in preedit
         if text:
             self.entry.insert_text(text, -1)
@@ -2258,32 +2308,20 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         GObject.signal_stop_emission_by_name(editable, "insert-text")
         return False
 
-    def _preedit_draw(self, widget, cr):
+    def _preedit_draw(self, widget: Gtk.Widget, _cr: ty.Any) -> bool:
         # draw nothing if hidden
-        return widget.get_width_chars() == 0
+        return widget.get_width_chars() == 0  # type: ignore
 
-    def _changed(self, editable):
+    def _changed(self, editable: Gtk.Entry) -> None:
         """
         The entry changed callback: Here we have to be sure to use
         **UNICODE** (unicode()) for the entered text
         """
         # @text is UTF-8
         text = editable.get_text()
-        # text = text.decode("UTF-8")
 
         # draw character count as icon
-        if False and self.get_in_text_mode() and text:
-            w, h = editable.size_request()
-            sz = h - 3
-            c = editable.style.text[Gtk.StateType.NORMAL]
-            textc = (c.red / 65535.0, c.green / 65535.0, c.blue / 65535.0)
-            pb = get_glyph_pixbuf(str(len(text)), sz, color=textc)
-            pb = get_glyph_pixbuf(str(len(text)), sz, color="black")
-            editable.set_icon_from_pixbuf(Gtk.EntryIconPosition.SECONDARY, pb)
-        else:
-            editable.set_icon_from_pixbuf(
-                Gtk.EntryIconPosition.SECONDARY, None
-            )
+        editable.set_icon_from_pixbuf(Gtk.EntryIconPosition.SECONDARY, None)
 
         # cancel search and return if empty
         if not text:
@@ -2302,11 +2340,11 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         # start search for updated query
         pane = self._pane_for_widget(self.current)
-        if not self.get_in_text_mode() and self._reset_to_toplevel:
+        if not self._is_text_mode and self._reset_to_toplevel:
             self.soft_reset(pane)
 
         self.data_controller.search(
-            pane, key=text, context=text, text_mode=self.get_in_text_mode()
+            pane, key=text, context=text, text_mode=self._is_text_mode
         )
 
 
@@ -2380,15 +2418,15 @@ class WindowController(pretty.OutputMixin):
     """
 
     def __init__(self):
-        self.window = None
+        self.window: Gtk.Window = None
         self.current_screen_handler = 0
         self.current_screen = None
-        self.interface = None
+        self.interface: Interface = None  # type: ignore
         self._statusicon = None
         self._statusicon_ai = None
         self._window_hide_timer = scheduler.Timer()
 
-    def initialize(self, data_controller):
+    def initialize(self, data_controller: data.DataController) -> None:
         self.window = Gtk.Window(
             type=Gtk.WindowType.TOPLEVEL,
             border_width=WINDOW_BORDER_WIDTH,
@@ -2415,10 +2453,10 @@ class WindowController(pretty.OutputMixin):
         self.window.drag_dest_add_text_targets()
         self.window.connect("drag-data-received", self._on_drag_data_received)
 
-    def _on_window_map_event(self, *args):
+    def _on_window_map_event(self, *_args: ty.Any) -> None:
         self.interface.update_third()
 
-    def _on_window_realize(self, widget):
+    def _on_window_realize(self, widget: Gtk.Widget) -> None:
         # Load css
         style_provider = Gtk.CssProvider()
         style_provider.load_from_data(KUPFER_CSS)
@@ -2429,58 +2467,79 @@ class WindowController(pretty.OutputMixin):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
-    def show_statusicon(self):
+    def show_statusicon(self) -> None:
         if not self._statusicon:
             self._statusicon = self._setup_gtk_status_icon(self._setup_menu())
 
         with suppress(AttributeError):
             self._statusicon.set_visible(True)
 
-    def hide_statusicon(self):
+    def hide_statusicon(self) -> None:
         if self._statusicon:
             try:
                 self._statusicon.set_visible(False)
             except AttributeError:
                 self._statusicon = None
 
-    def _showstatusicon_changed(self, setctl, section, key, value):
+    def _showstatusicon_changed(
+        self,
+        setctl: settings.SettingsController,
+        section: str,
+        key: str,
+        value: ty.Any,
+    ) -> None:
         "callback from SettingsController"
         if value:
             self.show_statusicon()
         else:
             self.hide_statusicon()
 
-    def show_statusicon_ai(self):
+    def show_statusicon_ai(self) -> None:
         if not self._statusicon_ai:
             self._statusicon_ai = self._setup_appindicator(self._setup_menu())
 
-        if not self._statusicon_ai:
+        if self._statusicon_ai or AppIndicator3 is None:
             return
 
         self._statusicon_ai.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
 
-    def hide_statusicon_ai(self):
-        if self._statusicon_ai:
+    def hide_statusicon_ai(self) -> None:
+        if self._statusicon_ai and AppIndicator3 is not None:
             self._statusicon_ai.set_status(
                 AppIndicator3.IndicatorStatus.PASSIVE
             )
 
-    def _showstatusicon_ai_changed(self, setctl, section, key, value):
+    def _showstatusicon_ai_changed(
+        self,
+        setctl: settings.SettingsController,
+        section: str,
+        key: str,
+        value: ty.Any,
+    ) -> None:
         if value:
             self.show_statusicon_ai()
         else:
             self.hide_statusicon_ai()
 
-    def _setup_menu(self, context_menu=False):
+    def _setup_menu(self, context_menu: bool = False) -> Gtk.Menu:
         menu = Gtk.Menu()
         menu.set_name("kupfer-menu")
 
-        def submenu_callback(menuitem, callback):
+        def submenu_callback(
+            menuitem: Gtk.MenuItem, callback: ty.Callable[[], None]
+        ) -> bool:
             callback()
             return True
 
-        def add_menu_item(icon, callback, label=None, with_ctx=True):
-            def mitem_handler(menuitem, callback):
+        def add_menu_item(
+            icon: str | None,
+            callback: ty.Callable[..., None],
+            label: str | None = None,
+            with_ctx: bool = True,
+        ) -> None:
+            def mitem_handler(
+                menuitem: Gtk.MenuItem, callback: ty.Callable[..., None]
+            ) -> bool:
                 if with_ctx:
                     event_time = Gtk.get_current_event_time()
                     ui_ctx = uievents.gui_context_from_widget(
@@ -2489,15 +2548,17 @@ class WindowController(pretty.OutputMixin):
                     callback(ui_ctx)
                 else:
                     callback()
+
                 if context_menu:
                     self.put_away()
+
                 return True
 
-            mitem = None
             if label and not icon:
                 mitem = Gtk.MenuItem(label=label)
             else:
                 mitem = Gtk.ImageMenuItem.new_from_stock(icon)
+
             mitem.connect("activate", mitem_handler, callback)
             menu.append(mitem)
 
@@ -2524,7 +2585,7 @@ class WindowController(pretty.OutputMixin):
 
         return menu
 
-    def _setup_gtk_status_icon(self, menu):
+    def _setup_gtk_status_icon(self, menu: Gtk.Menu) -> Gtk.StatusIcon:
         status = Gtk.StatusIcon.new_from_icon_name(version.ICON_NAME)
         status.set_tooltip_text(version.PROGRAM_NAME)
 
@@ -2532,7 +2593,7 @@ class WindowController(pretty.OutputMixin):
         status.connect("activate", self.show_hide)
         return status
 
-    def _setup_appindicator(self, menu):
+    def _setup_appindicator(self, menu: Gtk.Menu) -> ty.Any:
         if AppIndicator3 is None:
             return None
 
@@ -2545,7 +2606,7 @@ class WindowController(pretty.OutputMixin):
         indicator.set_menu(menu)
         return indicator
 
-    def _setup_window(self):
+    def _setup_window(self) -> None:
         """
         Returns window
         """
@@ -2604,7 +2665,7 @@ class WindowController(pretty.OutputMixin):
         # on metacity
         self.window.set_resizable(False)
 
-    def _window_type_hint(self):
+    def _window_type_hint(self) -> Gdk.WindowTypeHint:
         type_hint = Gdk.WindowTypeHint.UTILITY
         hint_name = kupfer.config.get_kupfer_env("WINDOW_TYPE_HINT").upper()
         if hint_name:
@@ -2619,7 +2680,7 @@ class WindowController(pretty.OutputMixin):
 
         return type_hint
 
-    def _window_position(self):
+    def _window_position(self) -> Gtk.WindowPosition:
         value = Gtk.WindowPosition.NONE
         hint_name = kupfer.config.get_kupfer_env("WINDOW_POSITION").upper()
         if hint_name:
@@ -2634,28 +2695,50 @@ class WindowController(pretty.OutputMixin):
 
         return value
 
-    def _window_frame_clicked(self, widget, event):
+    def _window_frame_clicked(
+        self, widget: Gtk.Widget, event: Gdk.EventButton
+    ) -> None:
         "Start drag when the window is clicked"
         widget.begin_move_drag(
             event.button, int(event.x_root), int(event.y_root), event.time
         )
 
-    def _context_clicked(self, widget, event):
+    def _context_clicked(
+        self, widget: Gtk.Widget, event: Gdk.EventButton
+    ) -> bool:
         "The context menu label was clicked"
         menu = self._setup_menu(True)
         menu.set_screen(self.window.get_screen())
         menu.popup(None, None, None, None, event.button, event.time)
         return True
 
-    def _button_enter(self, widget, event, button, udata):
+    def _button_enter(
+        self,
+        widget: Gtk.Widget,
+        event: Gdk.EventCrossing,
+        button: Gtk.Widget,
+        udata: str,
+    ) -> None:
         "Pointer enters context menu button"
-        button.set_markup("<u>" + udata + "</u>")
+        button.set_markup(f"<u>{udata}</u>")
 
-    def _button_leave(self, widget, event, button, udata):
+    def _button_leave(
+        self,
+        widget: Gtk.Widget,
+        event: Gdk.EventCrossing,
+        button: Gtk.Widget,
+        udata: str,
+    ) -> None:
         "Pointer leaves context menu button"
         button.set_markup(udata)
 
-    def _popup_menu(self, status_icon, button, activate_time, menu):
+    def _popup_menu(
+        self,
+        status_icon: Gtk.StatusIcon,
+        button: Gtk.Widget,
+        activate_time: float,
+        menu: Gtk.Menu,
+    ) -> None:
         """
         When the StatusIcon is right-clicked
         """
@@ -2668,14 +2751,19 @@ class WindowController(pretty.OutputMixin):
             activate_time,
         )
 
-    def launch_callback(self, sender):
+    def launch_callback(self, sender: ty.Any) -> None:
         # Separate window hide from the action being
         # done. This is to solve a window focus bug when
         # we switch windows using an action
         self.interface.did_launch()
         self._window_hide_timer.set_ms(100, self.put_away)
 
-    def result_callback(self, sender, result_type, ui_ctx):
+    def result_callback(
+        self,
+        sender: Gtk.Widget,
+        _result_type: ty.Any,
+        ui_ctx: uievents.GUIEnvironmentContext,
+    ) -> None:
         self.interface.did_get_result()
         if ui_ctx:
             self.on_present(
@@ -2684,7 +2772,7 @@ class WindowController(pretty.OutputMixin):
         else:
             self.on_present(sender, "", Gtk.get_current_event_time())
 
-    def _lost_focus(self, window, event):
+    def _lost_focus(self, window: Gtk.Window, event: Gdk.EventFocus) -> None:
         if not kupfer.config.has_capability("HIDE_ON_FOCUS_OUT"):
             return
         # Close at unfocus.
@@ -2693,7 +2781,7 @@ class WindowController(pretty.OutputMixin):
         # do some additional math to make sure that
         # that window won't close if the mouse pointer
         # is over it.
-        _gdkwindow, x, y, mods = (
+        _gdkwindow, x, y, _mods = (
             window.get_screen().get_root_window().get_pointer()
         )
         w_x, w_y = window.get_position()
@@ -2701,12 +2789,13 @@ class WindowController(pretty.OutputMixin):
         if x not in range(w_x, w_x + w_w) or y not in range(w_y, w_y + w_h):
             self._window_hide_timer.set_ms(50, self.put_away)
 
-    def _monitors_changed(self, *ignored):
+    def _monitors_changed(self, *_ignored: ty.Any) -> None:
         self._center_window()
 
-    def is_current_display(self, displayname):
+    def is_current_display(self, displayname: str) -> bool:
         def norm_name(name):
             "Make :0.0 out of :0"
+            # TODO: change
             if name[-2] == ":":
                 return name + ".0"
 
@@ -2718,32 +2807,23 @@ class WindowController(pretty.OutputMixin):
         cur_disp = self.window.get_screen().get_display().get_name()
         return norm_name(cur_disp) == norm_name(displayname)
 
-    def _window_put_on_screen(self, screen):
+    def _window_put_on_screen(self, screen: Gdk.Screen) -> None:
         if self.current_screen_handler:
             scr = self.window.get_screen()
             scr.disconnect(self.current_screen_handler)
 
-        if False:
-            rgba = screen.get_rgba_colormap()
-            if rgba:
-                self.window.unrealize()
-                self.window.set_screen(screen)
-                self.window.set_colormap(rgba)
-                self.window.realize()
-
-        else:
-            self.window.set_screen(screen)
-
+        self.window.set_screen(screen)
         self.current_screen_handler = screen.connect(
             "monitors-changed", self._monitors_changed
         )
         self.current_screen = screen
 
-    def _center_window(self, displayname=None):
+    def _center_window(self, displayname: str | None = None) -> None:
         """Center Window on the monitor the pointer is currently on"""
 
         def norm_name(name):
             "Make :0.0 out of :0"
+            # TODO: remove duplicate
             if name[-2] == ":":
                 return name + ".0"
 
@@ -2764,9 +2844,9 @@ class WindowController(pretty.OutputMixin):
         midx = geo.x + geo.width / 2 - wid / 2
         midy = geo.y + geo.height / 2 - hei / 2
         self.window.move(midx, midy)
-        uievents.GUIEnvironmentContext._try_close_unused_displays(screen)
+        uievents.GUIEnvironmentContext.try_close_unused_displays(screen)
 
-    def _should_recenter_window(self):
+    def _should_recenter_window(self) -> bool:
         """Return True if the mouse pointer and the window
         are on different monitors.
         """
@@ -2776,15 +2856,17 @@ class WindowController(pretty.OutputMixin):
 
         display = self.window.get_screen().get_display()
         screen, x, y, modifiers = display.get_pointer()
-        return screen.get_monitor_at_point(
-            x, y
-        ) != screen.get_monitor_at_window(self.window.get_window())
+        mon_cur = screen.get_monitor_at_point(x, y)
+        mon_win = screen.get_monitor_at_window(self.window.get_window())
+        return mon_cur != mon_win
 
-    def activate(self, sender=None):
+    def activate(self, sender: Gtk.Widget | None = None) -> None:
         dispname = self.window.get_screen().make_display_name()
         self.on_present(sender, dispname, Gtk.get_current_event_time())
 
-    def on_present(self, sender, display, timestamp):
+    def on_present(
+        self, sender: ty.Any, display: str | None, timestamp: float
+    ) -> None:
         """Present on @display, where None means default display"""
         self._window_hide_timer.invalidate()
         if not display:
@@ -2803,14 +2885,16 @@ class WindowController(pretty.OutputMixin):
         if self._should_recenter_window():
             self._center_window(display)
 
-    def put_away(self):
+    def put_away(self) -> None:
         self.interface.put_away()
         self.window.hide()
 
-    def _cancelled(self, widget):
+    def _cancelled(self, _obj: Interface) -> None:
         self.put_away()
 
-    def on_show_hide(self, sender, display, timestamp):
+    def on_show_hide(
+        self, sender: ty.Any, display: str, timestamp: float
+    ) -> None:
         """
         Toggle activate/put-away
         """
@@ -2819,66 +2903,98 @@ class WindowController(pretty.OutputMixin):
         else:
             self.on_present(sender, display, timestamp)
 
-    def show_hide(self, sender):
+    def show_hide(self, sender: Gtk.Widget) -> None:
         "GtkStatusIcon callback"
         self.on_show_hide(sender, "", Gtk.get_current_event_time())
 
-    def _key_binding(self, keyobj, keybinding_number, display, timestamp):
+    def _key_binding(
+        self,
+        keyobj: keybindings.KeyboundObject,
+        keybinding_number: int,
+        display: str,
+        timestamp: float,
+    ) -> None:
         """Keybinding activation callback"""
         if keybinding_number == keybindings.KEYBINDING_DEFAULT:
             self.on_show_hide(keyobj, display, timestamp)
+
         elif keybinding_number == keybindings.KEYBINDING_MAGIC:
             self.on_present(keyobj, display, timestamp)
             self.interface.select_selected_text()
             self.interface.select_selected_file()
 
-    def _on_drag_data_received(self, widget, context, x, y, data, info, time):
+    def _on_drag_data_received(
+        self,
+        widget: Gtk.Widget,
+        context: ty.Any,
+        x: int,
+        y: int,
+        data,
+        info,
+        time,
+    ) -> None:
+        ic(vars())
         uris = data.get_uris()
         if uris:
             self.interface.put_files(uris, paths=False)
         else:
             self.interface.put_text(data.get_text())
 
-    def on_put_text(self, sender, text, display, timestamp):
+    def on_put_text(
+        self, sender: Gtk.Widget, text: str, display: str, timestamp: float
+    ) -> None:
         """We got a search text from dbus"""
         self.on_present(sender, display, timestamp)
         self.interface.put_text(text)
 
-    def on_put_files(self, sender, fileuris, display, timestamp):
+    def on_put_files(
+        self,
+        sender: Gtk.Widget,
+        fileuris: ty.Iterable[str],
+        display: str,
+        timestamp: float,
+    ) -> None:
         self.on_present(sender, display, timestamp)
         self.interface.put_files(fileuris, paths=True)
 
-    def on_execute_file(self, sender, filepath, display, timestamp):
+    def on_execute_file(
+        self,
+        sender: Gtk.Widget,
+        filepath: ty.Iterable[str],
+        display: str,
+        timestamp: float,
+    ) -> None:
         self.interface.execute_file(filepath, display, timestamp)
 
-    def _close_window(self, window, event):
+    def _close_window(self, window: Gtk.Widget, event) -> bool:
+        ic(vars())
         self.put_away()
         return True
 
-    def _destroy(self, widget, data=None):
+    def _destroy(self, widget: Gtk.Widget, _data: ty.Any = None) -> None:
         self.quit()
 
-    def _sigterm(self, signal, frame):
+    def _sigterm(self, signal: int, _frame: ty.Any) -> None:
         self.output_info("Caught signal", signal, "exiting..")
         self.quit()
 
-    def _on_early_interrupt(self, signal, frame):
+    def _on_early_interrupt(self, signal: int, _frame: ty.Any) -> None:
         sys.exit(1)
 
-    def save_data(self):
+    def save_data(self) -> None:
         """Save state before quit"""
         sch = scheduler.GetScheduler()
         sch.finish()
         self.interface.save_config()
 
-    def quit(self, sender=None):
+    def quit(self, sender: Gtk.Widget | None = None) -> None:
         Gtk.main_quit()
 
-    def quit_now(self):
+    def quit_now(self) -> None:
         """Quit immediately (state save should already be done)"""
         raise SystemExit
 
-    def _session_save(self, *args):
+    def _session_save(self, *_args: ty.Any) -> bool:
         """Old-style session save callback.
         ret True on successful
         """
@@ -2887,14 +3003,14 @@ class WindowController(pretty.OutputMixin):
         self.save_data()
         return True
 
-    def _session_die(self, *args):
+    def _session_die(self, *_args: ty.Any) -> None:
         """Session callback on session end
         quit now, without saving, since we already do that on
         Session save!
         """
         self.quit_now()
 
-    def lazy_setup(self):
+    def lazy_setup(self) -> None:
         """Do all setup that can be done after showing main interface.
         Connect to desktop services (keybinding callback, session logout
         callbacks etc).
@@ -2918,17 +3034,15 @@ class WindowController(pretty.OutputMixin):
             "value-changed::kupfer.showstatusicon_ai",
             self._showstatusicon_ai_changed,
         )
-        keystr = setctl.get_keybinding()
-        magickeystr = setctl.get_magic_keybinding()
 
-        if keystr:
+        if keystr := setctl.get_keybinding():
             succ = keybindings.bind_key(keystr)
             self.output_info(
                 f"Trying to register {keystr} to spawn kupfer.. "
                 + ("success" if succ else "failed")
             )
 
-        if magickeystr:
+        if magickeystr := setctl.get_magic_keybinding():
             succ = keybindings.bind_key(
                 magickeystr, keybindings.KEYBINDING_MAGIC
             )
@@ -2951,7 +3065,7 @@ class WindowController(pretty.OutputMixin):
 
         self.output_debug("finished lazy_setup")
 
-    def main(self, quiet=False):
+    def main(self, quiet: bool = False) -> None:
         """Start WindowController, present its window (if not @quiet)"""
         signal.signal(signal.SIGINT, self._on_early_interrupt)
 

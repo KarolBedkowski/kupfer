@@ -28,6 +28,7 @@ from kupfer.core.sources import GetSourceController
 SourcePane, ActionPane, ObjectPane = (1, 2, 3)
 
 # In two-pane or three-pane mode
+# TODO: enum
 SourceActionMode, SourceActionObjectMode = (1, 2)
 
 DATA_SAVE_INTERVAL_S = 3660
@@ -306,10 +307,10 @@ class LeafPane(Pane, pretty.OutputMixin):
     def refresh_data(self):
         self.emit("new-source", self.source)
 
-    def browse_up(self):
+    def browse_up(self) -> bool:
         """Try to browse up to previous sources, from current
         source"""
-        succ = self.pop_source()
+        succ = bool(self.pop_source())
         if not succ:
             if self.source.has_parent():
                 self.source_rebase(self.source.get_parent())
