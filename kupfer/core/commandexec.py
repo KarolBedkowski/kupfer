@@ -45,18 +45,21 @@ from kupfer.obj.sources import MultiSource
 from kupfer.obj.compose import MultipleLeaf
 from kupfer.ui.uievents import GUIEnvironmentContext
 
+# TODO: enum
 RESULT_NONE, RESULT_OBJECT, RESULT_SOURCE, RESULT_ASYNC = (1, 2, 3, 4)
 RESULTS_SYNC = (RESULT_OBJECT, RESULT_SOURCE)
 
 _MAX_LAST_RESULTS = 10
-
-_ACTION_EXEC_CONTEXT = None
 
 ExecInfo = ty.Union[
     tuple[ty.Type[BaseException], BaseException, types.TracebackType],
     tuple[None, None, None],
 ]
 CmdTuple = tuple[Leaf, Action, ty.Optional[Leaf]]
+Token = tuple[int, CmdTuple]  # TODO: check, probably int
+
+if ty.TYPE_CHECKING:
+    _ = ic = str
 
 
 class ActionExecutionError(Exception):
@@ -94,7 +97,7 @@ class ExecutionToken:
     def __init__(
         self,
         aectx: ActionExecutionContext,
-        async_token: tuple[ty.Any, CmdTuple],
+        async_token: Token,
         ui_ctx: GUIEnvironmentContext | None,
     ) -> None:
         self._aectx: ActionExecutionContext = aectx
@@ -111,8 +114,12 @@ class ExecutionToken:
     def register_late_error(self, exc_info: ExecInfo | None = None) -> None:
         self._aectx.register_late_error(self._token, exc_info)
 
-    def delegated_run(self, *objs: ty.Any) -> tuple[ty.Any, ty.Any]:
-        return self._aectx.run(*objs, delegate=True, ui_ctx=self._ui_ctx)
+    def delegated_run(
+        self, obj: Leaf, action: Action, iobj: Leaf | None
+    ) -> tuple[ty.Any, ty.Any]:
+        return self._aectx.run(
+            obj, action, iobj, delegate=True, ui_ctx=self._ui_ctx
+        )
 
     @property
     def environment(self):
@@ -136,6 +143,14 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
     """
 
     __gtype_name__ = "ActionExecutionContext"
+    _instance = None
+
+    @classmethod
+    def instance(cls) -> ActionExecutionContext:
+        if cls._instance is None:
+            cls._instance = ActionExecutionContext()
+
+        return cls._instance
 
     def __init__(self):
         GObject.GObject.__init__(self)
@@ -144,8 +159,8 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         self._delegate = False
         self._command_counter = itertools.count()
         self.last_command_id = -1
-        self.last_command = None
-        self.last_executed_command = None
+        self.last_command: ty.Optional[CmdTuple] = None
+        self.last_executed_command: ty.Optional[CmdTuple] = None
         self.last_results: collections.deque[ty.Any] = collections.deque(
             [], _MAX_LAST_RESULTS
         )
@@ -163,30 +178,34 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         return bool(self._nest_level)
 
     @contextlib.contextmanager
-    def _error_conversion(self, *cmdtuple):
+    def _error_conversion(self, cmdtuple: CmdTuple) -> ty.Any:
         try:
             yield
         except OperationError:
             self._do_error_conversion(cmdtuple, sys.exc_info())
 
     def _do_error_conversion(
-        self, cmdtuple: tuple[ty.Any, ...], exc_info: ExecInfo
+        self, cmdtuple: CmdTuple, exc_info: ExecInfo
     ) -> None:
         if not self.operation_error(exc_info, cmdtuple):
-            raise exc_info[1]
+            raise exc_info[1]  # type: ignore
 
         _etype, value, traceback = exc_info
         raise ActionExecutionError(value).with_traceback(traceback)
 
-    def get_async_token(self):
+    def get_async_token(self) -> Token:
         """Get an action execution for current execution
 
         Return a token for the currently active command execution.
         The token must be used for posting late results or late errors.
         """
+        assert self.last_command_id is not None
+        assert self.last_executed_command
         return (self.last_command_id, self.last_executed_command)
 
-    def make_execution_token(self, ui_ctx):
+    def make_execution_token(
+        self, ui_ctx: GUIEnvironmentContext | None
+    ) -> ExecutionToken:
         """
         Return an ExecutionToken for @self and @ui_ctx
         """
@@ -210,7 +229,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         )
 
     def register_late_error(
-        self, token: tuple[ty.Any, CmdTuple], exc_info: ExecInfo | None = None
+        self, token: Token, exc_info: ExecInfo | None = None
     ) -> None:
         "Register an error in exc_info. The error must be an OperationError"
         if exc_info is None:
@@ -223,7 +242,13 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         _command_id, cmdtuple = token
         self._do_error_conversion(cmdtuple, exc_info)
 
-    def register_late_result(self, token, result, show=True, ctxenv=None):
+    def register_late_result(
+        self,
+        token: Token,
+        result: ty.Any,
+        show: bool = True,
+        ctxenv: GUIEnvironmentContext | None = None,
+    ) -> None:
         """Register a late result
 
         Result must be a Leaf (as in result object, not factory or async)
@@ -236,12 +261,9 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
             raise ActionExecutionError(f"Late result from {action} was None")
 
         assert isinstance(result, (Leaf, Source))
-        res_name = str(result)
-        res_desc = result.get_description()
-        if res_desc:
+        description = res_name = str(result)
+        if res_desc := result.get_description():
             description = f"{res_name} ({res_desc})"
-        else:
-            description = res_name
 
         # If only registration was requsted, remove the command id info
         if not show:
@@ -265,7 +287,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         )
         self._append_result(result_type, result)
 
-    def _append_result(self, res_type, result):
+    def _append_result(self, res_type: int, result: ty.Any) -> None:
         if res_type == RESULT_OBJECT:
             self.last_results.append(result)
 
@@ -298,7 +320,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
 
         # The execution token object for the current invocation
         execution_token = self.make_execution_token(ui_ctx)
-        with self._error_conversion(obj, action, iobj):
+        with self._error_conversion((obj, action, iobj)):
             with self._nesting():
                 ret = activate_action(execution_token, obj, action, iobj)
 
@@ -336,12 +358,14 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
 
         return res, ret
 
-    def combine_action_result_multiple(self, action, retvals):
+    def combine_action_result_multiple(
+        self, action: Action, retvals: ty.Iterable[tuple[int, ty.Any]|None]
+    ) -> ty.Any:
         self.output_debug(
             "Combining", repr(action), retvals, f"delegate={self._delegate}"
         )
 
-        def _make_retvalue(res, values):
+        def _make_retvalue(res: int, values: list[ty.Any]) -> ty.Any:
             "Construct a return value for type res"
             if res == RESULT_SOURCE:
                 return values[0] if len(values) == 1 else MultiSource(values)
@@ -358,11 +382,12 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
             return None
 
         if not self._delegate:
-            values = []
+            values: list[ty.Any] = []
             res = RESULT_NONE
             for ret in retvals:
-                res_type = parse_action_result(action, ret)
-                if res_type != RESULT_NONE:
+                if (
+                    res_type := parse_action_result(action, ret)
+                ) != RESULT_NONE:
                     values.append(ret)
                     res = res_type
 
@@ -370,15 +395,13 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
 
         # Re-parse result values
         res = RESULT_NONE
-        resmap = {}
+        resmap : dict[int, ty.Any]= {}
         for ret in retvals:
-            if ret is None:
-                continue
-
-            res_type, ret_obj = ret
-            if res_type != RESULT_NONE:
-                res = res_type
-                resmap.setdefault(res_type, []).append(ret_obj)
+            if ret is not None:
+                res_type, ret_obj = ret
+                if res_type != RESULT_NONE:
+                    resmap.setdefault(res_type, []).append(ret_obj)
+                    res = res_type
 
         # register tasks
         tasks = resmap.pop(RESULT_ASYNC, [])
@@ -396,7 +419,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
             objects.append(SourceLeaf(source))
             return RESULT_OBJECT, _make_retvalue(RESULT_OBJECT, objects)
 
-        return RESULT_NONE, None
+        return RESULT_NONE
 
 
 # Signature: Action result type, action result, gui_context
@@ -424,18 +447,17 @@ GObject.signal_new(
 
 
 def DefaultActionExecutionContext() -> ActionExecutionContext:
-    global _ACTION_EXEC_CONTEXT
-    if _ACTION_EXEC_CONTEXT is None:
-        _ACTION_EXEC_CONTEXT = ActionExecutionContext()
-
-    return _ACTION_EXEC_CONTEXT
+    return ActionExecutionContext.instance()
 
 
 def activate_action(
-    context: ty.Optional[ExecutionToken], obj, action: Action, iobj
+    context: ty.Optional[ExecutionToken],
+    obj: Leaf,
+    action: Action,
+    iobj: Leaf | None,
 ) -> ty.Any:
     """Activate @action in simplest manner"""
-    kwargs = {}
+    kwargs : dict[str, ty.Any] = {}
     if _wants_context(action):
         kwargs["ctx"] = context
 
@@ -465,11 +487,11 @@ def _activate_action_multiple(
 
     if action.requires_object():
         iobjs = (None,) if iobj is None else _get_leaf_members(iobj)
-        return action.activate_multiple(
+        return action.activate_multiple(  # type: ignore
             _get_leaf_members(obj), iobjs, **kwargs
         )
 
-    return action.activate_multiple(_get_leaf_members(obj), **kwargs)
+    return action.activate_multiple(_get_leaf_members(obj), **kwargs)  # type: ignore
 
 
 def _activate_action_multiple_multiplied(

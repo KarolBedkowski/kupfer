@@ -20,8 +20,11 @@ from kupfer.ui import uievents
 if ty.TYPE_CHECKING:
     from kupfer.core.commandexec import ExecutionToken
 
+# TODO: !! remove
+import typeguard
 
-def _window_close_on_escape(widget: Gtk.Widget, event: Gdk.Event) -> bool:
+
+def _window_close_on_escape(widget: Gtk.Widget, event: Gdk.EventKey) -> bool:
     """
     Callback function for Window's key press event, will destroy window
     on escape
@@ -64,39 +67,71 @@ def builder_get_objects_from_file(
         builder.connect_signals(autoconnect_to)  # pylint: disable=no-member
 
 
+class _ResultWindowBehavior:
+    def __init__(self):
+        self.names: ty.Any = None
+
+    def on_text_result_window_key_press_event(
+        self, widget: Gtk.Widget, event: Gdk.EventKey
+    ) -> bool:
+        return _window_close_on_escape(widget, event)
+
+    def on_close_button_clicked(self, widget: Gtk.Widget) -> bool:
+        self.names.text_result_window.close()
+        return True
+
+    def on_copy_button_clicked(self, widget: Gtk.Widget) -> None:
+        clip = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        textview = self.names.result_textview
+        buf = textview.get_buffer()
+        buf.select_range(*buf.get_bounds())
+        buf.copy_clipboard(clip)
+
+
+def _calculate_window_size(
+    window: Gtk.Window, textview: Gtk.TextView
+) -> tuple[int, int]:
+    # Find the size of one (monospace) letter
+    playout = textview.create_pango_layout("X")
+    ink_r, _logical_r = playout.get_pixel_extents()
+
+    # Fix Sizing:
+    # We want to size the window so that the
+    # TextView is displayed without scrollbars
+    # initially, if it fits on screen.
+    tw_sr = textview.get_size_request()
+    oldwid, oldhei = tw_sr.width, tw_sr.height
+    winwid, winhei = window.get_size()
+
+    # max_hsize, max_vsize = window.get_default_size()
+    tw_sr = textview.size_request()
+    wid, hei = tw_sr.width, tw_sr.height
+
+    # Set max window size to 100 colums x 60 lines
+    max_hsize = ink_r.height * 60
+    max_vsize = ink_r.width * 100
+
+    vsize = int(min(hei + (winhei - oldhei) + 5, max_vsize))
+    hsize = int(min(wid + (winwid - oldwid) + 5, max_hsize))
+    return vsize, hsize
+
+
+@typeguard.typeguard_ignore  # TODO: !! remove
 def show_text_result(
     text: str,
     title: ty.Optional[str] = None,
     ctx: ty.Optional["ExecutionToken"] = None,
-):
+) -> None:
     """
     Show @text in a result window.
 
     Use @title to set a window title
     """
 
-    class ResultWindowBehavior:
-        def __init__(self):
-            self.names: ty.Any = None
-
-        def on_text_result_window_key_press_event(self, widget, event):
-            return _window_close_on_escape(widget, event)
-
-        def on_close_button_clicked(self, widget):
-            self.names.text_result_window.close()
-            return True
-
-        def on_copy_button_clicked(self, widget):
-            clip = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-            textview = self.names.result_textview
-            buf = textview.get_buffer()
-            buf.select_range(*buf.get_bounds())
-            buf.copy_clipboard(clip)
-
     window, textview = builder_get_objects_from_file(
         "result.ui",
         ("text_result_window", "result_textview"),
-        autoconnect_to=ResultWindowBehavior(),
+        autoconnect_to=_ResultWindowBehavior(),
     )
 
     # Set up text buffer
@@ -114,30 +149,8 @@ def show_text_result(
 
     window.show_all()
 
-    # Find the size of one (monospace) letter
-    playout = textview.create_pango_layout("X")
-    ink_r, _logical_r = playout.get_pixel_extents()
-
-    # Fix Sizing:
-    # We want to size the window so that the
-    # TextView is displayed without scrollbars
-    # initially, if it fits on screen.
-    tw_sr = textview.get_size_request()
-    oldwid, oldhei = tw_sr.width, tw_sr.height
-    winwid, winhei = window.get_size()
-
-    # max_hsize, max_vsize = window.get_default_size()
-    tw_sr = textview.size_request()
-    wid, hei = tw_sr.width, tw_sr.height
+    hsize, vsize = _calculate_window_size(window, textview)
     textview.set_wrap_mode(Gtk.WrapMode.WORD)
-
-    # Set max window size to 100 colums x 60 lines
-    max_hsize = ink_r.height * 60
-    max_vsize = ink_r.width * 100
-
-    vsize = int(min(hei + (winhei - oldhei) + 5, max_vsize))
-    hsize = int(min(wid + (winwid - oldwid) + 5, max_hsize))
-
     window.resize(hsize, vsize)
     if ctx:
         ctx.environment.present_window(window)
@@ -152,6 +165,16 @@ def _wrap_paragraphs(text: str) -> str:
     return "\n\n".join(textwrap.fill(par) for par in text.split("\n\n"))
 
 
+def _set_font_size(label: Gtk.Label, fontsize: float = 48.0) -> None:
+    siz_attr = Pango.AttrFontDesc(
+        Pango.FontDescription.from_string(str(fontsize)), 0, -1
+    )
+    attrs = Pango.AttrList()
+    attrs.insert(siz_attr)
+    label.set_attributes(attrs)
+
+
+@typeguard.typeguard_ignore
 def show_large_type(
     text: str, ctx: ty.Optional["ExecutionToken"] = None
 ) -> None:
@@ -164,14 +187,6 @@ def show_large_type(
     label = Gtk.Label()
     label.set_text(text)
     label.show()
-
-    def set_font_size(label: Gtk.Label, fontsize: float = 48.0) -> None:
-        siz_attr = Pango.AttrFontDesc(
-            Pango.FontDescription.from_string(str(fontsize)), 0, -1
-        )
-        attrs = Pango.AttrList()
-        attrs.insert(siz_attr)
-        label.set_attributes(attrs)
 
     size = 72.0
     # set_font_size(label, size)
@@ -198,7 +213,7 @@ def show_large_type(
         # Round size down to fit inside
         wscale = maxwid * 1.0 / wid
         hscale = maxhei * 1.0 / hei
-        set_font_size(label, math.floor(min(wscale, hscale) * size) or 1.0)
+        _set_font_size(label, math.floor(min(wscale, hscale) * size) or 1.0)
 
     window.add(label)  # pylint: disable=no-member
     window.set_position(Gtk.WindowPosition.CENTER)  # pylint: disable=no-member
