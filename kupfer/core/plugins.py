@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pkgutil
 import sys
 import textwrap
@@ -5,7 +7,7 @@ import typing as ty
 
 from kupfer import pretty
 from kupfer.core import settings
-from kupfer.obj.base import Source
+from kupfer.obj.base import Source, Action
 
 # import kupfer.icons on demand later
 
@@ -195,7 +197,7 @@ def _import_hook_fake(pathcomps: ty.Iterable[str]) -> FakePlugin:
     return _import_plugin_fake(modpath)
 
 
-def _import_hook_true(pathcomps: ty.List[str]) -> ty.Any:
+def _import_hook_true(pathcomps: ty.Collection[str]) -> ty.Any:
     """@pathcomps path components to the import"""
     path = ".".join(pathcomps)
     fromlist = pathcomps[-1:]
@@ -285,7 +287,7 @@ def _plugin_path(name: str) -> ty.Tuple[str, ...]:
 # Plugin Attributes
 def get_plugin_attributes(
     plugin_name: str, attrs: ty.Tuple[str, ...], warn: bool = False
-) -> ty.Iterator[ty.Optional[str]]:
+) -> ty.Iterator[ty.Optional[ty.Any]]:
     """Generator of the attributes named @attrs
     to be found in plugin @plugin_name
     if the plugin is not found, we write an error
@@ -312,7 +314,7 @@ def get_plugin_attributes(
             yield obj
 
 
-def get_plugin_attribute(plugin_name: str, attr: str) -> ty.Optional[str]:
+def get_plugin_attribute(plugin_name: str, attr: str) -> ty.Optional[ty.Any]:
     """Get single plugin attribute"""
     attrs = tuple(get_plugin_attributes(plugin_name, (attr,)))
     if attrs:
@@ -323,7 +325,7 @@ def get_plugin_attribute(plugin_name: str, attr: str) -> ty.Optional[str]:
 
 def load_plugin_sources(
     plugin_name: str, attr: str = sources_attribute, instantiate: bool = True
-) -> ty.Iterable[Source]:
+) -> ty.Iterable[Source]|ty.Iterable[Action]:
     sources = get_plugin_attribute(plugin_name, attr)
     if not sources:
         return

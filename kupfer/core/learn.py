@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pickle
 import os
 from pathlib import Path
@@ -7,7 +9,7 @@ import typing as ty
 from kupfer import config
 from kupfer import conspickle
 from kupfer import pretty
-from kupfer.obj.base import Leaf
+from kupfer.obj.base import Leaf, KupferObject
 
 _MNEMONICS_FILENAME = "mnemonics.pickle"
 _CORRELATION_KEY = "kupfer.bonus.correlation"
@@ -137,7 +139,7 @@ def get_record_score(obj: ty.Any, key: str = "") -> float:
     return fav + mnscore
 
 
-def get_correlation_bonus(obj: Leaf, for_leaf: Leaf) -> int:
+def get_correlation_bonus(obj: KupferObject, for_leaf: Leaf|None) -> int:
     """
     Get the bonus rank for @obj when used with @for_leaf
     """
@@ -248,13 +250,13 @@ def save() -> None:
     Learning.pickle_register(_REGISTER, filepath)
 
 
-def add_favorite(obj: Leaf) -> None:
+def add_favorite(obj: KupferObject) -> None:
     _FAVORITES.add(repr(obj))
 
 
-def remove_favorite(obj: Leaf) -> None:
+def remove_favorite(obj: KupferObject) -> None:
     _FAVORITES.discard(repr(obj))
 
 
-def is_favorite(obj: Leaf) -> bool:
+def is_favorite(obj: KupferObject) -> bool:
     return repr(obj) in _FAVORITES

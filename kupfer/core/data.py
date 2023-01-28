@@ -1,3 +1,4 @@
+from __future__ import annotations
 import itertools
 import operator
 import os
@@ -8,7 +9,7 @@ import typing as ty
 from gi.repository import GLib, GObject
 
 from kupfer.obj import base, sources, compose
-from kupfer.obj.base import Action, Leaf, Source
+from kupfer.obj.base import Action, Leaf, Source, TextSource, AnySource
 from kupfer import pretty, scheduler
 from kupfer import datatools
 from kupfer.core import actioncompat
@@ -18,6 +19,7 @@ from kupfer.core import pluginload
 from kupfer.core import qfurl
 from kupfer.core import search, learn
 from kupfer.core import settings
+from kupfer.core.search import Rankable
 
 from kupfer.core.sources import GetSourceController
 
@@ -40,8 +42,8 @@ def _is_iterable(obj: ty.Any) -> bool:
 
 
 def _dress_leaves(
-    seq: ty.Iterable[Leaf], action: ty.Optional[Action]
-) -> ty.Iterable[Leaf]:
+    seq: ty.Iterable[Rankable], action: ty.Optional[Action]
+) -> ty.Iterable[Rankable]:
     """yield items of @seq "dressed" by the source controller"""
     sctr = GetSourceController()
     for itm in seq:
@@ -50,8 +52,8 @@ def _dress_leaves(
 
 
 def _peekfirst(
-    seq: ty.Iterable[Leaf],
-) -> ty.Tuple[ty.Optional[Leaf], ty.Iterable[Leaf]]:
+    seq: ty.Iterable[Rankable],
+) -> tuple[ty.Optional[Rankable], ty.Iterable[Rankable]]:
     """This function will return (firstitem, iter)
     where firstitem is the first item of @seq or None if empty,
     and iter an equivalent copy of @seq
@@ -64,12 +66,12 @@ def _peekfirst(
     return (None, seq)
 
 
-def _as_set_iter(seq: ty.Iterable[Leaf]) -> ty.Iterable[Leaf]:
+def _as_set_iter(seq: ty.Iterable[Rankable]) -> ty.Iterable[Rankable]:
     key = operator.attrgetter("object")
     return datatools.UniqueIterator(seq, key=key)
 
 
-def _valid_check(seq: ty.Iterable[Leaf]) -> ty.Iterable[Leaf]:
+def _valid_check(seq: ty.Iterable[Rankable]) -> ty.Iterable[Rankable]:
     """yield items of @seq that are valid"""
     for itm in seq:
         obj = itm.object
@@ -116,7 +118,7 @@ class Searcher:
         decorator = decorator or _identity
 
         start_time = pretty.timing_start()
-        match_lists = []
+        match_lists: list[list[Rankable]] = []
         for src in sources:
             fixedrank = 0
             can_cache = True
@@ -138,6 +140,8 @@ class Searcher:
 
             if rankables is None:
                 rankables = search.make_rankables(items)
+
+            assert rankables is not None
 
             if score:
                 if fixedrank:
@@ -185,11 +189,11 @@ class Searcher:
         else:
             matches = search.score_actions(rankables, leaf)
 
-        matches = sorted(
+        sorted_matches = sorted(
             matches, key=operator.attrgetter("rank"), reverse=True
         )
 
-        match, match_iter = _peekfirst(decorator(matches))
+        match, match_iter = _peekfirst(decorator(sorted_matches))
         return match, match_iter
 
 
@@ -255,7 +259,7 @@ class LeafPane(Pane, pretty.OutputMixin):
         ), "New selection for object pane is not a Leaf!"
         super().select(item)
 
-    def _load_source(self, src):
+    def _load_source(self, src: AnySource) -> AnySource:
         """Try to get a source from the SourceController,
         if it is already loaded we get it from there, else
         returns @src"""
@@ -335,7 +339,7 @@ class LeafPane(Pane, pretty.OutputMixin):
 
         self.refresh_data()
 
-    def soft_reset(self) -> ty.Optional[Source]:
+    def soft_reset(self) -> ty.Optional[AnySource]:
         Pane.reset(self)
         while self.pop_source():
             pass
@@ -665,7 +669,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
                 sources = self._load_plugin(item)
                 self._insert_sources(item, sources, initialize=False)
 
-    def _load_plugin(self, plugin_id: str) -> ty.Set[Source]:
+    def _load_plugin(self, plugin_id: str) -> ty.Set[AnySource]:
         """
         Load @plugin_id, register all its Actions, Content and TextSources.
         Return its sources.
@@ -715,7 +719,10 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self._reload_source_root()
 
     def _insert_sources(
-        self, plugin_id: str, sources: ty.List[Source], initialize: bool = True
+        self,
+        plugin_id: str,
+        sources: ty.Collection[AnySource],
+        initialize: bool = True,
     ) -> None:
         if not sources:
             return
@@ -748,7 +755,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if not final_invocation:
             self._save_data_timer.set(DATA_SAVE_INTERVAL_S, self._save_data)
 
-    def _new_source(self, ctr: LeafPane, src: Source) -> None:
+    def _new_source(self, ctr: LeafPane, src: AnySource) -> None:
         if ctr is self.source_pane:
             pane = SourcePane
         elif ctr is self.object_pane:
@@ -761,14 +768,14 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.source_pane.reset()
         self.action_pane.reset()
 
-    def soft_reset(self, pane: LeafPane) -> ty.Optional[Source]:
-        if pane is ActionPane:
+    def soft_reset(self, pane: int) -> ty.Optional[AnySource]:
+        if pane == ActionPane:
             return None
 
         panectl: LeafPane = self._panectl_table[pane]
         return panectl.soft_reset()
 
-    def cancel_search(self, pane=None):
+    def cancel_search(self, pane: int | None = None) -> None:
         """Cancel any outstanding search, or the search for @pane"""
         panes = (pane,) if pane else iter(self._panectl_table)
         for pane in panes:
@@ -843,7 +850,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
                 self.object_stack_clear(ObjectPane)
                 self._populate_third_pane()
 
-        elif pane is ActionPane:
+        elif pane == ActionPane:
             self.object_stack_clear(ObjectPane)
             if item and item.requires_object():
                 newmode = SourceActionObjectMode
@@ -906,11 +913,11 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if pane is ObjectPane:
             return self.object_pane.browse_up()
 
-    def browse_down(self, pane, alternate=False):
+    def browse_down(self, pane: int, alternate=False) -> None:
         """Browse into @leaf if it's possible
         and save away the previous sources in the stack
         if @alternate, use the Source's alternate method"""
-        if pane is ActionPane:
+        if pane == ActionPane:
             return
 
         # record used object if we browse down

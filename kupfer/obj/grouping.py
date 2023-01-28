@@ -33,7 +33,7 @@ class GroupingLeaf(Leaf):
 
     grouping_slots : ty.Tuple[str, ...] = ()
 
-    def __init__(self, obj: Leaf, name: str) -> None:
+    def __init__(self, obj: ty.Any, name: str) -> None:
         Leaf.__init__(self, obj, name)
         self.links = [self]
 
@@ -119,7 +119,7 @@ class GroupingSource(Source):
                 continue
 
             for leaf in leaves:
-                for slot2 in leaf.grouping_slots:  # type: ignore
+                for slot2 in leaf.grouping_slots:
                     for value2 in leaf.all(slot2):
                         if value2:
                             merge_groups((slot, value), (slot2, value2))

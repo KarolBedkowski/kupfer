@@ -31,7 +31,7 @@ class UriListRepresentation:
         raise NotImplementedError
 
 
-def get_text_representation(obj: TextRepresentation) -> ty.Optional[str]:
+def get_text_representation(obj: ty.Any) -> ty.Optional[str]:
     try:
         return obj.get_text_representation()
     except AttributeError:
@@ -66,7 +66,7 @@ def copy_to_clipboard(
     # def clear(clipboard, udata):
     #     pass
 
-    data : list[str, ty.Any] = {}
+    data : dict[int, ty.Any] = {}
     try:
         urilist = obj.get_urilist_representation()  # type: ignore
     except AttributeError:

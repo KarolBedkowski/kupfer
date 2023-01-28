@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 import threading
 import typing as ty
@@ -52,13 +54,13 @@ class ThreadTask(Task):
         """
 
         pass
-    def thread_finally(self, exc_info: ExecInfo) -> None:
+    def thread_finally(self, exc_info: ExecInfo|None) -> None:
         """Always run at thread finish"""
         if exc_info is not None:
             etype, value, tb = exc_info
             raise etype(value).with_traceback(tb)
 
-    def _thread_finally(self, exc_info: ExecInfo) -> None:
+    def _thread_finally(self, exc_info: ExecInfo|None) -> None:
         try:
             self.thread_finally(exc_info)
         finally:

@@ -245,7 +245,7 @@ def _get_notification_obj() -> ty.Any:
 
 def show_notification(
     title: str, text: str = "", icon_name: str = "", nid: int = 0
-) -> ty.Any:
+) -> ty.Optional[int]:
     """
     @nid: If not 0, the id of the notification to replace.
 
@@ -268,4 +268,4 @@ def show_notification(
         -1,
         dbus_interface=IFACE_NAME,
     )
-    return rid
+    return int(rid)

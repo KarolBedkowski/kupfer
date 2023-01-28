@@ -212,7 +212,10 @@ class ApplicationsMatcherService(pretty.OutputMixin):
             res_class,
         )
 
-    def _has_match(self, app_id: str) -> bool:
+    def _has_match(self, app_id: str|None) -> bool:
+        if not app_id:
+            return False
+
         return app_id in self.register
 
     def _is_match(self, app_id: str, window: Wnck.Window) -> bool:
@@ -254,11 +257,11 @@ class ApplicationsMatcherService(pretty.OutputMixin):
 
         return time() <= timeout
 
-    def application_name(self, app_id: str) -> Wnck.Window:
+    def application_name(self, app_id: str|None) -> ty.Optional[str]:
         if not self._has_match(app_id):
             return None
 
-        return self.register[app_id]
+        return self.register[app_id]  #type: ignore
 
     def application_is_running(self, app_id: str) -> bool:
         for win in self._get_wnck_screen_windows_stacked():

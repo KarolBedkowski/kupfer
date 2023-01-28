@@ -90,7 +90,7 @@ class Open(Action):
                 screen=ctx and ctx.environment.get_screen(),
             )
 
-    def get_description(self):
+    def get_description(self) -> ty.Optional[str]:
         return _("Open with default application")
 
 
@@ -112,7 +112,7 @@ class GetParent(Action):
         parent = os.path.normpath(os.path.join(fileloc, os.path.pardir))
         return FileLeaf(parent)
 
-    def get_description(self):
+    def get_description(self) -> ty.Optional[str]:
         return None
 
     def get_icon_name(self):
@@ -134,7 +134,7 @@ class OpenTerminal(Action):
         except utils.SpawnError as exc:
             raise OperationError(exc)
 
-    def get_description(self):
+    def get_description(self) -> ty.Optional[str]:
         return _("Open this location in a terminal")
 
     def get_icon_name(self):
@@ -165,7 +165,7 @@ class Execute(Action):
         else:
             utils.spawn_async(argv)
 
-    def get_description(self):
+    def get_description(self) -> ty.Optional[str]:
         if self.in_terminal:
             return _("Run this program in a Terminal")
 

@@ -189,8 +189,9 @@ class KupferObject(metaclass=_BuiltinObject):
         """
         return self.fallback_icon_name
 
+T = ty.TypeVar("T")
 
-def _aslist(seq: ty.Any) -> ty.Iterable[ty.Any]:
+def _aslist(seq: ty.Iterable[T]) -> ty.Collection[T]:
     """Return a list out of @seq, or seq if it is a list"""
     if isinstance(seq, (list, tuple)):
         return seq
@@ -595,3 +596,5 @@ class ActionGenerator:
     def get_actions_for_leaf(self, leaf: Leaf) -> ty.Iterable[Action]:
         """Return actions appropriate for given leaf."""
         return []
+
+AnySource = Source | TextSource

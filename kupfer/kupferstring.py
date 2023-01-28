@@ -31,7 +31,7 @@ def _folditems():
 _FOLDING_TABLE = dict(_folditems())
 
 
-def tounicode(utf8str: ty.Union[str, bytes]) -> str:
+def tounicode(utf8str: ty.Union[str, bytes, None]) -> str:
     """Return `unicode` from UTF-8 encoded @utf8str
     This is to use the same error handling etc everywhere
     """

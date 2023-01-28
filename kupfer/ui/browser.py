@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import itertools
 import signal
@@ -32,7 +34,7 @@ from kupfer.ui import listen
 from kupfer.ui import uievents
 from kupfer.core import data, relevance, learn, search
 from kupfer.core import settings, actionaccel
-from kupfer.obj.base import Leaf, Source, Action
+from kupfer.obj.base import Leaf, Source, Action, KupferObject, AnySource
 from kupfer import icons
 from kupfer import interface
 from kupfer import pretty
@@ -51,7 +53,7 @@ _escape_table = {
 }
 
 
-def tounicode(ustr: ty.AnyStr) -> str:
+def tounicode(ustr: ty.AnyStr|None) -> str:
     if isinstance(ustr, str):
         return ustr
 
@@ -244,7 +246,7 @@ class LeafModel:
     def set_base(self, baseiter: ty.Iterable[search.Rankable]) -> None:
         self.base = iter(baseiter)
 
-    def populate(self, num: ty.Optional[int] = None) -> ty.Optional[Leaf]:
+    def populate(self, num: ty.Optional[int] = None) -> ty.Optional[KupferObject]:
         """
         populate model with num items from its base
         and return first item inserted
@@ -288,7 +290,7 @@ class LeafModel:
     def add_first(self, rankable: search.Rankable) -> None:
         self.store.prepend(self._get_row(rankable))
 
-    def get_icon(self, leaf: Leaf) -> ty.Optional[GdkPixbuf]:
+    def get_icon(self, leaf: KupferObject) -> ty.Optional[GdkPixbuf]:
         if (size := self.icon_size) > 8:
             return leaf.get_thumbnail(size, size) or leaf.get_pixbuf(size)
 
@@ -307,14 +309,14 @@ class LeafModel:
 
         return text
 
-    def get_fav(self, leaf: Leaf) -> str:
+    def get_fav(self, leaf: KupferObject) -> str:
         # fav: display star if it's a favourite
         if learn.is_favorite(leaf):
             return "\N{BLACK STAR}"
 
         return ""
 
-    def get_aux_info(self, leaf: Leaf) -> str:
+    def get_aux_info(self, leaf: KupferObject) -> str:
         # For objects: Show arrow if it has content
         # For actions: Show accelerator
         #
@@ -640,7 +642,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         self.match = None
         self.match_state = State.WAIT
         self.text: ty.Optional[str] = ""
-        self.source: ty.Optional[Source] = None
+        self.source: ty.Optional[AnySource] = None
         self._old_win_position = None
         self._has_search_result = False
         self._initialized = False
@@ -651,7 +653,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         self._read_icon_size()
         self.setup_empty()
 
-    def get_aux_info(self, leaf: Leaf) -> str:
+    def get_aux_info(self, leaf: KupferObject) -> str:
         # Return content for the aux info column
         return ""
 
@@ -748,7 +750,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         """
         return self._child
 
-    def get_current(self) -> ty.Optional[str]:
+    def get_current(self) -> ty.Optional[KupferObject]:
         """
         return current selection
         """
@@ -758,7 +760,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         self.match_view.object_stack = stack
         self.match_view.update_match()
 
-    def set_source(self, source: Source) -> None:
+    def set_source(self, source: AnySource) -> None:
         """Set current source (to get icon, name etc)"""
         self.source = source
 
@@ -909,7 +911,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         if self.get_table_visible():
             self._table_set_cursor_at_row(0)
 
-    def _window_config(self, widget: Gtk.Widget, event: Gdk.Event) -> None:
+    def _window_config(self, widget: Gtk.Widget, event: Gdk.EventConfigure) -> None:
         """
         When the window moves
         """
@@ -983,7 +985,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
 
     def update_match(
         self,
-        key: str,
+        key: str|None,
         matchrankable: ty.Optional[search.Rankable],
         matches: ty.Iterable[search.Rankable],
     ) -> None:
@@ -1015,7 +1017,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         self.match_view.set_match_state("No match", None, state=State.NO_MATCH)
         self.relax_match()
 
-    def populate(self, num: int) -> ty.Optional[Leaf]:
+    def populate(self, num: int) -> ty.Optional[KupferObject]:
         """populate model with num items"""
         return self.model.populate(num)
 
@@ -1050,7 +1052,7 @@ class LeafSearch(Search):
     Customize for leaves search
     """
 
-    def get_aux_info(self, leaf: Leaf) -> str:
+    def get_aux_info(self, leaf: KupferObject) -> str:
         if hasattr(leaf, "has_content") and leaf.has_content():
             if text_direction_is_ltr():
                 return "\N{BLACK RIGHT-POINTING SMALL TRIANGLE} "
@@ -1059,7 +1061,7 @@ class LeafSearch(Search):
 
         return ""
 
-    def _get_pbuf(self, src: Source) -> ty.Optional[GdkPixbuf]:
+    def _get_pbuf(self, src: AnySource) -> ty.Optional[GdkPixbuf]:
         return src.get_thumbnail(
             self.icon_size * 4 // 3, self.icon_size
         ) or src.get_pixbuf(self.icon_size)
@@ -1261,7 +1263,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         ## make sure we lose the preedit focus ring
         self.preedit.set_name("kupfer-preedit")
 
-        self.current = None
+        self.current : ty.Optional[Search] = None
 
         self._widget: ty.Optional[Gtk.Widget] = None
         self._ui_transition_timer = scheduler.Timer()
@@ -1356,7 +1358,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self.action_accel_config = actionaccel.AccelConfig()
         self.search.reset()
 
-    def get_widget(self) -> None:
+    def get_widget(self) -> Gtk.Widget:
         """Return a Widget containing the whole Interface"""
         if self._widget:
             return self._widget
@@ -1411,12 +1413,12 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         #     self._key_repeat_active = False
         #     self._update_active()
 
-    def _entry_key_press(self, entry: Gtk.Entry, event: Gdk.Event) -> bool:
+    def _entry_key_press(self, entry: Gtk.Entry, event: Gdk.EventKey) -> bool:
         """
         Intercept arrow keys and manipulate table
         without losing focus from entry field
         """
-
+        assert self.current is not None
         direct_text_key = Gdk.keyval_from_name("period")
         init_text_keys = list(
             map(Gdk.keyval_from_name, ("slash", "equal", "question"))
@@ -1499,7 +1501,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             elif keyv in init_text_keys:
                 if self.try_enable_text_mode():
                     # swallow if it is the direct key
-                    swallow = keyv == direct_text_key
+                    swallow : bool = keyv == direct_text_key
                     return swallow
 
         if text_mode and keyv in (
@@ -1701,7 +1703,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         pane = self._pane_for_widget(self.current)
         self.data_controller.search(pane, interactive=True)
 
-    def soft_reset(self, pane=None):
+    def soft_reset(self, pane:ty.Optional[int]=None) ->None:
         """Reset @pane or current pane context/source
         softly (without visible update), and unset _reset_to_toplevel marker.
         """
@@ -2175,7 +2177,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     def _widget_for_pane(self, pane):
         return self.pane_to_widget[pane]
 
-    def _pane_for_widget(self, widget):
+    def _pane_for_widget(self, widget: GObject.GObject) -> int | None:
         return self.widget_to_pane[id(widget)]
 
     def _object_stack_changed(self, controller, pane):
@@ -2201,6 +2203,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self._description_changed()
 
     def _description_changed(self):
+        assert self.current
         match = self.current.get_current()
         # Use invisible WORD JOINER instead of empty, to maintain vertical size
         desc = match and match.get_description() or "\N{WORD JOINER}"

@@ -102,8 +102,8 @@ def timing_start() -> ty.Optional[list[float]]:
     return None
 
 
-def timing_step(modulename: str, start: list[float], label: str) -> None:
-    if DEBUG:
+def timing_step(modulename: str, start: ty.Optional[list[float]], label: str) -> None:
+    if DEBUG and start:
         cts = timestamp()
         print_debug(modulename, label, f"in {cts - start[0]:.6f} s")
         start[0] = cts

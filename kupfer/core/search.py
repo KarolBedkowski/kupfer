@@ -4,12 +4,12 @@ import typing as ty
 import operator
 import itertools
 from kupfer.core import learn, relevance
-from kupfer.obj.base import Leaf
+from kupfer.obj.base import Leaf, KupferObject
 
 
 def make_rankables(
-    itr: ty.Iterable[ty.Any], rank: int = 0
-) -> ty.Iterable[Rankable]:
+    itr: ty.Iterable[KupferObject], rank: int = 0
+) -> list[Rankable]:
     return [Rankable(str(obj), obj, rank) for obj in itr]
 
 
@@ -26,7 +26,7 @@ class Rankable:
     # To save memory with (really) many Rankables
     __slots__ = ("rank", "value", "object", "aliases")
 
-    def __init__(self, value: str, obj: Leaf, rank: float = 0) -> None:
+    def __init__(self, value: str, obj: KupferObject, rank: float = 0) -> None:
         self.rank = rank
         self.value : str = value
         self.object = obj
@@ -66,7 +66,7 @@ def bonus_actions(
         yield obj
 
 
-def add_rank_objects(rankables: ty.Iterator[Rankable], rank: float) -> None:
+def add_rank_objects(rankables: ty.Iterable[Rankable], rank: float) -> None:
     """
     rankables: List[Rankable]
     rank: Fixed rank
@@ -109,7 +109,7 @@ def score_objects(rankables: ty.List[Rankable], key: str) -> None:
 
 
 def score_actions(
-    rankables: ty.Iterable[Rankable], for_leaf: Leaf
+    rankables: ty.Iterable[Rankable], for_leaf: ty.Optional[Leaf]
 ) -> ty.Iterator[Rankable]:
     """Alternative (rigid) scoring mechanism for objects,
     putting much more weight in rank_adjust
@@ -146,7 +146,7 @@ def _max_multiple(iterables, key):
 
 
 def find_best_sort(
-    rankables: ty.List[ty.List[Rankable]],
+    rankables: list[list[Rankable]],
 ) -> ty.Iterator[Rankable]:
     """
     rankables: List[List[Rankable]]

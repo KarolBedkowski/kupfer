@@ -24,12 +24,14 @@ With multiple command execution (and delegation), we must then process and
 merge multiple return values.
 """
 
+from __future__ import annotations
 
 import collections
 import contextlib
 import itertools
 import sys
 import typing as ty
+import types
 
 from gi.repository import GObject
 
@@ -37,10 +39,11 @@ from kupfer import pretty
 from kupfer import task
 from kupfer import uiutils
 from kupfer.objects import OperationError
-from kupfer.obj.base import Leaf, Source, Action
+from kupfer.obj.base import Leaf, Source, Action, KupferObject
 from kupfer.obj.objects import SourceLeaf
 from kupfer.obj.sources import MultiSource
 from kupfer.obj.compose import MultipleLeaf
+from kupfer.ui.uievents import GUIEnvironmentContext
 
 RESULT_NONE, RESULT_OBJECT, RESULT_SOURCE, RESULT_ASYNC = (1, 2, 3, 4)
 RESULTS_SYNC = (RESULT_OBJECT, RESULT_SOURCE)
@@ -48,6 +51,8 @@ RESULTS_SYNC = (RESULT_OBJECT, RESULT_SOURCE)
 _MAX_LAST_RESULTS = 10
 
 _ACTION_EXEC_CONTEXT = None
+
+ExecInfo = tuple[ty.Optional[ty.Type[Exception]], ty.Optional[Exception], ty.Optional[types.TracebackType]]
 
 
 class ActionExecutionError(Exception):
@@ -65,7 +70,7 @@ def _get_leaf_members(leaf: Leaf) -> ty.Iterable[Leaf]:
         return (leaf,)
 
 
-def _is_multiple(leaf: Leaf) -> bool:
+def _is_multiple(leaf: Leaf | None) -> bool:
     return hasattr(leaf, "get_multiple_leaf_representation")
 
 
@@ -82,20 +87,28 @@ class ExecutionToken:
     and to access the environment.
     """
 
-    def __init__(self, aectx, async_token, ui_ctx):
-        self._aectx = aectx
+    def __init__(
+        self,
+        aectx: ActionExecutionContext,
+        async_token: ty.Any,
+        ui_ctx: GUIEnvironmentContext | None,
+    ) -> None:
+        self._aectx: ActionExecutionContext = aectx
         self._token = async_token
         self._ui_ctx = ui_ctx
 
-    def register_late_result(self, result_object, show=True):
+    def register_late_result(
+        self, result_object: KupferObject, show: bool = True
+    ) -> None:
         self._aectx.register_late_result(
             self._token, result_object, show=show, ctxenv=self._ui_ctx
         )
 
-    def register_late_error(self, exc_info=None):
+    def register_late_error(self, exc_info: ExecInfo | None = None) -> None:
         self._aectx.register_late_error(self._token, exc_info)
 
-    def delegated_run(self, *objs):
+    def delegated_run(self, *objs: ty.Any) -> tuple[ty.Any, ty.Any]:
+        ic(objs)
         return self._aectx.run(*objs, delegate=True, ui_ctx=self._ui_ctx)
 
     @property
@@ -109,8 +122,8 @@ class ExecutionToken:
         """
         if self._ui_ctx is not None:
             return self._ui_ctx
-        else:
-            raise RuntimeError("Environment Context not available")
+
+        raise RuntimeError("Environment Context not available")
 
 
 class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
@@ -130,10 +143,9 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         self.last_command_id = -1
         self.last_command = None
         self.last_executed_command = None
-        self.last_results = collections.deque([], _MAX_LAST_RESULTS)
-
-    def check_valid(self, obj, action, iobj):
-        pass
+        self.last_results: collections.deque[ty.Any] = collections.deque(
+            [], _MAX_LAST_RESULTS
+        )
 
     @contextlib.contextmanager
     def _nesting(self):
@@ -144,8 +156,8 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         finally:
             self._nest_level -= 1
 
-    def _is_nested(self):
-        return self._nest_level
+    def _is_nested(self) -> bool:
+        return bool(self._nest_level)
 
     @contextlib.contextmanager
     def _error_conversion(self, *cmdtuple):
@@ -154,7 +166,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         except OperationError:
             self._do_error_conversion(cmdtuple, sys.exc_info())
 
-    def _do_error_conversion(self, cmdtuple, exc_info):
+    def _do_error_conversion(self, cmdtuple, exc_info: ExecInfo) -> None:
         if not self.operation_error(exc_info, cmdtuple):
             raise exc_info[1]
 
@@ -175,7 +187,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         """
         return ExecutionToken(self, self.get_async_token(), ui_ctx)
 
-    def operation_error(self, exc_info, cmdtuple):
+    def operation_error(self, exc_info: ExecInfo, cmdtuple) -> int | None:
         "Error when executing action. Return True when error was handled"
         if self._is_nested():
             return
@@ -190,7 +202,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
             icon_name="kupfer",
         )
 
-    def register_late_error(self, token, exc_info=None):
+    def register_late_error(self, token, exc_info: ExecInfo = None) -> None:
         "Register an error in exc_info. The error must be an OperationError"
         if exc_info is None:
             exc_info = sys.exc_info()
@@ -247,7 +259,9 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         if res_type == RESULT_OBJECT:
             self.last_results.append(result)
 
-    def run(self, obj, action, iobj, delegate=False, ui_ctx=None):
+    def run(
+        self, obj, action, iobj, delegate=False, ui_ctx=None
+    ) -> tuple[ty.Any, ty.Any]:
         """
         Activate the command (obj, action, iobj), where @iobj may be None
 
@@ -400,8 +414,8 @@ def DefaultActionExecutionContext() -> ActionExecutionContext:
 
 
 def activate_action(
-    context: ty.Optional[ActionExecutionContext], obj, action: Action, iobj
-):
+    context: ty.Optional[ExecutionToken], obj, action: Action, iobj
+) -> ty.Any:
     """Activate @action in simplest manner"""
     kwargs = {}
     if _wants_context(action):

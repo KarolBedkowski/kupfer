@@ -16,6 +16,8 @@ from kupfer.obj.helplib import PicklingHelperMixin, FilesystemWatchMixin
 from kupfer.obj.objects import FileLeaf, SourceLeaf
 from kupfer.obj.objects import ConstructFileLeaf, ConstructFileLeafTypes
 
+if ty.TYPE_CHECKING:
+    _ = str
 
 def _representable_fname(fname: str) -> bool:
     "Return False if fname contains surrogate escapes"
@@ -149,7 +151,7 @@ class SourcesSource(Source):
 
     def __init__(
         self,
-        sources: ty.List[Source],
+        sources: ty.Collection[Source],
         name: ty.Optional[str] = None,
         use_reprs: bool = True,
     ) -> None:
@@ -181,7 +183,7 @@ class MultiSource(Source):
 
     fallback_icon_name = "kupfer-catalog"
 
-    def __init__(self, sources: ty.List[Source]) -> None:
+    def __init__(self, sources: ty.Collection[Source]) -> None:
         super().__init__(_("Catalog"))
         self.sources = sources
 

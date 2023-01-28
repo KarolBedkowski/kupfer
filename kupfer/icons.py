@@ -259,7 +259,7 @@ def get_thumbnail_for_gfile(
 
 
 def get_pixbuf_from_file(
-    thumb_path: str, width: int = -1, height: int = -1
+    thumb_path: str|None, width: int = -1, height: int = -1
 ) -> ty.Optional[GdkPixbuf]:
     """
     Return a Pixbuf thumbnail for the file at @thumb_path
@@ -328,7 +328,7 @@ def get_icon_for_gicon(
 
 
 def _get_icon_for_standard_gicon(
-    gicon: _GIcon, icon_size: int
+    gicon: ty.Any, icon_size: int
 ) -> ty.Optional[GdkPixbuf]:
     """Render ThemedIcon and FileIcon"""
     if isinstance(gicon, FileIcon):
@@ -461,7 +461,7 @@ def get_icon_from_file(
     return None
 
 
-def is_good(gicon: _GIcon) -> bool:
+def is_good(gicon: _GIcon|None) -> bool:
     """Return True if it is likely that @gicon will load a visible icon
     (icon name exists in theme, or icon references existing file)
     """
@@ -480,7 +480,7 @@ def is_good(gicon: _GIcon) -> bool:
 
 
 def get_gicon_with_fallbacks(
-    gicon: _GIcon, names: ty.Iterable[str]
+    gicon: _GIcon|None, names: ty.Iterable[str]
 ) -> ty.Optional[_GIcon]:
     if is_good(gicon):
         return gicon

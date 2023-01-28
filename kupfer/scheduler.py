@@ -90,7 +90,7 @@ class Timer:
 
     def set(
         self,
-        timeout_seconds: int,
+        timeout_seconds: float,
         callback: TimerCallback,
         *arguments: ty.Any,
     ) -> None:

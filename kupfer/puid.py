@@ -19,7 +19,7 @@ import typing as ty
 from kupfer import pretty
 from kupfer.core import actioncompat
 from kupfer.core import qfurl
-from kupfer.obj.base import Source, Leaf, Action
+from kupfer.obj.base import Source, Leaf, Action, AnySource
 from kupfer.core.sources import GetSourceController
 from kupfer.conspickle import ConservativeUnpickler
 
@@ -90,11 +90,11 @@ def is_reference(puid: ty.Any) -> bool:
 # are visiting, and nested context with the _exclusion
 # context manager
 
-_EXCLUDING: list[Source] = []
+_EXCLUDING: list[AnySource] = []
 
 
 @contextlib.contextmanager
-def _exclusion(src: Source) -> ty.Iterator[None]:
+def _exclusion(src: AnySource) -> ty.Iterator[None]:
     try:
         _EXCLUDING.append(src)
         yield
@@ -107,7 +107,7 @@ def _is_currently_excluding(src: ty.Any) -> bool:
 
 
 def _find_obj_in_catalog(
-    puid: str, catalog: ty.Collection[Source]
+    puid: str, catalog: ty.Collection[AnySource]
 ) -> ty.Optional[Leaf]:
     if puid.startswith(qfurl.QFURL_SCHEME):
         qfu = qfurl.qfurl(url=puid)
@@ -126,7 +126,7 @@ def _find_obj_in_catalog(
 
 
 def resolve_unique_id(
-    puid: ty.Any, excluding: ty.Optional[Source] = None
+    puid: ty.Any, excluding: ty.Optional[AnySource] = None
 ) -> ty.Optional[Leaf]:
     """
     Resolve unique id @puid

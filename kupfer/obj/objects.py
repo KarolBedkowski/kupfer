@@ -156,7 +156,7 @@ class FileLeaf(Leaf, TextRepresentation):
         """
         return _as_gfile(self.object)
 
-    def get_description(self) -> str:
+    def get_description(self) -> ty.Optional[str]:
         return utils.get_display_path_for_bytestring(self.canonical_path())
 
     def get_actions(self) -> ty.Iterable[Action]:
@@ -240,7 +240,7 @@ class SourceLeaf(Leaf):
     def content_source(self, alternate: bool = False) -> Source:
         return self.object  # type: ignore
 
-    def get_description(self) -> str:
+    def get_description(self) -> ty.Optional[str]:
         return self.object.get_description()  # type: ignore
 
     # FIXME: property vs class field
@@ -386,7 +386,7 @@ class AppLeaf(Leaf):
 
         yield LaunchAgain()
 
-    def get_description(self) -> str:
+    def get_description(self) -> ty.Optional[str]:
         # Use Application's description, else use executable
         # for "file-based" applications we show the path
         app_desc = tounicode(self.object.get_description())
@@ -514,7 +514,7 @@ class CloseAll(Action):
 class UrlLeaf(Leaf, TextRepresentation):
     serializable = 1
 
-    def __init__(self, obj: str, name: str) -> None:
+    def __init__(self, obj: str, name: str|None) -> None:
         super().__init__(obj, name or obj)
         if obj != name:
             self.kupfer_add_alias(obj)
@@ -522,7 +522,7 @@ class UrlLeaf(Leaf, TextRepresentation):
     def get_actions(self) -> ty.Iterator[Action]:
         yield OpenUrl()
 
-    def get_description(self) -> str:
+    def get_description(self) -> ty.Optional[str]:
         return self.object
 
     def get_icon_name(self) -> str:
@@ -627,7 +627,7 @@ class TextLeaf(Leaf, TextRepresentation):
 
         return firstline
 
-    def get_description(self):
+    def get_description(self) -> str:
         numlines = self.object.count("\n") + 1
         desc = self.get_first_text_line(self.object)
 

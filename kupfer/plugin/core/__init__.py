@@ -98,9 +98,11 @@ class CopyToClipboard (Action):
         interface.copy_to_clipboard(leaf, clip)
     def item_types(self):
         yield Leaf
+
     def valid_for_item(self, leaf):
         with suppress(AttributeError):
             return bool(interface.get_text_representation(leaf))
+
     def get_description(self):
         return _("Copy to clipboard")
     def get_icon_name(self):

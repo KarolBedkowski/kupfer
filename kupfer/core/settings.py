@@ -10,7 +10,7 @@ from gi.repository import GLib, GObject
 
 from kupfer import config, pretty, scheduler
 
-_AltValidator = ty.Callable[[dict[str, ty.Any]], bool]
+AltValidator = ty.Callable[[dict[str, ty.Any]], bool]
 
 
 def strbool(value: ty.Any, default: bool = False) -> bool:
@@ -105,7 +105,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
         self._config = self._read_config()
         self._save_timer = scheduler.Timer(True)
         self._alternatives: ty.Dict[str, ty.Any] = {}
-        self._alternative_validators: ty.Dict[str, _AltValidator] = {}
+        self._alternative_validators: ty.Dict[str, AltValidator | None] = {}
 
     def _update_config_save_timer(self) -> None:
         self._save_timer.set(60, self._save_config)
@@ -399,7 +399,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
 
         return False
 
-    def get_use_command_keys(self) -> str:
+    def get_use_command_keys(self) -> bool:
         return self.get_config("Kupfer", "usecommandkeys")  # type: ignore
 
     def set_use_command_keys(self, enabled: str) -> bool:
@@ -584,7 +584,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
         self,
         category_key: str,
         alternatives: dict[str, ty.Any],
-        validator: _AltValidator,
+        validator: AltValidator | None,
     ) -> None:
         self._alternatives[category_key] = alternatives
         self._alternative_validators[category_key] = validator

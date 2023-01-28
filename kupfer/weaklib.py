@@ -10,7 +10,7 @@ import weakref
 
 from gi.repository import GObject
 
-MCallback = ty.Callable[..., ty.Any]
+MCallback = ty.Callable[..., None]
 
 
 class WeakCallback:

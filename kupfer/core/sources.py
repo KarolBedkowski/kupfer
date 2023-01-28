@@ -14,7 +14,7 @@ import typing as ty
 from kupfer import config, pretty, scheduler
 from kupfer import conspickle
 from kupfer.obj import base, sources
-from kupfer.obj.base import Source, Action, ActionGenerator, Leaf
+from kupfer.obj.base import Source, Action, ActionGenerator, Leaf, TextSource, AnySource
 from kupfer.core import pluginload
 
 
@@ -295,7 +295,7 @@ class SourceController(pretty.OutputMixin):
         self.rescanner = PeriodicRescanner(period=3)
         self.sources: ty.Set[Source] = set()
         self.toplevel_sources: ty.Set[Source] = set()
-        self.text_sources: ty.Set[Source] = set()
+        self.text_sources: ty.Set[TextSource] = set()
         self.content_decorators: ty.Dict[ty.Any, ty.Set[Source]] = {}
         self.action_decorators: ty.Dict[ty.Any, ty.Set[Action]] = {}
         self.action_generators: ty.List[ActionGenerator] = []
@@ -308,7 +308,7 @@ class SourceController(pretty.OutputMixin):
 
     def add(
         self,
-        plugin_id: str,
+        plugin_id: ty.Optional[str],
         srcs: ty.Iterable[Source],
         toplevel: bool = False,
         initialize: bool = False,
@@ -329,7 +329,7 @@ class SourceController(pretty.OutputMixin):
         if plugin_id:
             self._register_plugin_objects(plugin_id, *new_srcs)
 
-    def set_toplevel(self, src: Source, toplevel: bool) -> None:
+    def set_toplevel(self, src: AnySource, toplevel: bool) -> None:
         assert src in self.sources, "Source is not tracked in SourceController"
         self._invalidate_root()
         if toplevel:
@@ -345,7 +345,7 @@ class SourceController(pretty.OutputMixin):
             self.plugin_object_map[obj] = plugin_id
             pretty.print_debug(__name__, "Add", repr(obj))
 
-    def _remove(self, src: Source) -> None:
+    def _remove(self, src: AnySource) -> None:
         self._invalidate_root()
         self.toplevel_sources.discard(src)
         self.sources.discard(src)
@@ -398,18 +398,18 @@ class SourceController(pretty.OutputMixin):
         self.text_sources.update(srcs)
         self._register_plugin_objects(plugin_id, *srcs)
 
-    def get_text_sources(self) -> ty.Set[Source]:
+    def get_text_sources(self) -> ty.Set[TextSource]:
         return self.text_sources
 
     def add_content_decorators(
-        self, plugin_id: str, decos: ty.Dict[ty.Any, ty.Set[Source]]
+        self, plugin_id: str, decos: ty.Dict[ty.Any, ty.Set[Source|Leaf]]
     ) -> None:
         for typ, val in decos.items():
             self.content_decorators.setdefault(typ, set()).update(val)
             self._register_plugin_objects(plugin_id, *val)
 
     def add_action_decorators(
-        self, plugin_id: str, decos: ty.Dict[ty.Any, ty.Set[Action]]
+        self, plugin_id: str, decos: dict[ty.Any, ty.Collection[Action]]
     ) -> None:
         for typ, val in decos.items():
             self.action_decorators.setdefault(typ, set()).update(val)
@@ -443,10 +443,10 @@ class SourceController(pretty.OutputMixin):
             if not action.name.endswith(plugin_suffix):
                 action.name += plugin_suffix
 
-    def __contains__(self, src: Source) -> bool:
+    def __contains__(self, src: AnySource) -> bool:
         return src in self.sources
 
-    def __getitem__(self, src: Source) -> Source:
+    def __getitem__(self, src: AnySource) -> AnySource:
         # TODO: ???
         if not src in self:
             raise KeyError
@@ -531,7 +531,7 @@ class SourceController(pretty.OutputMixin):
 
         return sources.MultiSource(firstlevel)
 
-    def get_canonical_source(self, source: Source) -> Source:
+    def get_canonical_source(self, source: AnySource) -> AnySource:
         "Return the canonical instance for @source"
         # check if we already have source, then return that
         if source in self:
@@ -636,7 +636,7 @@ class SourceController(pretty.OutputMixin):
             self._pickle_source(source, pickler=sourcepickler)
 
     @classmethod
-    def _pickle_source(self, source: Source, pickler: ty.Any=None)->None:
+    def _pickle_source(cls, source: Source, pickler: ty.Any=None)->None:
         sourcepickler = pickler or SourcePickler()
         sourcepickler.pickle_source(source)
 
