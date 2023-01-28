@@ -1,9 +1,14 @@
+from __future__ import annotations
+
+import typing as ty
+
 import gi
-from gi.repository import GObject
+from gi.repository import GObject, Gdk, Gtk
 
 from kupfer import pretty
 from kupfer import environment
 
+# TODO: Enum
 KEYBINDING_DEFAULT = 1
 KEYBINDING_MAGIC = 2
 
@@ -18,20 +23,18 @@ if environment.allows_keybinder():
         pretty.print_debug(__name__, "Keybinder 3.0 not available in gi")
     else:
         from gi.repository import Keybinder
+
         Keybinder.init()
 else:
     pretty.print_debug(__name__, "Keybinder disabled")
 
-_keybound_object = None
+
 def GetKeyboundObject():
     """Get the shared instance"""
-    global _keybound_object
-    if not _keybound_object:
-        _keybound_object = KeyboundObject()
+    return KeyboundObject.instance()
 
-    return _keybound_object
 
-class KeyboundObject (GObject.GObject):
+class KeyboundObject(GObject.GObject):
     """Keybinder object
 
     signals:
@@ -39,32 +42,59 @@ class KeyboundObject (GObject.GObject):
         keybinding signal is triggered when the key bound
         for @target is triggered.
     """
-    __gtype_name__ = "KeyboundObject"
-    def __init__(self):
-        super().__init__()
 
-    def _keybinding(self, target):
+    __gtype_name__ = "KeyboundObject"
+    _instance: KeyboundObject | None = None
+
+    @classmethod
+    def instance(cls) -> KeyboundObject:
+        if cls._instance is None:
+            cls._instance = KeyboundObject()
+
+        return cls._instance
+
+    def keybinding(self, target: int) -> None:
+        assert Keybinder
         time = Keybinder.get_current_event_time()
         self.emit("keybinding", target, "", time)
 
-    def emit_bound_key_changed(self, keystring, is_bound):
+    def emit_bound_key_changed(self, keystring: str, is_bound: bool) -> None:
         self.emit("bound-key-changed", keystring, is_bound)
 
-    def relayed_keys(self, sender, keystring, display, timestamp):
-        for target, key in _currently_bound.items():
+    def relayed_keys(
+        self,
+        _sender: ty.Any,
+        keystring: str,
+        display: Gdk.Display,
+        timestamp: float,
+    ) -> None:
+        for target, key in _CURRENTLY_BOUND.items():
             if keystring == key:
                 self.emit("keybinding", target, display, timestamp)
 
-# Arguments: Target, Display, Timestamp
-GObject.signal_new("keybinding", KeyboundObject, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN,
-        (GObject.TYPE_INT, GObject.TYPE_STRING, GObject.TYPE_UINT))
-# Arguments: Keystring, Boolean
-GObject.signal_new("bound-key-changed", KeyboundObject, GObject.SignalFlags.RUN_LAST,
-        GObject.TYPE_BOOLEAN,
-        (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN,))
 
-_currently_bound = {}
+# Arguments: Target, Display, Timestamp
+GObject.signal_new(
+    "keybinding",
+    KeyboundObject,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (GObject.TYPE_INT, GObject.TYPE_STRING, GObject.TYPE_UINT),
+)
+# Arguments: Keystring, Boolean
+GObject.signal_new(
+    "bound-key-changed",
+    KeyboundObject,
+    GObject.SignalFlags.RUN_LAST,
+    GObject.TYPE_BOOLEAN,
+    (
+        GObject.TYPE_STRING,
+        GObject.TYPE_BOOLEAN,
+    ),
+)
+
+_CURRENTLY_BOUND : dict[int, str] = {}
+
 
 def is_available():
     """
@@ -72,28 +102,34 @@ def is_available():
     """
     if Keybinder is None:
         return False
-    else:
-        try:
-            return Keybinder.supported()
-        except AttributeError:
-            return True
 
-def get_all_bound_keys():
-    return list(filter(bool, list(_currently_bound.values())))
+    try:
+        return Keybinder.supported()
+    except AttributeError:
+        return True
 
-def get_current_event_time():
+
+def get_all_bound_keys() -> list[str]:
+    return list(filter(bool, _CURRENTLY_BOUND.values()))
+
+
+def get_current_event_time() -> int|float:
     "Return current event time as given by keybinder"
     if Keybinder is None:
         return 0
+
     return Keybinder.get_current_event_time()
 
-def _register_bound_key(keystr, target):
-    _currently_bound[target] = keystr
 
-def get_currently_bound_key(target=KEYBINDING_DEFAULT):
-    return _currently_bound.get(target)
+def _register_bound_key(keystr: str, target: int) -> None:
+    _CURRENTLY_BOUND[target] = keystr
 
-def bind_key(keystr, keybinding_target=KEYBINDING_DEFAULT):
+
+def get_currently_bound_key(target:int=KEYBINDING_DEFAULT)->str|None:
+    return _CURRENTLY_BOUND.get(target)
+
+
+def bind_key(keystr:str|None, keybinding_target:int=KEYBINDING_DEFAULT)->bool:
     """
     Bind @keystr, unbinding any previous key for @keybinding_target.
     If @keystr is a false value, any previous key will be unbound.
@@ -103,15 +139,17 @@ def bind_key(keystr, keybinding_target=KEYBINDING_DEFAULT):
     if Keybinder is None:
         return False
 
-    def callback(keystr):
-        return GetKeyboundObject()._keybinding(keybinding_target)
-
     if not _is_sane_keybinding(keystr):
         pretty.print_error(__name__, "Refusing to bind key", repr(keystr))
         return False
 
     succ = True
     if keystr:
+
+        def callback(keystr: str) -> bool:
+            GetKeyboundObject().keybinding(keybinding_target)
+            return False
+
         try:
             succ = Keybinder.bind(keystr, callback)
             pretty.print_debug(__name__, "binding", repr(keystr))
@@ -132,7 +170,7 @@ def bind_key(keystr, keybinding_target=KEYBINDING_DEFAULT):
     return succ
 
 
-def _is_sane_keybinding(keystr):
+def _is_sane_keybinding(keystr:str|None)->bool:
     "Refuse keys that we absolutely do not want to bind"
     if keystr is None:
         return True

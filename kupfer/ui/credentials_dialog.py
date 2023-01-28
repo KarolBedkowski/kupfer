@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from gi.repository import Gtk
 
 from kupfer import version, config, kupferstring
 
 class CredentialsDialogController():
-    def __init__(self, username, password, infotext=None):
+    def __init__(self, username: str|None, password: str|None, infotext:str|None=None):
         """Load ui from data file"""
         builder = Gtk.Builder()
         builder.set_translation_domain(version.PACKAGE_NAME)
@@ -23,27 +25,27 @@ class CredentialsDialogController():
         self.entry_user.set_text(username or '')
         self.entry_pass.set_text(password or '')
 
-    def on_button_ok_clicked(self, widget):
+    def on_button_ok_clicked(self, widget:Gtk.Widget)->None:
         self.window.response(Gtk.ResponseType.ACCEPT)
         self.window.hide()
 
-    def on_button_cancel_clicked(self, widget):
+    def on_button_cancel_clicked(self, widget:Gtk.Widget)->None:
         self.window.response(Gtk.ResponseType.CANCEL)
         self.window.hide()
 
-    def show(self):
-        return self.window.run()
+    def show(self)->bool:
+        return self.window.run()  # type: ignore
 
     @property
-    def username(self):
+    def username(self) -> str:
         return kupferstring.tounicode(self.entry_user.get_text())
 
     @property
-    def password(self):
+    def password(self) -> str:
         return kupferstring.tounicode(self.entry_pass.get_text())
 
 
-def ask_user_credentials(user=None, password=None, infotext=None):
+def ask_user_credentials(user:str|None=None, password:str|None=None, infotext:str|None=None) -> tuple[str, str]|None:
     ''' Ask user for username and password.
 
     @user, @password - initial values
@@ -54,5 +56,5 @@ def ask_user_credentials(user=None, password=None, infotext=None):
     result = None
     if dialog.show() == Gtk.ResponseType.ACCEPT:
         result = dialog.username, dialog.password
-    return result
 
+    return result

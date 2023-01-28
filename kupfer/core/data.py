@@ -692,13 +692,13 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         return set()
 
     def _plugin_enabled(
-        self, _setctl: ty.Any, plugin_id: str, enabled: bool
+        self, _setctl: ty.Any, plugin_id: str, enabled: bool|int
     ) -> None:
         from kupfer.core import plugins
 
         if enabled and not plugins.is_plugin_loaded(plugin_id):
-            sources = self._load_plugin(plugin_id)
-            self._insert_sources(plugin_id, sources, initialize=True)
+            srcs = self._load_plugin(plugin_id)
+            self._insert_sources(plugin_id, srcs, initialize=True)
         elif not enabled:
             self._remove_plugin(plugin_id)
 
@@ -905,7 +905,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
                 if new_stack != panectl.object_stack:
                     self._set_object_stack(pane, new_stack)
 
-    def browse_up(self, pane):
+    def browse_up(self, pane) -> bool:
         """Try to browse up to previous sources, from current
         source"""
         if pane is SourcePane:
@@ -913,6 +913,8 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
         if pane is ObjectPane:
             return self.object_pane.browse_up()
+
+        return False
 
     def browse_down(self, pane: int, alternate=False) -> None:
         """Browse into @leaf if it's possible
