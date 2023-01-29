@@ -93,7 +93,7 @@ GObject.signal_new(
     ),
 )
 
-_CURRENTLY_BOUND : dict[int, str] = {}
+_CURRENTLY_BOUND : dict[int, str|None] = {}
 
 
 def is_available():
@@ -121,7 +121,7 @@ def get_current_event_time() -> int|float:
     return Keybinder.get_current_event_time()
 
 
-def _register_bound_key(keystr: str, target: int) -> None:
+def _register_bound_key(keystr: str|None, target: int) -> None:
     _CURRENTLY_BOUND[target] = keystr
 
 
