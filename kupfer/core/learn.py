@@ -101,7 +101,7 @@ class Learning:
 _REGISTER: ty.Dict[str, ty.Union[Mnemonics, ty.Dict[str, str]]] = {}
 
 
-def record_search_hit(obj: ty.Any, key: str = "") -> None:
+def record_search_hit(obj: ty.Any, key: str|None = None) -> None:
     """
     Record that KupferObject @obj was used, with the optional
     search term @key recording
@@ -112,7 +112,7 @@ def record_search_hit(obj: ty.Any, key: str = "") -> None:
         mns = _REGISTER[name] = Mnemonics()
 
     assert isinstance(mns, Mnemonics)
-    mns.increment(key)
+    mns.increment(key or "")
 
 
 def get_record_score(obj: ty.Any, key: str = "") -> float:
