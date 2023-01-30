@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import typing as ty
 import functools
 
 import glib
@@ -5,7 +8,11 @@ from gi.repository import Gtk
 
 from kupfer import version, config
 
-def idle_call(func):
+
+T = ty.TypeVar("T")
+
+
+def idle_call(func: ty.Callable[..., T]) -> ty.Callable[..., T]:
     @functools.wraps(func)
     def idle_wrapper(*args):
         glib.idle_add(func, *args)
@@ -15,8 +22,11 @@ def idle_call(func):
 
 _HEADER_MARKUP = '<span weight="bold" size="larger">%s</span>'
 
-class ProgressDialogController :
-    def __init__(self, title, header=None, max_value=100):
+
+class ProgressDialogController:
+    def __init__(
+        self, title: str, header: str | None = None, max_value: int = 100
+    ):
         """Create a new progress dialog
 
         @header: first line of dialog
@@ -30,7 +40,7 @@ class ProgressDialogController :
         self._construct_dialog(ui_file, title, header)
 
     @idle_call
-    def _construct_dialog(self, ui_file, title, header):
+    def _construct_dialog(self, ui_file: str, title: str, header: str) -> None:
 
         builder = Gtk.Builder()
         builder.set_translation_domain(version.PACKAGE_NAME)
@@ -38,44 +48,48 @@ class ProgressDialogController :
         builder.add_from_file(ui_file)
         builder.connect_signals(self)
         self.window = builder.get_object("window_progress")
-        self.button_abort = builder.get_object('button_abort')
-        self.progressbar = builder.get_object('progressbar')
-        self.label_info = builder.get_object('label_info')
-        self.label_header = builder.get_object('label_header')
+        self.button_abort = builder.get_object("button_abort")
+        self.progressbar = builder.get_object("progressbar")
+        self.label_info = builder.get_object("label_info")
+        self.label_header = builder.get_object("label_header")
 
         self.window.set_title(title)
         if header:
-            self.label_header.set_markup(_HEADER_MARKUP %
-                    glib.markup_escape_text(header))
+            self.label_header.set_markup(
+                _HEADER_MARKUP % glib.markup_escape_text(header)
+            )
         else:
             self.label_header.hide()
 
-        self.update(0, '', '')
+        self.update(0, "", "")
 
-    def on_button_abort_clicked(self, widget):
+    def on_button_abort_clicked(self, widget: Gtk.Button) -> None:
         self.aborted = True
         self.button_abort.set_sensitive(False)
 
     @idle_call
-    def show(self):
+    def show(self) -> None:
         self.window.present()
 
     @idle_call
-    def hide(self):
+    def hide(self) -> None:
         self.window.hide()
 
     @idle_call
-    def update(self, value, label, text):
-        """ Update dialog information.
+    def update(self, value: int | float, label: str, text: str) -> bool:
+        """Update dialog information.
 
         @value: value to set for progress bar
         @label: current action (displayed in emphasized style)
         @text: current information (normal style)
+
+        @return true when abort button was pressed
         """
-        self.progressbar.set_fraction(min(value/self.max_value, 1.0))
-        self.label_info.set_markup("<b>%s</b> %s" %
-            (
-                glib.markup_escape_text(label),
-                glib.markup_escape_text(text),
-            ))
+        self.progressbar.set_fraction(min(value / self.max_value, 1.0))
+        self.label_info.set_markup(
+            "<b>"
+            + glib.markup_escape_text(label)
+            + "</b>"
+            + glib.markup_escape_text(text)
+        )
         return self.aborted
