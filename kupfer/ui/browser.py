@@ -2760,7 +2760,7 @@ class WindowController(pretty.OutputMixin):
 
     def result_callback(
         self,
-        sender: Gtk.Widget,
+        sender: data.DataController,
         _result_type: ty.Any,
         ui_ctx: uievents.GUIEnvironmentContext,
     ) -> None:
