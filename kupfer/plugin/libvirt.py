@@ -87,7 +87,7 @@ class DomAction(Action):
     def item_types(self):
         yield Domain
 
-    def activate(self, leaf):
+    def activate(self, leaf, iobj=None, ctx=None):
         with libvirt.open(__kupfer_settings__["connection"] or None) as conn:
             domain = conn.lookupByName(leaf.object)
 
@@ -161,7 +161,7 @@ class OpenConsoleAction(Action):
     def item_types(self):
         yield Domain
 
-    def activate(self, leaf):
+    def activate(self, leaf, iobj=None, ctx=None):
         conn = __kupfer_settings__["connection"] or "qemu:///system"
         domain = leaf.object
         utils.spawn_async(

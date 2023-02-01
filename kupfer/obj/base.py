@@ -292,7 +292,7 @@ class Action(KupferObject):
 
     def activate(
         self, leaf: ty.Any, iobj: ty.Any = None, ctx: ty.Any = None
-    ) -> None:
+    ) -> Leaf|None:
         """Use this action with @obj and @iobj
 
         @leaf:  the direct object (Leaf)

@@ -281,7 +281,7 @@ def spawn_async_notify_as(app_id: str, argv: list[str]) -> bool:
     return desktop_launch.spawn_app_id(app_id, argv, None, True)
 
 
-def spawn_async(argv: list[str], in_dir: str = ".") -> bool:
+def spawn_async(argv: ty.Collection[str], in_dir: str = ".") -> bool:
     """
     Silently spawn @argv in the background
 
@@ -294,7 +294,7 @@ def spawn_async(argv: list[str], in_dir: str = ".") -> bool:
         return False
 
 
-def spawn_async_raise(argv: list[str], workdir: str = ".") -> bool:
+def spawn_async_raise(argv: ty.Collection[str], workdir: str = ".") -> bool:
     """
     A version of spawn_async that raises on error.
 

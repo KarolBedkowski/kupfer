@@ -25,7 +25,7 @@ class ZealSearch(Action):
     def __init__(self):
         Action.__init__(self, _("Zeal Search"))
 
-    def activate(self, leaf):
+    def activate(self, leaf, iobj=None, ctx=None):
         utils.spawn_async(["zeal", leaf.object])
 
     def get_description(self):
@@ -124,7 +124,8 @@ class ZealSearchInDocset(Action):
     def __init__(self):
         Action.__init__(self, _("Search In Zeal docset..."))
 
-    def activate(self, leaf, iobj, ctx=None):
+    def activate(self, leaf, iobj=None, ctx=None):
+        assert iobj
         docset = iobj.object
         terms = leaf.object
         utils.spawn_async(["zeal", docset + ":" + terms])
@@ -160,7 +161,8 @@ class ZealSearchFor(Action):
     def __init__(self):
         Action.__init__(self, _("Search For..."))
 
-    def activate(self, leaf, iobj, ctx=None):
+    def activate(self, leaf, iobj=None, ctx=None):
+        assert iobj
         docset = leaf.object
         terms = iobj.object
         utils.spawn_async(["zeal", docset + ":" + terms])

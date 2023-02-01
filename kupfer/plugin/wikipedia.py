@@ -4,7 +4,7 @@ This is a simple plugin demonstration, how to add single, simple actions
 
 __kupfer_name__ = _("Wikipedia")
 __kupfer_sources__ = ()
-__kupfer_actions__ = ("WikipediaSearch", )
+__kupfer_actions__ = ("WikipediaSearch",)
 __description__ = _("Search in Wikipedia")
 __version__ = "2017.1"
 __author__ = "US"
@@ -26,16 +26,18 @@ __kupfer_settings__ = plugin_support.PluginSettings(
 )
 
 
-class WikipediaSearch (Action):
+class WikipediaSearch(Action):
     def __init__(self):
         Action.__init__(self, _("Search in Wikipedia"))
 
-    def activate(self, leaf):
+    def activate(self, leaf, iobj=None, ctx=None):
         # Send in UTF-8 encoding
         lang_code = __kupfer_settings__["lang"]
-        search_url=f"https://{lang_code}.wikipedia.org/w/index.php?title=Special:Search&go=Go&"
+        search_url = f"https://{lang_code}.wikipedia.org/w/index.php?title=Special:Search&go=Go&"
         # will encode search=text, where `text` is escaped
-        query_url = search_url + urllib.parse.urlencode({"search": leaf.object})
+        query_url = search_url + urllib.parse.urlencode(
+            {"search": leaf.object}
+        )
         utils.show_url(query_url)
 
     def item_types(self):

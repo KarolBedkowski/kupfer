@@ -178,6 +178,7 @@ def check_dbus_connection():
         raise ImportError(_("No D-Bus connection to desktop session"))
 
 
+# TODO: check
 class UserNamePassword:
     pass
 
