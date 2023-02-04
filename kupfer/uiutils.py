@@ -21,7 +21,11 @@ if ty.TYPE_CHECKING:
     from kupfer.core.commandexec import ExecutionToken
 
 # TODO: !! remove
-import typeguard
+try:
+    from typeguard import typeguard_ignore
+except ImportError:
+    def typeguard_ignore(func):
+        return func
 
 
 def _window_close_on_escape(widget: Gtk.Widget, event: Gdk.EventKey) -> bool:
@@ -116,7 +120,7 @@ def _calculate_window_size(
     return vsize, hsize
 
 
-@typeguard.typeguard_ignore  # TODO: !! remove
+@typeguard_ignore  # TODO: !! remove
 def show_text_result(
     text: str,
     title: ty.Optional[str] = None,
@@ -174,7 +178,7 @@ def _set_font_size(label: Gtk.Label, fontsize: float = 48.0) -> None:
     label.set_attributes(attrs)
 
 
-@typeguard.typeguard_ignore
+@typeguard_ignore
 def show_large_type(
     text: str, ctx: ty.Optional["ExecutionToken"] = None
 ) -> None:
