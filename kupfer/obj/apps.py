@@ -24,7 +24,7 @@ class AppLeafContentMixin:
     """
 
     @classmethod
-    def get_leaf_repr(cls) -> AppLeaf:
+    def get_leaf_repr(cls) -> AppLeaf|None:
         if not hasattr(cls, "_cached_leaf_repr"):
             cls._cached_leaf_repr = cls.__get_leaf_repr()  # type: ignore
 

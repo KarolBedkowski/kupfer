@@ -146,7 +146,7 @@ class AsyncCommand(pretty.OutputMixin):
         self,
         argv: list[str],
         finish_callback: ty.Callable[[AsyncCommand, bytes, bytes], None],
-        timeout_s: int,
+        timeout_s: int|None,
         stdin: ty.Optional[bytes] = None,
         env: ty.Any = None,
     ) -> None:
