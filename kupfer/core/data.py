@@ -943,9 +943,12 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if sobject and self.mode is SourceActionObjectMode:
             learn.record_search_hit(sobject, self.object_pane.get_latest_key())
 
+        if not leaf or not action:
+            return
+
         try:
             ctx = self._execution_context
-            res, ret = ctx.run(leaf, action, sobject, ui_ctx=ui_ctx)
+            res, _ret = ctx.run(leaf, action, sobject, ui_ctx=ui_ctx)
         except commandexec.ActionExecutionError:
             self.output_exc()
             return
