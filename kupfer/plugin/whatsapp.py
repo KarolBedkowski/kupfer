@@ -31,7 +31,7 @@ class WhatsApp (Action):
     def __init__(self):
         Action.__init__(self, _("WhatsApp Web"))
 
-    def activate(self, leaf):
+    def activate(self, leaf, iobj=None, ctx=None):
         url_w = "https://web.whatsapp.com/send?phone="
         url_number = url_w + leaf.object
         utils.show_url(url_number)
