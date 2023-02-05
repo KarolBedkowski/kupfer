@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as ty
 
 from gi.repository import Gtk, Gdk
@@ -12,7 +14,7 @@ class TextRepresentation:
 
     def get_text_representation(self) -> str:
         """The default implementation returns the represented object"""
-        return self.object  # pylint: disable=no-member; type: ignore
+        return str(self.object)  # pylint: disable=no-member
 
 
 class UriListRepresentation:
@@ -29,14 +31,17 @@ class UriListRepresentation:
         raise NotImplementedError
 
 
-def get_text_representation(obj: ty.Any) -> ty.Optional[str]:
+def get_text_representation(obj: ty.Any) -> str | None:
+    """
+    Get text representation from any @obj.
+    """
     try:
         return obj.get_text_representation()  # type: ignore
     except AttributeError:
         return None
 
 
-def copy_to_clipboard( obj: KupferObject, clipboard: Gtk.Clipboard) -> bool:
+def copy_to_clipboard(obj: KupferObject, clipboard: Gtk.Clipboard) -> bool:
     """
     Copy @obj to @clipboard, a Gtk.Clipboard
 
@@ -61,7 +66,7 @@ def copy_to_clipboard( obj: KupferObject, clipboard: Gtk.Clipboard) -> bool:
     # def clear(clipboard, udata):
     #     pass
 
-    data : dict[int, ty.Any] = {}
+    data: dict[int, ty.Any] = {}
     try:
         urilist = obj.get_urilist_representation()  # type: ignore
     except AttributeError:

@@ -12,19 +12,20 @@ from dbus.mainloop.glib import DBusGMainLoop
 gi.require_version("Gtk", "3.0")
 gi.require_version("Keybinder", "3.0")
 
-from gi.repository import Gtk, Keybinder as keybinder
+from gi.repository import (  # pylint: disable=wrong-import-position
+    Gtk,
+    Keybinder as keybinder,
+)
 
 SERV = "se.kaizer.kupfer"
 OBJ = "/interface"
 IFACE = "se.kaizer.kupfer.Listener"
 
 if not hasattr(builtins, "_"):
-
-    def _(x):
-        return x
+    _ = str
 
 
-def get_all_keys() -> list[str]:
+def _get_all_keys() -> list[str]:
     try:
         bus = dbus.Bus()
         obj = bus.get_object(SERV, OBJ)
@@ -36,16 +37,16 @@ def get_all_keys() -> list[str]:
         return []
 
 
-def rebind_key(keystring: str, is_bound: bool) -> None:
+def _rebind_key(keystring: str, is_bound: bool) -> None:
     if is_bound:
         print("binding", keystring)
-        keybinder.bind(keystring, relay_key, keystring)
+        keybinder.bind(keystring, _relay_key, keystring)
     else:
         print("unbinding", keystring)
         keybinder.unbind(keystring)
 
 
-def relay_key(key: str) -> None:
+def _relay_key(key: str) -> None:
     print("Relaying", key)
     time = keybinder.get_current_event_time()
     s_id = f"kupfer-{os.getpid()}_TIME{time}"
@@ -58,14 +59,12 @@ def relay_key(key: str) -> None:
 def main() -> None:
     DBusGMainLoop(set_as_default=True)
 
-    relayed_keys = list(get_all_keys())
-
-    for key in relayed_keys:
-        rebind_key(key, True)
+    for key in _get_all_keys():
+        _rebind_key(key, True)
 
     bus = dbus.Bus()
     bus.add_signal_receiver(
-        rebind_key, "BoundKeyChanged", dbus_interface=IFACE
+        _rebind_key, "BoundKeyChanged", dbus_interface=IFACE
     )
     sicon = Gtk.StatusIcon.new_from_icon_name("kupfer")
     display = os.getenv("DISPLAY", ":0")

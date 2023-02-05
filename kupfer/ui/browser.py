@@ -32,10 +32,10 @@ from kupfer.ui import accelerators
 from kupfer.ui import keybindings
 from kupfer.ui import listen
 from kupfer.ui import uievents
-from kupfer.core import data, relevance, learn, search
+from kupfer.core import data, relevance, learn
 from kupfer.core.search import Rankable
 from kupfer.core import settings, actionaccel
-from kupfer.obj.base import Leaf, Source, Action, KupferObject, AnySource
+from kupfer.obj.base import Leaf, Action, KupferObject, AnySource
 from kupfer.obj.objects import FileLeaf
 from kupfer import icons
 from kupfer import interface

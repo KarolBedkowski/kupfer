@@ -13,7 +13,7 @@ import zlib
 from contextlib import suppress
 import typing as ty
 
-from gi.repository import GLib, Gio, Gdk
+from gi.repository import GLib, Gio, Gtk
 from gi.repository import GdkPixbuf
 
 from kupfer import icons, launch, utils
@@ -405,7 +405,7 @@ class AppLeaf(Leaf):
 
 
 class OpenUrl(Action):
-    action_accelerator : ty.Optional[str] = "o"
+    action_accelerator: ty.Optional[str] = "o"
     rank_adjust: int = 5
 
     def __init__(self, name: ty.Optional[str] = None) -> None:
@@ -430,7 +430,7 @@ class OpenUrl(Action):
 class Launch(Action):
     """Launches an application (AppLeaf)"""
 
-    action_accelerator : ty.Optional[str] = "o"
+    action_accelerator: ty.Optional[str] = "o"
     rank_adjust = 5
 
     def __init__(
@@ -469,10 +469,10 @@ class Launch(Action):
 
 
 class LaunchAgain(Launch):
-    action_accelerator : ty.Optional[str] = None
+    action_accelerator: ty.Optional[str] = None
     rank_adjust = 0
 
-    def __init__(self, name: ty.Optional[str]=None):
+    def __init__(self, name: ty.Optional[str] = None):
         Launch.__init__(self, name or _("Launch Again"), open_new=True)
 
     def item_types(self) -> ty.Iterator[ty.Type[Leaf]]:
@@ -481,7 +481,7 @@ class LaunchAgain(Launch):
     def valid_for_item(self, leaf: Leaf) -> bool:
         return launch.application_is_running(leaf.get_id())
 
-    def get_description(self)->str:
+    def get_description(self) -> str:
         return _("Launch another instance of this application")
 
 
@@ -514,7 +514,7 @@ class CloseAll(Action):
 class UrlLeaf(Leaf, TextRepresentation):
     serializable = 1
 
-    def __init__(self, obj: str, name: str|None) -> None:
+    def __init__(self, obj: str, name: str | None) -> None:
         super().__init__(obj, name or obj)
         if obj != name:
             self.kupfer_add_alias(obj)
@@ -534,13 +534,13 @@ class RunnableLeaf(Leaf):
     for items such as Quit, Log out etc.
     """
 
-    def __init__(self, obj: ty.Any = None, name: str="") -> None:
+    def __init__(self, obj: ty.Any = None, name: str = "") -> None:
         Leaf.__init__(self, obj, name)
 
     def get_actions(self) -> ty.Iterator[Action]:
         yield Perform()
 
-    def run(self, ctx: ty.Any=None) -> None:
+    def run(self, ctx: ty.Any = None) -> None:
         raise NotImplementedError
 
     def wants_context(self) -> bool:
@@ -566,12 +566,12 @@ class RunnableLeaf(Leaf):
 class Perform(Action):
     """Perform the action in a RunnableLeaf"""
 
-    action_accelerator : ty.Optional[str]= "o"
+    action_accelerator: ty.Optional[str] = "o"
     rank_adjust = 5
 
-    def __init__(self, name: ty.Optional[str]=None):
+    def __init__(self, name: ty.Optional[str] = None):
         # TRANS: 'Run' as in Perform a (saved) command
-        super().__init__(name=name or  _("Run"))
+        super().__init__(name=name or _("Run"))
 
     def wants_context(self) -> bool:
         return True
@@ -596,7 +596,7 @@ class TextLeaf(Leaf, TextRepresentation):
 
     serializable = 1
 
-    def __init__(self, text: str, name: ty.Optional[str]=None)->None:
+    def __init__(self, text: str, name: ty.Optional[str] = None) -> None:
         """@text *must* be unicode or UTF-8 str"""
         text = tounicode(text)
         if not name:

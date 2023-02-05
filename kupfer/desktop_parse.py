@@ -13,7 +13,7 @@ import shlex
 
 # This is the "string" type encoding escapes
 # this is unescaped before we process anything..
-escape_table = {
+_ESCAPE_TABLE = {
     r"\s": " ",
     r"\n": "\n",
     r"\t": "\t",
@@ -23,22 +23,20 @@ escape_table = {
 
 # quoted are those chars that need a backslash in front
 # (inside a double-quoted section, that is)
-quoted = r""" " ` $ \ """.split()
-quoted_table = {
-    r"\"": '"',
-    r"\`": "`",
-    r"\$": "$",
-    "\\\\": "\\",
-}
+# not in use
+# quoted = r""" " ` $ \ """.split()
+# quoted_table = {
+#     r"\"": '"',
+#     r"\`": "`",
+#     r"\$": "$",
+#     "\\\\": "\\",
+# }
 
-'''
 # reserved are those that need to be inside quotes
 # note that all the quoted are also reserved, of course
-
-We don't use these at all
-reserved = r""" " ' \ > < ~ | & ; $ * ? # ( ) ` """.split()
-reserved.extend([' ', '\t', '\n'])
-'''
+# We don't use these at all
+# reserved = r""" " ' \ > < ~ | & ; $ * ? # ( ) ` """.split()
+# reserved.extend([' ', '\t', '\n'])
 
 
 def two_part_unescaper(string: str, reptable: ty.Dict[str, str]) -> str:
@@ -47,13 +45,12 @@ def two_part_unescaper(string: str, reptable: ty.Dict[str, str]) -> str:
         return string
 
     def _inner():
-        it = iter(zip(string, string[1:]))
-        for cur, nex in it:
-            key = cur + nex
-            if key in reptable:
+        pairs = zip(string, string[1:])
+        for cur, nex in pairs:
+            if (key := cur + nex) in reptable:
                 yield reptable[key]
                 try:
-                    next(it)
+                    next(pairs)
                 except StopIteration:
                     return
             else:
@@ -67,7 +64,7 @@ def two_part_unescaper(string: str, reptable: ty.Dict[str, str]) -> str:
 T = ty.TypeVar("T", str, bytes)
 
 
-def custom_shlex_split(
+def _custom_shlex_split(
     string: T, comments: bool = False, posix: bool = True
 ) -> list[T]:
     """
@@ -100,17 +97,17 @@ def custom_shlex_split(
     return [x.encode("UTF-8") for x in lex_output]
 
 
-def unescape(string: str) -> str:
+def _unescape(string: str) -> str:
     "Primary unescape of control sequences"
-    return two_part_unescaper(string, escape_table)
+    return two_part_unescaper(string, _ESCAPE_TABLE)
 
 
 def test_unescape():
     r"""
     >>> t = r'"This \\$ \\\\ \s\\\\"'
-    >>> unescape(t)
+    >>> _unescape(t)
     '"This \\$ \\\\  \\\\"'
-    >>> unescape(r'\t\s\\\\')
+    >>> _unescape(r'\t\s\\\\')
     '\t \\\\'
     """
 
@@ -166,7 +163,7 @@ def parse_argv(instr: str) -> list[str]:
     ['A\\\\BC "hi there']
 
     """
-    return custom_shlex_split(instr)
+    return _custom_shlex_split(instr)
 
 
 def parse_unesc_argv(instr: str) -> list[str]:
@@ -184,7 +181,7 @@ def parse_unesc_argv(instr: str) -> list[str]:
     >>> parse_unesc_argv("'/usr'/bin/gnome-terminal -x gvim 'Insanely Broken'Yes")
     ['/usr/bin/gnome-terminal', '-x', 'gvim', 'Insanely BrokenYes']
     """
-    return custom_shlex_split(unescape(instr))
+    return _custom_shlex_split(_unescape(instr))
 
 
 if __name__ == "__main__":
