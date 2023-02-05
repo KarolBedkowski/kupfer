@@ -1,38 +1,10 @@
 """
+ouuu
 Debugging routines, can only be used when Kupfer is run from the Source
 directory.
 """
-import os
 import atexit
 import gc
-
-try:
-    import stackprinter
-
-    stackprinter.set_excepthook(style="color")
-except ImportError:
-    try:
-        from rich.traceback import install
-
-        install()
-    except ImportError:
-        pass
-
-try:
-    import icecream
-
-    icecream.install()
-    icecream.ic.configureOutput(includeContext=True)
-except ImportError:  # Graceful fallback if IceCream isn't installed.
-    pass
-
-try:
-    from typeguard.importhook import install_import_hook
-
-    if os.getenv("KUPFER_NO_TYPECHECK") is None:
-        install_import_hook("kupfer")
-except ImportError:
-    pass
 
 
 def mem_stats():

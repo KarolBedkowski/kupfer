@@ -18,6 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import sys
+
 try:
     import stackprinter
 
@@ -29,6 +31,7 @@ except ImportError:
         install()
     except ImportError:
         pass
+
 try:
     import icecream
 
@@ -39,15 +42,16 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 
 
 try:
-    from typeguard.importhook import install_import_hook
- #   from typeguard import config, warn_on_error
+    if "--debug" in sys.argv:
+        from typeguard.importhook import install_import_hook
 
-    install_import_hook("kupfer")
-#    config.typecheck_fail_callback = warn_on_error
+        install_import_hook("kupfer")
+        print("WARN! typeguard hook installed")
 except ImportError:
     pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from kupfer import main
+
     main.main()
