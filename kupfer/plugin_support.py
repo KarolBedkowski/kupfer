@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as ty
 
 from gi.repository import GObject
@@ -102,8 +104,8 @@ class PluginSettings(GObject.GObject, pretty.OutputMixin):
 
     def _value_changed(
         self,
-        setctl: ty.Any,
-        section: ty.Any,
+        setctl: settings.SettingsController,
+        section: str,
         key: str,
         value: ty.Any,
         plugin_name: str,
@@ -120,11 +122,11 @@ class PluginSettings(GObject.GObject, pretty.OutputMixin):
         """Return label for setting @key"""
         return self.setting_descriptions[key]["label"]  # type: ignore
 
-    def get_alternatives(self, key: str) -> ty.Optional[ty.Iterable[ty.Any]]:
+    def get_alternatives(self, key: str) -> ty.Iterable[ty.Any] | None:
         """Return alternatives for setting @key (if any)"""
         return self.setting_descriptions[key].get("alternatives")
 
-    def get_tooltip(self, key: str) -> ty.Optional[str]:
+    def get_tooltip(self, key: str) -> str | None:
         """Return tooltip string for setting @key (if any)"""
         return self.setting_descriptions[key].get("tooltip")
 
@@ -155,7 +157,24 @@ GObject.signal_new(
 _HAS_DBUS_CONNECTION = None
 
 
-def check_dbus_connection():
+class _DBusChecker:
+    has_connection = None
+
+    @classmethod
+    def check(cls) -> bool:
+        if cls.has_connection is None:
+            try:
+                import dbus  # pylint: disable=import-outside-toplevel
+
+                dbus.Bus()
+                cls.has_connection = True
+            except (ImportError, dbus.DBusException):
+                cls.has_connection = False
+
+        return cls.has_connection
+
+
+def check_dbus_connection() -> None:
     """
     Check if a connection to the D-Bus daemon is available,
     else raise ImportError with an explanatory error message.
@@ -164,17 +183,7 @@ def check_dbus_connection():
     if this check is used, the plugin may use D-Bus and assume it
     is available in the Plugin's code.
     """
-    global _HAS_DBUS_CONNECTION
-    if _HAS_DBUS_CONNECTION is None:
-        import dbus
-
-        try:
-            dbus.Bus()
-            _HAS_DBUS_CONNECTION = True
-        except dbus.DBusException:
-            _HAS_DBUS_CONNECTION = False
-
-    if not _HAS_DBUS_CONNECTION:
+    if not _DBusChecker.check():
         raise ImportError(_("No D-Bus connection to desktop session"))
 
 
@@ -194,7 +203,9 @@ def check_keybinding_support() -> None:
     """
     Check if we can make global keybindings
     """
-    from kupfer.ui import keybindings
+    from kupfer.ui import (
+        keybindings,
+    )  # pylint: disable=import-outside-toplevel
 
     if not keybindings.is_available():
         raise ImportError(_("Dependency '%s' is not available") % "Keybinder")
@@ -261,11 +272,11 @@ def register_alternative(
         return False
 
     id_ = str(id_)
-    alt = _AVAILABLE_ALTERNATIVES[category_key]
-    id_ = f"{caller}.{id_}"
+    full_id = f"{caller}.{id_}"
     kw_set = set(kwargs)
-
+    alt = _AVAILABLE_ALTERNATIVES[category_key]
     req_set = set(alt["required_keys"])
+
     if not req_set.issubset(kw_set):
         _plugin_configuration_error(
             caller, f"Configuration error for alternative '{category_key}':"
@@ -275,9 +286,9 @@ def register_alternative(
         )
         return False
 
-    _ALTERNATIVES[category_key][id_] = kwargs
+    _ALTERNATIVES[category_key][full_id] = kwargs
     pretty.print_debug(
-        __name__, f"Registered alternative {category_key}: {id_}"
+        __name__, f"Registered alternative {category_key}: {full_id}"
     )
     setctl = settings.GetSettingsController()
     setctl.update_alternatives(
@@ -288,13 +299,14 @@ def register_alternative(
     plugin_id = ".".join(caller.split(".")[2:])
     if plugin_id and not plugin_id.startswith("core."):
         plugins.register_plugin_unimport_hook(
-            plugin_id, _unregister_alternative, caller, category_key, id_
+            plugin_id, _unregister_alternative, caller, category_key, full_id
         )
+
     return True
 
 
 def _unregister_alternative(
-    caller: str, category_key: str, full_id_: str
+    caller: str, category_key: str, full_id: str
 ) -> None:
     """
     Remove the alternative for category @category_key
@@ -307,17 +319,16 @@ def _unregister_alternative(
         return
 
     alt = _AVAILABLE_ALTERNATIVES[category_key]
-    id_ = full_id_
     try:
-        del _ALTERNATIVES[category_key][id_]
+        del _ALTERNATIVES[category_key][full_id]
     except KeyError:
         _plugin_configuration_error(
-            caller, f"Alternative '{id_}' does not exist"
+            caller, f"Alternative '{full_id}' does not exist"
         )
         return
 
     pretty.print_debug(
-        __name__, f"Unregistered alternative {category_key}: {id_}"
+        __name__, f"Unregistered alternative {category_key}: {full_id}"
     )
     setctl = settings.GetSettingsController()
     setctl.update_alternatives(
