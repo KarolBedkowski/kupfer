@@ -16,7 +16,7 @@ def get_scheduler() -> Scheduler:
 class Scheduler(GObject.GObject, pretty.OutputMixin):
     __gtype_name__ = "Scheduler"
 
-    _instance: ty.Optional[Scheduler] = None
+    _instance: Scheduler | None = None
 
     @classmethod
     def instance(cls) -> Scheduler:
@@ -124,8 +124,9 @@ class Timer:
         self._current_timer = GLib.idle_add(self._call)
 
     def _call(self, timer: ty.Any = None) -> None:
-        self._current_timer = -1
         assert self._current_callback
+
+        self._current_timer = -1
         self._current_callback()
 
     def invalidate(self) -> None:

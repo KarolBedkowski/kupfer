@@ -17,7 +17,6 @@ ExecInfo = ty.Union[
 ]
 
 
-
 class Task:
     """Represent a task that can be done in the background
 
@@ -58,13 +57,12 @@ class ThreadTask(Task):
         completion, and can be used to communicate with the GUI.
         """
 
-        pass
-
     def thread_finally(self, exc_info: ExecInfo | None) -> None:
         """Always run at thread finish"""
         if exc_info is not None:
             etype, value, tb = exc_info
-            raise etype(value).with_traceback(tb)
+            if etype:
+                raise etype(value).with_traceback(tb)
 
     def _thread_finally(self, exc_info: ExecInfo | None) -> None:
         try:

@@ -4,7 +4,10 @@ User Interface Utility Functions for Kupfer
 These helper functions can be called from plugins (are meant to serve this
 purpose), but care should be taken to only call UI functions from the main
 (default) thread.
+
+TODO: move to ui?
 """
+from __future__ import annotations
 
 import math
 import textwrap
@@ -18,14 +21,18 @@ from kupfer import config, version
 from kupfer.ui import uievents
 
 if ty.TYPE_CHECKING:
+    # commandexec import uiutils TODO: fix imports
     from kupfer.core.commandexec import ExecutionToken
 
-# TODO: !! remove
 try:
     from typeguard import typeguard_ignore
 except ImportError:
-    def typeguard_ignore(func):
-        return func
+
+    _F = ty.TypeVar("_F")
+
+    def typeguard_ignore(f: _F) -> _F:  # pylint: disable=invalid-name
+        """This decorator is a noop during static type-checking."""
+        return f
 
 
 def _window_close_on_escape(widget: Gtk.Widget, event: Gdk.EventKey) -> bool:
@@ -120,11 +127,11 @@ def _calculate_window_size(
     return vsize, hsize
 
 
-@typeguard_ignore  # TODO: !! remove
+@typeguard_ignore
 def show_text_result(
     text: str,
-    title: ty.Optional[str] = None,
-    ctx: ty.Optional["ExecutionToken"] = None,
+    title: str | None = None,
+    ctx: "ExecutionToken" | None = None,
 ) -> None:
     """
     Show @text in a result window.
@@ -179,9 +186,7 @@ def _set_font_size(label: Gtk.Label, fontsize: float = 48.0) -> None:
 
 
 @typeguard_ignore
-def show_large_type(
-    text: str, ctx: ty.Optional["ExecutionToken"] = None
-) -> None:
+def show_large_type(text: str, ctx: "ExecutionToken" | None = None) -> None:
     """
     Show @text, large, in a result window.
     """
@@ -264,7 +269,7 @@ def _get_notification_obj() -> ty.Any:
 
 def show_notification(
     title: str, text: str = "", icon_name: str = "", nid: int = 0
-) -> ty.Optional[int]:
+) -> int | None:
     """
     @nid: If not 0, the id of the notification to replace.
 
