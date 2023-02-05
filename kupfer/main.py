@@ -4,8 +4,12 @@ import locale
 import sys
 from contextlib import suppress
 import getopt
+import runpy
 
-_DEBUG = False
+try:
+    from kupfer import version_subst
+except ImportError:
+    version_subst = None
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -15,11 +19,7 @@ def _setup_locale_and_gettext() -> None:
     """Set up localization with gettext"""
     package_name = "kupfer"
     localedir = "./locale"
-    try:
-        from kupfer import version_subst
-    except ImportError:
-        pass
-    else:
+    if version_subst:
         package_name = version_subst.PACKAGE_NAME
         localedir = version_subst.LOCALEDIR
     # Install _() builtin for gettext; always returning unicode objects
@@ -40,11 +40,10 @@ def _setup_locale_and_gettext() -> None:
 _setup_locale_and_gettext()
 
 
-def prt(*args: ty.Any) -> None:
+def _print(*args: ty.Any) -> None:
     enc = locale.getpreferredencoding(do_setlocale=False)
     sys.stdout.buffer.write(" ".join(args).encode(enc, "replace"))
     sys.stdout.buffer.write(b"\n")
-    # print(((" ".join(args)).encode(enc, "replace")))
 
 
 def _make_help_text(
@@ -62,7 +61,8 @@ def _make_help_text(
 
 
 def _make_plugin_list() -> str:
-    from kupfer.core import plugins
+    # require setup path and locales
+    from kupfer.core import plugins  # pylint: disable=import-outside-toplevel
 
     plugin_header = _("Available plugins:")
     plugin_list = plugins.get_plugin_desc()
@@ -96,29 +96,25 @@ def get_options() -> list[str]:
             [o for o, _h in program_options] + [o for o, _h in misc_options],
         )
     except getopt.GetoptError as exc:
-        prt(str(exc))
-        prt(_make_help_text(program_options, misc_options))
+        _print(str(exc))
+        _print(_make_help_text(program_options, misc_options))
         raise SystemExit(1)
 
     for key, val in opts:
         if key == "--list-plugins":
-            prt(gtkmain(_make_plugin_list))
+            _print(gtkmain(_make_plugin_list))
             raise SystemExit
 
         if key == "--help":
-            prt(_make_help_text(program_options, misc_options))
+            _print(_make_help_text(program_options, misc_options))
             raise SystemExit
 
         if key == "--version":
-            print_version()
+            _print_version()
             raise SystemExit
 
-        if key == "--debug":
-            global _DEBUG
-            _DEBUG = True
-
         if key == "--relay":
-            prt("WARNING: --relay is deprecated!")
+            _print("WARNING: --relay is deprecated!")
             exec_helper("kupfer.keyrelay")
             raise SystemExit
 
@@ -130,14 +126,16 @@ def get_options() -> list[str]:
     return [tupl[0] for tupl in opts]
 
 
-def print_version() -> None:
-    from kupfer import version
+def _print_version() -> None:
+    # require setup path and locales
+    from kupfer import version  # pylint: disable=import-outside-toplevel
 
-    prt(version.PACKAGE_NAME, version.VERSION)
+    _print(version.PACKAGE_NAME, version.VERSION)
 
 
 def print_banner() -> None:
-    from kupfer import version
+    # require setup path and locales
+    from kupfer import version  # pylint: disable=import-outside-toplevel
 
     if not sys.stdout or not sys.stdout.isatty():
         return
@@ -147,12 +145,12 @@ def print_banner() -> None:
         "   %(COPYRIGHT)s\n"
         "   %(WEBSITE)s\n"
     ) % vars(version)
-    prt(banner)
+    _print(banner)
 
 
 def _set_process_title() -> None:
     try:
-        import setproctitle
+        import setproctitle  # pylint: disable=import-outside-toplevel
     except ImportError:
         pass
     else:
@@ -160,8 +158,6 @@ def _set_process_title() -> None:
 
 
 def exec_helper(helpername: str) -> None:
-    import runpy
-
     runpy.run_module(helpername, run_name="__main__", alter_sys=True)
     raise SystemExit
 
@@ -171,7 +167,7 @@ def gtkmain(
     *args: ty.Any,
     **kwargs: ty.Any,
 ) -> ty.Any:
-    import gi
+    import gi  # pylint: disable=import-outside-toplevel
 
     gi.require_version("Gtk", "3.0")
     gi.require_version("Gdk", "3.0")
@@ -180,13 +176,13 @@ def gtkmain(
 
 
 def browser_start(quiet: bool) -> None:
-    from gi.repository import Gdk
+    from gi.repository import Gdk  # pylint: disable=import-outside-toplevel
 
     if not Gdk.Screen.get_default():
         print("No Screen Found, Exiting...", file=sys.stderr)
         sys.exit(1)
 
-    from kupfer.ui import browser
+    from kupfer.ui import browser  # pylint: disable=import-outside-toplevel
 
     wctrl = browser.WindowController()
     wctrl.main(quiet=quiet)
@@ -197,10 +193,13 @@ def main() -> None:
     cli_opts = get_options()
     print_banner()
 
-    from kupfer import pretty, version
+    from kupfer import (  # pylint: disable=import-outside-toplevel
+        pretty,
+        version,
+    )
 
-    if _DEBUG:
-        pretty.DEBUG = _DEBUG
+    if "--debug" in cli_opts:
+        pretty.DEBUG = True
         pretty.print_debug(
             __name__, "Version:", version.PACKAGE_NAME, version.VERSION
         )
