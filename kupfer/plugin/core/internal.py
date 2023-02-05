@@ -33,7 +33,7 @@ class KupferInterals(Source):
         return True
 
     def get_items(self):
-        ctx = commandexec.DefaultActionExecutionContext()
+        ctx = commandexec.default_action_execution_context()
         if ctx.last_command is not None:
             yield LastCommand(ctx.last_command)
 
@@ -81,7 +81,7 @@ class CommandResults(Source):
         return True
 
     def get_items(self):
-        ctx = commandexec.DefaultActionExecutionContext()
+        ctx = commandexec.default_action_execution_context()
         yield from reversed(ctx.last_results)
         try:
             leaf = ctx.last_results[-1]

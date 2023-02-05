@@ -82,7 +82,7 @@ class Triggers(Source):
             return
 
         ui_ctx = uievents.gui_context_from_keyevent(event_time, display)
-        ctx = commandexec.DefaultActionExecutionContext()
+        ctx = commandexec.default_action_execution_context()
         exec_token = ctx.make_execution_token(ui_ctx)
         self.perform_trigger(exec_token, target)
 

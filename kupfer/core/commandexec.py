@@ -446,7 +446,7 @@ GObject.signal_new(
 )
 
 
-def DefaultActionExecutionContext() -> ActionExecutionContext:
+def default_action_execution_context() -> ActionExecutionContext:
     return ActionExecutionContext.instance()
 
 
@@ -511,7 +511,7 @@ def _activate_action_multiple_multiplied(
         for item in iobjs
     ]
 
-    ctx = DefaultActionExecutionContext()
+    ctx = default_action_execution_context()
     ret = ctx.combine_action_result_multiple(action, rets)
     return ret
 

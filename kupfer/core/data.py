@@ -533,7 +533,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.mode = None
         self._search_ids = itertools.count(1)
         self._latest_interaction = -1
-        self._execution_context = commandexec.DefaultActionExecutionContext()
+        self._execution_context = commandexec.default_action_execution_context()
         self._execution_context.connect(
             "command-result", self._command_execution_result
         )
