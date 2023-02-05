@@ -329,7 +329,7 @@ def get_plugin_attribute(plugin_name: str, attr: str) -> ty.Optional[ty.Any]:
 
 def load_plugin_sources(
     plugin_name: str, attr: str = sources_attribute, instantiate: bool = True
-) -> ty.Iterable[Source]|ty.Iterable[Action]:
+) -> ty.Iterable[Source] | ty.Iterable[Action]:
     sources = get_plugin_attribute(plugin_name, attr)
     if not sources:
         return

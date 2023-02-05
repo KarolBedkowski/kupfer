@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as ty
 import sys
 import traceback
@@ -26,7 +28,7 @@ class OutputMixin:
         prefix: str,
         sep: str,
         end: str,
-        stream: ty.Optional[ty.TextIO],
+        stream: ty.TextIO | None,
         *items: ty.Any,
     ) -> None:
         category = self._output_category()
@@ -41,7 +43,7 @@ class OutputMixin:
         end = kwargs.get("end", "\n")
         self._output_core("", sep, end, sys.stdout, *items)
 
-    def output_exc(self, exc_info: ty.Optional[ExecInfo] = None) -> None:
+    def output_exc(self, exc_info: ExecInfo | None = None) -> None:
         """Output current exception, or use @exc_info if given"""
         etype, value, tb = exc_info or sys.exc_info()
         assert etype
@@ -66,7 +68,7 @@ class OutputMixin:
 
 
 class _StaticOutput(OutputMixin):
-    current_calling_module: ty.Optional[str] = None
+    current_calling_module: str | None = None
 
     def _output_category(self) -> str:
         return f"[{self.current_calling_module}]:"
@@ -105,7 +107,7 @@ print_error = _StaticOutputInst.print_error
 print_exc = _StaticOutputInst.print_exc
 
 
-def timing_start() -> ty.Optional[list[float]]:
+def timing_start() -> list[float] | None:
     if DEBUG:
         return [timestamp()]
 
@@ -113,7 +115,7 @@ def timing_start() -> ty.Optional[list[float]]:
 
 
 def timing_step(
-    modulename: str, start: ty.Optional[list[float]], label: str
+    modulename: str, start: list[float] | None, label: str
 ) -> None:
     if DEBUG and start:
         cts = timestamp()

@@ -111,7 +111,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         """Load ui from data file"""
         builder = Gtk.Builder()
         builder.set_translation_domain(version.PACKAGE_NAME)
-        self.window : Gtk.Window
+        self.window: Gtk.Window
 
         if ui_file := config.get_data_file("preferences.ui"):
             builder.add_from_file(ui_file)
@@ -487,7 +487,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         plugin_id = self.store.get_value(pathit, id_col)
         return plugin_id  # type: ignore
 
-    def _table_path_for_id(self, plugin_id: str) -> int:
+    def _table_path_for_id(self, plugin_id: str) -> Gtk.TreePath:
         """
         Find the tree path of @plugin_id
         """

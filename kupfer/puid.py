@@ -12,6 +12,8 @@ module loading is always refused; this way, we avoid loading parts of
 the program that we didn't wish to activate.
 """
 
+from __future__ import annotations
+
 import contextlib
 import pickle
 import typing as ty
@@ -19,7 +21,7 @@ import typing as ty
 from kupfer import pretty
 from kupfer.core import actioncompat
 from kupfer.core import qfurl
-from kupfer.obj.base import Source, Leaf, Action, AnySource
+from kupfer.obj.base import Leaf, Action, AnySource
 from kupfer.core.sources import GetSourceController
 from kupfer.conspickle import ConservativeUnpickler
 
@@ -63,7 +65,7 @@ class SerializedObject:
 PuID = ty.Union[str, SerializedObject]
 
 
-def get_unique_id(obj: ty.Any) -> ty.Optional[PuID]:
+def get_unique_id(obj: ty.Any) -> PuID | None:
     if obj is None:
         return None
 
@@ -108,7 +110,7 @@ def _is_currently_excluding(src: ty.Any) -> bool:
 
 def _find_obj_in_catalog(
     puid: str, catalog: ty.Collection[AnySource]
-) -> ty.Optional[Leaf]:
+) -> Leaf | None:
     if puid.startswith(qfurl.QFURL_SCHEME):
         qfu = qfurl.qfurl(url=puid)
         return qfu.resolve_in_catalog(catalog)
@@ -120,14 +122,14 @@ def _find_obj_in_catalog(
         with _exclusion(src):
             for obj in src.get_leaves() or []:
                 if repr(obj) == puid:
-                    return obj
+                    return obj  # type: ignore
 
     return None
 
 
 def resolve_unique_id(
-    puid: ty.Any, excluding: ty.Optional[AnySource] = None
-) -> ty.Optional[Leaf]:
+    puid: ty.Any, excluding: AnySource | None = None
+) -> Leaf | None:
     """
     Resolve unique id @puid
 
@@ -157,8 +159,8 @@ def resolve_unique_id(
 
 
 def resolve_action_id(
-    puid: ty.Any, for_item: ty.Optional[Leaf] = None
-) -> ty.Optional[Action]:
+    puid: ty.Any, for_item: Leaf | None = None
+) -> Action | None:
     if puid is None:
         return None
 
