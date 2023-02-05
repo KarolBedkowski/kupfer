@@ -423,7 +423,7 @@ def spawn_app_id(
 def spawn_app(
     app_info: Gio.AppInfo | None,
     argv: list[str],
-    filelist: list[str],
+    filelist: list[ty.Any],
     workdir: str | None = None,
     startup_notify: bool = True,
     timestamp: float | None = None,
