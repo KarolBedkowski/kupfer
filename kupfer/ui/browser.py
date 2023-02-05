@@ -36,6 +36,7 @@ from kupfer.core import data, relevance, learn, search
 from kupfer.core.search import Rankable
 from kupfer.core import settings, actionaccel
 from kupfer.obj.base import Leaf, Source, Action, KupferObject, AnySource
+from kupfer.obj.objects import FileLeaf
 from kupfer import icons
 from kupfer import interface
 from kupfer import pretty
@@ -2271,7 +2272,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         else:
             objs = (Gio.File.new_for_uri(U).get_path() for U in fileuris)
 
-        leaves = list(map(interface.get_fileleaf_for_path, filter(None, objs)))
+        leaves = list(map(FileLeaf, filter(None, objs)))
         if leaves:
             self.data_controller.insert_objects(data.SourcePane, leaves)
 

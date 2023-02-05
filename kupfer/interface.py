@@ -93,9 +93,3 @@ def copy_to_clipboard( obj: KupferObject, clipboard: Gtk.Clipboard) -> bool:
         return True
 
     return False
-
-
-def get_fileleaf_for_path(pth: str) -> "FileLeaf":
-    from kupfer.obj.objects import FileLeaf
-
-    return FileLeaf(pth)
