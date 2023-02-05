@@ -20,8 +20,9 @@ from kupfer.core import qfurl
 from kupfer.core import search, learn
 from kupfer.core import settings
 from kupfer.core.search import Rankable
-
 from kupfer.core.sources import GetSourceController
+from kupfer.ui.uievents import GUIEnvironmentContext
+
 
 # "Enums"
 # Which pane
@@ -953,7 +954,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             self.output_exc()
             return
 
-        if res not in commandexec.RESULTS_SYNC:
+        if not res.is_sync:
             self.emit("launched-action")
 
     def execute_file(self, filepath, ui_ctx, on_error):
@@ -988,11 +989,17 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self._set_object_stack(pane, objects[:-1])
         self._insert_object(pane, objects[-1])
 
-    def _command_execution_result(self, ctx, result_type, ret, uictx):
-        if result_type == commandexec.RESULT_SOURCE:
+    def _command_execution_result(
+        self,
+        ctx: commandexec.ActionExecutionContext,
+        result_type: commandexec.ExecResult,
+        ret: ty.Any,
+        uictx: GUIEnvironmentContext,
+    ) -> None:
+        if result_type == commandexec.ExecResult.SOURCE:
             self.object_stack_clear_all()
             self.source_pane.push_source(ret)
-        elif result_type == commandexec.RESULT_OBJECT:
+        elif result_type == commandexec.ExecResult.OBJECT:
             self.object_stack_clear_all()
             self._insert_object(SourcePane, ret)
         else:

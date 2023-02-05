@@ -35,10 +35,10 @@ def _exec_no_show_result(composedleaf):
     _obj, action, iobj = composedleaf.object
     ret = commandexec.activate_action(None, *composedleaf.object)
     result_type = commandexec.parse_action_result(action, ret)
-    if result_type == commandexec.RESULT_OBJECT:
+    if result_type == commandexec.ExecResult.OBJECT:
         return ret
 
-    if result_type == commandexec.RESULT_SOURCE:
+    if result_type == commandexec.ExecResult.SOURCE:
         leaves = list(ret.get_leaves())
         if not leaves:
             return
