@@ -134,6 +134,10 @@ def _truncate_source(text: str, find_attributes: ty.Iterable[str]) -> str:
     found_info_attributes = set(find_attributes)
     lines = []
     for line in text.splitlines():
+        # skip import from __future__ that must be in first line
+        if line.startswith("from __future__ import "):
+            continue
+
         lines.append(line)
         if not line.strip():
             continue
