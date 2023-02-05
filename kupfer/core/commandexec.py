@@ -52,14 +52,16 @@ RESULTS_SYNC = (RESULT_OBJECT, RESULT_SOURCE)
 _MAX_LAST_RESULTS = 10
 
 ExecInfo = ty.Union[
-    tuple[ty.Type[BaseException], BaseException, types.TracebackType],
+    tuple[
+        ty.Type[BaseException], BaseException, ty.Optional[types.TracebackType]
+    ],
     tuple[None, None, None],
 ]
 CmdTuple = tuple[Leaf, Action, ty.Optional[Leaf]]
 Token = tuple[int, CmdTuple]  # TODO: check, probably int
 
 if ty.TYPE_CHECKING:
-    _ = ic = str
+    _ = str
 
 
 class ActionExecutionError(Exception):
@@ -159,8 +161,8 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         self._delegate = False
         self._command_counter = itertools.count()
         self.last_command_id = -1
-        self.last_command: ty.Optional[CmdTuple] = None
-        self.last_executed_command: ty.Optional[CmdTuple] = None
+        self.last_command: CmdTuple | None = None
+        self.last_executed_command: CmdTuple | None = None
         self.last_results: collections.deque[ty.Any] = collections.deque(
             [], _MAX_LAST_RESULTS
         )
@@ -229,13 +231,12 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         )
 
     def register_late_error(
-        self, token: Token, exc_info: ExecInfo | None = None
+        self, token: Token, exc_info: ExecInfo | BaseException | None = None
     ) -> None:
         "Register an error in exc_info. The error must be an OperationError"
         if exc_info is None:
             exc_info = sys.exc_info()
-
-        if isinstance(exc_info, Exception):
+        elif isinstance(exc_info, BaseException):
             exc_info = (type(exc_info), exc_info, None)
 
         assert exc_info
@@ -359,7 +360,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         return res, ret
 
     def combine_action_result_multiple(
-        self, action: Action, retvals: ty.Iterable[tuple[int, ty.Any]|None]
+        self, action: Action, retvals: ty.Iterable[tuple[int, ty.Any] | None]
     ) -> ty.Any:
         self.output_debug(
             "Combining", repr(action), retvals, f"delegate={self._delegate}"
@@ -395,7 +396,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
 
         # Re-parse result values
         res = RESULT_NONE
-        resmap : dict[int, ty.Any]= {}
+        resmap: dict[int, ty.Any] = {}
         for ret in retvals:
             if ret is not None:
                 res_type, ret_obj = ret
@@ -451,13 +452,13 @@ def default_action_execution_context() -> ActionExecutionContext:
 
 
 def activate_action(
-    context: ty.Optional[ExecutionToken],
+    context: ExecutionToken | None,
     obj: Leaf,
     action: Action,
     iobj: Leaf | None,
 ) -> ty.Any:
     """Activate @action in simplest manner"""
-    kwargs : dict[str, ty.Any] = {}
+    kwargs: dict[str, ty.Any] = {}
     if _wants_context(action):
         kwargs["ctx"] = context
 

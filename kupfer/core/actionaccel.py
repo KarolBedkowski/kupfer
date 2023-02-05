@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import typing as ty
 
@@ -16,12 +18,12 @@ class AccelConfig(pretty.OutputMixin):
         self.loaded: bool = False
         self.changed: bool = False
 
-    def _filename(self) -> ty.Optional[str]:
-        ret = config.save_config_file("action_accels.json")
-        if ret is None:
-            self.output_error("Can't find XDG_CONFIG_HOME")
+    def _filename(self) -> str | None:
+        if ret := config.save_config_file("action_accels.json"):
+            return ret
 
-        return ret
+        self.output_error("Can't find XDG_CONFIG_HOME")
+        return None
 
     def load(self, validate_func: _ValidateFunc) -> bool:
         if self.loaded:
@@ -64,7 +66,7 @@ class AccelConfig(pretty.OutputMixin):
             else:
                 self.output_error("Ignoring invalid accel", k, "for", obj)
 
-    def get(self, obj: ty.Any) -> ty.Optional[str]:
+    def get(self, obj: ty.Any) -> str | None:
         """
         Return accel key for @obj or None
         """
@@ -89,6 +91,7 @@ class AccelConfig(pretty.OutputMixin):
         try:
             with open(data_file, "w", encoding="UTF-8") as dfp:
                 json.dump(self.accels, dfp, indent=4, sort_keys=True)
+
         except Exception:
             self.output_error("Failed to write:", data_file)
             self.output_exc()

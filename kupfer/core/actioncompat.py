@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as ty
 
-from kupfer.obj.base import Leaf, Action, Source,TextSource
+from kupfer.obj.base import Leaf, Action, Source, TextSource
 from kupfer.core.sources import SourceController
 
 
@@ -21,12 +21,12 @@ def action_valid_for_item(action: Action, leaf: Leaf) -> bool:
 
 
 def actions_for_item(
-    leaf: ty.Optional[Leaf], sourcecontroller: SourceController
+    leaf: Leaf | None, sourcecontroller: SourceController
 ) -> ty.Iterable[Action]:
     if leaf is None:
         return []
 
-    actions = None
+    actions: set[Action] | None = None
     for member in _get_leaf_members(leaf):
         l_actions = set(member.get_actions())
         l_actions.update(sourcecontroller.get_actions_for_leaf(member))
@@ -40,7 +40,7 @@ def actions_for_item(
 
 def iobject_source_for_action(
     action: Action, for_item: Leaf
-) -> tuple[ty.Optional[Source|TextSource], bool]:
+) -> tuple[Source | TextSource | None, bool]:
     """
     Return (src, use_catalog)
 
