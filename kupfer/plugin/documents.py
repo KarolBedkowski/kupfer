@@ -222,7 +222,7 @@ class ApplicationRecentsSource(RecentsSource):
     @classmethod
     def app_names(cls, leaf):
         "Return a frozenset of names"
-        svc = launch.GetApplicationsMatcherService()
+        svc = launch.get_applications_matcher_service()
         ids = [leaf.get_id()]
         if app_name := svc.application_name(ids[0]):
             ids.append(app_name.lower())

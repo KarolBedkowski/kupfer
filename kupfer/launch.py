@@ -6,6 +6,7 @@ import pickle
 import typing as ty
 from pathlib import Path
 
+import gi
 from gi.repository import GLib, Gio, Gdk
 
 from kupfer import pretty, config
@@ -14,14 +15,14 @@ from kupfer import desktop_launch
 from kupfer.ui import uievents
 from kupfer import terminal
 
-from kupfer.desktop_launch import SpawnError
+from kupfer.desktop_launch import SpawnError  # pylint: disable=unused-import
+
 
 ## NOTE: SpawnError  *should* be imported from this module
 
 try:
-    import gi
-
     gi.require_version("Wnck", "3.0")
+
     from gi.repository import Wnck
 
     Wnck.set_client_type(Wnck.ClientType.PAGER)
@@ -33,7 +34,7 @@ except ValueError as e:
     Wnck = None
 
 
-default_associations = {
+_DEFAULT_ASSOCIATIONS = {
     "evince": "Document Viewer",
     "file-roller": "File Roller",
     # "gedit" : "Text Editor",
@@ -44,7 +45,7 @@ default_associations = {
 
 
 def application_id(
-    app_info: Gio.AppInfo, desktop_file: ty.Optional[str] = None
+    app_info: Gio.AppInfo, desktop_file: str | None = None
 ) -> str:
     """Return an application id (string) for GAppInfo @app_info"""
     app_id = app_info.get_id() or desktop_file or ""
@@ -62,8 +63,8 @@ def launch_application(
     paths: ty.Iterable[str] = (),
     track: bool = True,
     activate: bool = True,
-    desktop_file: ty.Optional[str] = None,
-    screen: ty.Optional[Gdk.Screen] = None,
+    desktop_file: str | None = None,
+    screen: Gdk.Screen | None = None,
 ) -> bool:
     """
     Launch @app_rec correctly, using a startup notification
@@ -86,23 +87,21 @@ def launch_application(
     if uris:
         files = [Gio.File.new_for_uri(p) for p in uris]
 
-    svc = GetApplicationsMatcherService()
+    svc = get_applications_matcher_service()
     app_id = application_id(app_info, desktop_file)
 
     if activate and svc.application_is_running(app_id):
         svc.application_to_front(app_id)
         return True
 
-    # An launch callback closure for the @app_id
-    def application_launch_callback(argv, pid, notify_id, files, timestamp):
-        is_terminal = terminal.is_known_terminal_executable(argv[0])
-        if not is_terminal:
-            svc.launched_application(app_id, pid)
-
+    launch_callback = None
     if track:
-        launch_callback = application_launch_callback
-    else:
-        launch_callback = None
+        # An launch callback closure for the @app_id
+        def app_launch_callback(argv, pid, notify_id, files, timestamp):
+            if not terminal.is_known_terminal_executable(argv[0]):
+                svc.launched_application(app_id, pid)
+
+        launch_callback = app_launch_callback
 
     desktop_launch.launch_app_info(
         app_info,
@@ -116,12 +115,12 @@ def launch_application(
 
 
 def application_is_running(app_id: str) -> bool:
-    svc = GetApplicationsMatcherService()
+    svc = get_applications_matcher_service()
     return svc.application_is_running(app_id)
 
 
 def application_close_all(app_id: str) -> None:
-    svc = GetApplicationsMatcherService()
+    svc = get_applications_matcher_service()
     svc.application_close_all(app_id)
 
 
@@ -131,7 +130,7 @@ class ApplicationsMatcherService(pretty.OutputMixin):
     object on the Linux desktop
     """
 
-    _instance : ty.Optional[ApplicationsMatcherService]=None
+    _instance: ApplicationsMatcherService | None = None
 
     @classmethod
     def instance(cls) -> ApplicationsMatcherService:
@@ -141,13 +140,13 @@ class ApplicationsMatcherService(pretty.OutputMixin):
         return cls._instance
 
     def __init__(self):
-        self.register: dict[str, Wnck.Window] = {}
+        self.register: dict[str, "Wnck.Window"] = {}
         self._get_wnck_screen_windows_stacked()
         scheduler.GetScheduler().connect("finish", self._finish)
         self._load()
 
     @classmethod
-    def _get_wnck_screen_windows_stacked(cls) -> ty.Iterable[Wnck.Window]:
+    def _get_wnck_screen_windows_stacked(cls) -> ty.Iterable["Wnck.Window"]:
         if Wnck:
             if screen := Wnck.Screen.get_default():
                 return screen.get_windows_stacked()  # type: ignore
@@ -165,7 +164,7 @@ class ApplicationsMatcherService(pretty.OutputMixin):
 
     def _load(self) -> None:
         reg = self._unpickle_register(self._get_filename())
-        self.register = reg or default_associations
+        self.register = reg or _DEFAULT_ASSOCIATIONS
         # pretty-print register to debug
         if self.register:
             self.output_debug("Learned the following applications")
@@ -197,7 +196,7 @@ class ApplicationsMatcherService(pretty.OutputMixin):
         )
         return True
 
-    def _store(self, app_id: str, window: Wnck.Window) -> None:
+    def _store(self, app_id: str, window: "Wnck.Window") -> None:
         # FIXME: Store the 'res_class' name?
         application = window.get_application()
         res_class = window.get_class_group().get_res_class()
@@ -212,13 +211,13 @@ class ApplicationsMatcherService(pretty.OutputMixin):
             res_class,
         )
 
-    def _has_match(self, app_id: str|None) -> bool:
+    def _has_match(self, app_id: str | None) -> bool:
         if not app_id:
             return False
 
         return app_id in self.register
 
-    def _is_match(self, app_id: str, window: Wnck.Window) -> bool:
+    def _is_match(self, app_id: str, window: "Wnck.Window") -> bool:
         application = window.get_application()
         res_class = window.get_class_group().get_res_class()
         reg_name = self.register.get(app_id)
@@ -257,11 +256,11 @@ class ApplicationsMatcherService(pretty.OutputMixin):
 
         return time() <= timeout
 
-    def application_name(self, app_id: str|None) -> ty.Optional[str]:
+    def application_name(self, app_id: str | None) -> str | None:
         if not self._has_match(app_id):
             return None
 
-        return self.register[app_id]  #type: ignore
+        return self.register[app_id]  # type: ignore
 
     def application_is_running(self, app_id: str) -> bool:
         for win in self._get_wnck_screen_windows_stacked():
@@ -274,7 +273,10 @@ class ApplicationsMatcherService(pretty.OutputMixin):
 
         return False
 
-    def get_application_windows(self, app_id: str) -> list[Wnck.Window]:
+    def _get_application_windows(self, app_id: str) -> list["Wnck.Window"]:
+        if not Wnck:
+            return []
+
         application_windows = [
             w
             for w in self._get_wnck_screen_windows_stacked()
@@ -287,7 +289,7 @@ class ApplicationsMatcherService(pretty.OutputMixin):
         return application_windows
 
     def application_to_front(self, app_id: str) -> None:
-        application_windows = self.get_application_windows(app_id)
+        application_windows = self._get_application_windows(app_id)
         if not application_windows:
             return
 
@@ -302,7 +304,7 @@ class ApplicationsMatcherService(pretty.OutputMixin):
         self._to_front_single(application_windows, etime)
 
     def _to_front_application_style(
-        self, application_windows: list[Wnck.Window], evttime: int
+        self, application_windows: list["Wnck.Window"], evttime: int
     ) -> None:
         workspaces: dict[Wnck.Workspace, list[Wnck.Window]] = {}
         cur_screen = application_windows[0].get_screen()
@@ -351,14 +353,16 @@ class ApplicationsMatcherService(pretty.OutputMixin):
         self._focus_windows(focus_windows, evttime)
 
     def _to_front_single(
-        self, application_windows: list[Wnck.Window], evttime: int
+        self, application_windows: list["Wnck.Window"], evttime: int
     ) -> None:
         # bring the first window to front
         for window in application_windows:
             self._focus_windows([window], evttime)
             return
 
-    def _focus_windows(self, windows: list[Wnck.Window], evttime: int) -> None:
+    def _focus_windows(
+        self, windows: list["Wnck.Window"], evttime: int
+    ) -> None:
         for window in windows:
             # we special-case the desktop
             # only show desktop if it's the only window
@@ -375,13 +379,13 @@ class ApplicationsMatcherService(pretty.OutputMixin):
             window.activate_transient(evttime)
 
     def application_close_all(self, app_id: str) -> None:
-        application_windows = self.get_application_windows(app_id)
+        application_windows = self._get_application_windows(app_id)
         evttime = uievents.current_event_time()
         for win in application_windows:
             if not win.is_skip_tasklist():
                 win.close(evttime)
 
 
-def GetApplicationsMatcherService() -> ApplicationsMatcherService:
+def get_applications_matcher_service() -> ApplicationsMatcherService:
     """Get the (singleton) ApplicationsMatcherService"""
     return ApplicationsMatcherService.instance()
