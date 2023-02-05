@@ -2984,7 +2984,7 @@ class WindowController(pretty.OutputMixin):
 
     def save_data(self) -> None:
         """Save state before quit"""
-        sch = scheduler.GetScheduler()
+        sch = scheduler.get_scheduler()
         sch.finish()
         self.interface.save_config()
 
@@ -3090,7 +3090,7 @@ class WindowController(pretty.OutputMixin):
 
         # Load data
         data_controller = data.DataController()
-        sch = scheduler.GetScheduler()
+        sch = scheduler.get_scheduler()
         sch.load()
         # Now create UI and display
         self.initialize(data_controller)

@@ -142,7 +142,7 @@ class ApplicationsMatcherService(pretty.OutputMixin):
     def __init__(self):
         self.register: dict[str, "Wnck.Window"] = {}
         self._get_wnck_screen_windows_stacked()
-        scheduler.GetScheduler().connect("finish", self._finish)
+        scheduler.get_scheduler().connect("finish", self._finish)
         self._load()
 
     @classmethod

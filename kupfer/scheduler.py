@@ -8,7 +8,7 @@ from kupfer import pretty
 from kupfer.weaklib import gobject_connect_weakly
 
 
-def GetScheduler() -> Scheduler:
+def get_scheduler() -> Scheduler:
     """Get the shared instance"""
     return Scheduler.instance()
 
@@ -85,8 +85,8 @@ class Timer:
     def __init__(self, call_at_finish: bool = False) -> None:
         self._current_timer = -1
         self._call_at_finish = call_at_finish
-        self._current_callback: ty.Optional[ty.Callable[[], None]] = None
-        gobject_connect_weakly(GetScheduler(), "finish", self._on_finish)
+        self._current_callback: ty.Callable[[], None] | None = None
+        gobject_connect_weakly(get_scheduler(), "finish", self._on_finish)
 
     def set(
         self,

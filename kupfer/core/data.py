@@ -543,7 +543,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
         self._save_data_timer = scheduler.Timer()
 
-        sch = scheduler.GetScheduler()
+        sch = scheduler.get_scheduler()
         sch.connect("load", self._load)
         sch.connect("display", self._display)
         sch.connect("finish", self._finish)

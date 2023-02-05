@@ -411,7 +411,7 @@ def _icon_render_change(setctl, *_arguments):
     _ICON_RENDERER = renderer
 
 
-scheduler.GetScheduler().connect("loaded", _setup_icon_renderer)
+scheduler.get_scheduler().connect("loaded", _setup_icon_renderer)
 
 
 def get_icon_for_name(
