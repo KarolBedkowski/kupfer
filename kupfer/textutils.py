@@ -4,6 +4,27 @@ def _unicode_truncate(ustr: str, length: int, encoding: str = "UTF-8") -> str:
     return bstr.decode(encoding, "ignore")
 
 
+def _split_first_line(text: str) -> tuple[str, str]:
+    """Take first non-empty line of @text and rest"""
+    lines, *rest = text.lstrip().split("\n", maxsplit=1)
+    return lines, rest[0] if rest else ""
+
+
+def _split_first_words(text: str, maxlen: int) -> tuple[str, str]:
+    text = text.lstrip()
+    first_text = _unicode_truncate(text, maxlen)
+    words = first_text.split()
+    if len(words) > 3:
+        # TODO: why skip last world here and below? wrong indent?
+        words = words[:-1]
+        first_words = " ".join(words[:-1])
+        if text.startswith(first_words):
+            first_text = first_words
+
+    rest_text = text[len(first_text) :]
+    return first_text, rest_text
+
+
 def extract_title_body(text: str, maxtitlelen: int = 60) -> tuple[str, str]:
     """Prepare @text: Return a (title, body) tuple
 
@@ -31,38 +52,15 @@ def extract_title_body(text: str, maxtitlelen: int = 60) -> tuple[str, str]:
     if not text.strip():
         return text, ""
 
-    def split_first_line(text: str) -> tuple[str, str]:
-        """Take first non-empty line of text"""
-        lines = iter(text.splitlines())
-        for line in lines:
-            if line := line.strip():
-                rest = "\n".join(lines)
-                return line, rest
-
-        return text, ""
+    firstline, rest = _split_first_line(text)
+    if len(firstline.encode("UTF-8")) <= maxtitlelen:
+        return firstline, rest
 
     # We use the UTF-8 encoding and truncate due to it:
     # this is a good heuristic for ascii vs "wide characters"
     # it results in taking fewer characters if they are asian, which
     # is exactly what we want
-    def split_first_words(text: str, maxlen: int) -> tuple[str, str]:
-        text = text.lstrip()
-        first_text = _unicode_truncate(text, maxlen)
-        words = first_text.split()
-        if len(words) > 3:
-            words = words[:-1]
-            first_words = " ".join(words[:-1])
-            if text.startswith(first_words):
-                first_text = first_words
-
-        rest_text = text[len(first_text) :]
-        return first_text, rest_text
-
-    firstline, rest = split_first_line(text)
-    if len(firstline.encode("UTF-8")) <= maxtitlelen:
-        return firstline, rest
-
-    firstline, rest = split_first_words(text, maxtitlelen)
+    firstline, rest = _split_first_words(text, maxtitlelen)
 
     if rest.strip():
         return firstline, text
