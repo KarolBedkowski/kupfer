@@ -47,6 +47,12 @@ class PaneMode(IntEnum):
     SOURCE_ACTION_OBJECT = 2
 
 
+ItemCheckFunc = ty.Callable[
+    [ty.Iterable[KupferObject]], ty.Iterable[KupferObject]
+]
+DecoratorFunc = ty.Callable[[ty.Iterable[Rankable]], ty.Iterable[Rankable]]
+
+
 def _identity(x: ty.Any) -> ty.Any:
     return x
 
@@ -111,9 +117,9 @@ class Searcher:
         sources_: ty.Iterable[Source | TextSource | ty.Iterable[KupferObject]],
         key: str,
         score: bool = True,
-        item_check: ty.Callable[[ty.Any], ty.Any] | None = None,
-        decorator: ty.Callable[[ty.Any], ty.Any] | None = None,
-    ):
+        item_check: ItemCheckFunc | None = None,
+        decorator: DecoratorFunc | None = None,
+    ) -> tuple[Rankable | None, ty.Iterable[Rankable]]:
         """
         @sources is a sequence listing the inputs, which should be
         Sources, TextSources or sequences of KupferObjects
@@ -135,9 +141,9 @@ class Searcher:
         # and perform ranking as in place operations on lists
         item_check = item_check or _identity
         decorator = decorator or _identity
-
         start_time = pretty.timing_start()
         match_lists: list[list[Rankable]] = []
+
         for src in sources_:
             fixedrank = 0
             can_cache = True
@@ -160,7 +166,7 @@ class Searcher:
                         items = src.get_leaves()  # type: ignore
 
             if rankables is None:
-                rankables = search.make_rankables(item_check(items))
+                rankables = search.make_rankables(item_check(items))  # type: ignore
 
             assert rankables is not None
 
@@ -190,8 +196,13 @@ class Searcher:
         return match, match_iter
 
     def rank_actions(
-        self, objects, key, leaf, item_check=None, decorator=None
-    ):
+        self,
+        objects: ty.Iterable[KupferObject],
+        key: str,
+        leaf: Leaf | None,
+        item_check: ItemCheckFunc | None = None,
+        decorator: DecoratorFunc | None = None,
+    ) -> tuple[Rankable | None, ty.Iterable[Rankable]]:
         """
         rank @objects, which should be a sequence of KupferObjects,
         for @key, with the action ranker algorithm.
