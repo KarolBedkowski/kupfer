@@ -166,16 +166,16 @@ class Searcher:
 
             if score:
                 if fixedrank:
-                    search.add_rank_objects(rankables, fixedrank)
+                    rankables = search.add_rank_objects(rankables, fixedrank)
                 elif key:
-                    search.score_objects(rankables, key)
-                    search.bonus_objects(rankables, key)
+                    rankables = search.score_objects(rankables, key)
+                    rankables = search.bonus_objects(rankables, key)
 
                 if can_cache:
+                    rankables = list(rankables)
                     self._source_cache[src] = rankables
 
-            matches = rankables
-            match_lists.append(matches)
+            match_lists.append(list(rankables))
 
         if score:
             matches = search.find_best_sort(match_lists)
@@ -205,7 +205,7 @@ class Searcher:
 
         rankables = search.make_rankables(item_check(objects))
         if key:
-            search.score_objects(rankables, key)
+            rankables = search.score_objects(rankables, key)
             matches = search.bonus_actions(rankables, key)
         else:
             matches = search.score_actions(rankables, leaf)

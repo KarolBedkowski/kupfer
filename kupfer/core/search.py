@@ -9,9 +9,9 @@ from kupfer.obj.base import Leaf, KupferObject
 
 def make_rankables(
     itr: ty.Iterable[KupferObject], rank: int = 0
-) -> list[Rankable]:
+) -> ty.Iterator[Rankable]:
     """Create Rankable from some KupferObject:w"""
-    return [Rankable(str(obj), obj, rank) for obj in itr]
+    return (Rankable(str(obj), obj, rank) for obj in itr)
 
 
 def wrap_rankable(obj: ty.Any, rank: int = 0) -> Rankable:
@@ -40,7 +40,9 @@ class Rankable:
         return f"<Rankable {self} repres {self.object!r} at {id(self):x}>"
 
 
-def bonus_objects(rankables: ty.Iterable[Rankable], key: str) -> None:
+def bonus_objects(
+    rankables: ty.Iterable[Rankable], key: str
+) -> ty.Iterator[Rankable]:
     """
     rankables: List[Rankable]
     inncrement each for mnemonic score for key.
@@ -49,6 +51,7 @@ def bonus_objects(rankables: ty.Iterable[Rankable], key: str) -> None:
     get_record_score = learn.get_record_score
     for obj in rankables:
         obj.rank += get_record_score(obj.object, key)
+        yield obj
 
 
 def bonus_actions(
@@ -67,7 +70,9 @@ def bonus_actions(
         yield obj
 
 
-def add_rank_objects(rankables: ty.Iterable[Rankable], rank: float) -> None:
+def add_rank_objects(
+    rankables: ty.Iterable[Rankable], rank: float
+) -> ty.Iterator[Rankable]:
     """
     Add @rank to rank of all @rankables.
 
@@ -76,6 +81,7 @@ def add_rank_objects(rankables: ty.Iterable[Rankable], rank: float) -> None:
     """
     for obj in rankables:
         obj.rank += rank
+        yield obj
 
 
 def _score_for_key(query: str) -> ty.Callable[[str, str], float]:
@@ -85,7 +91,9 @@ def _score_for_key(query: str) -> ty.Callable[[str, str], float]:
     return relevance.score
 
 
-def score_objects(rankables: ty.List[Rankable], key: str) -> None:
+def score_objects(
+    rankables: ty.Iterable[Rankable], key: str
+) -> ty.Iterator[Rankable]:
     """
     rankables: List[Rankable]
 
@@ -108,7 +116,8 @@ def score_objects(rankables: ty.List[Rankable], key: str) -> None:
 
             rb.rank = rank
 
-    rankables[:] = [rb for rb in rankables if rb.rank > 10]
+        if rb.rank > 10:
+            yield rb
 
 
 def score_actions(
