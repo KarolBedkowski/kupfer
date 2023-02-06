@@ -10,6 +10,7 @@ from kupfer.obj.base import Leaf, KupferObject
 def make_rankables(
     itr: ty.Iterable[KupferObject], rank: int = 0
 ) -> list[Rankable]:
+    """Create Rankable from some KupferObject:w"""
     return [Rankable(str(obj), obj, rank) for obj in itr]
 
 
@@ -28,7 +29,7 @@ class Rankable:
 
     def __init__(self, value: str, obj: KupferObject, rank: float = 0) -> None:
         self.rank = rank
-        self.value : str = value
+        self.value: str = value
         self.object = obj
         self.aliases = getattr(obj, "name_aliases", ())
 
@@ -68,7 +69,9 @@ def bonus_actions(
 
 def add_rank_objects(rankables: ty.Iterable[Rankable], rank: float) -> None:
     """
-    rankables: List[Rankable]
+    Add @rank to rank of all @rankables.
+
+    rankables: Iterable[Rankable] - updated
     rank: Fixed rank
     """
     for obj in rankables:

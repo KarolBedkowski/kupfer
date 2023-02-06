@@ -10,7 +10,14 @@ from enum import IntEnum
 from gi.repository import GLib, GObject
 
 from kupfer.obj import base, sources, compose
-from kupfer.obj.base import Action, Leaf, Source, TextSource, AnySource
+from kupfer.obj.base import (
+    Action,
+    Leaf,
+    Source,
+    AnySource,
+    TextSource,
+    KupferObject,
+)
 from kupfer import pretty, scheduler
 from kupfer import datatools
 from kupfer.core import actioncompat
@@ -24,6 +31,7 @@ from kupfer.core.search import Rankable
 from kupfer.core.sources import GetSourceController
 from kupfer.ui.uievents import GUIEnvironmentContext
 
+DATA_SAVE_INTERVAL_S = 3660
 
 # "Enums"
 # Which pane
@@ -37,9 +45,6 @@ class PaneSel(IntEnum):
 class PaneMode(IntEnum):
     SOURCE_ACTION = 1
     SOURCE_ACTION_OBJECT = 2
-
-
-DATA_SAVE_INTERVAL_S = 3660
 
 
 def _identity(x: ty.Any) -> ty.Any:
@@ -99,10 +104,15 @@ class Searcher:
 
     def __init__(self):
         self._source_cache = {}
-        self._old_key = None
+        self._old_key: str | None = None
 
     def search(
-        self, sources, key, score=True, item_check=None, decorator=None
+        self,
+        sources_: ty.Iterable[Source | TextSource | ty.Iterable[KupferObject]],
+        key: str,
+        score: bool = True,
+        item_check: ty.Callable[[ty.Any], ty.Any] | None = None,
+        decorator: ty.Callable[[ty.Any], ty.Any] | None = None,
     ):
         """
         @sources is a sequence listing the inputs, which should be
@@ -128,12 +138,12 @@ class Searcher:
 
         start_time = pretty.timing_start()
         match_lists: list[list[Rankable]] = []
-        for src in sources:
+        for src in sources_:
             fixedrank = 0
             can_cache = True
             rankables = None
-            if _is_iterable(src):
-                items = item_check(src)
+            if hasattr(src, "__iter__"):
+                items = src
                 can_cache = False
             else:
                 # Look in source cache for stored rankables
@@ -141,14 +151,16 @@ class Searcher:
                     rankables = self._source_cache[src]
                 except KeyError:
                     try:
-                        items = item_check(src.get_text_items(key))
-                        fixedrank = src.get_rank()
+                        # TextSources
+                        items = src.get_text_items(key)  # type: ignore
+                        fixedrank = src.get_rank()  # type: ignore
                         can_cache = False
                     except AttributeError:
-                        items = item_check(src.get_leaves())
+                        # Source
+                        items = src.get_leaves()  # type: ignore
 
             if rankables is None:
-                rankables = search.make_rankables(items)
+                rankables = search.make_rankables(item_check(items))
 
             assert rankables is not None
 
@@ -541,7 +553,9 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.mode = None
         self._search_ids = itertools.count(1)
         self._latest_interaction = -1
-        self._execution_context = commandexec.default_action_execution_context()
+        self._execution_context = (
+            commandexec.default_action_execution_context()
+        )
         self._execution_context.connect(
             "command-result", self._command_execution_result
         )
@@ -700,7 +714,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         return set()
 
     def _plugin_enabled(
-        self, _setctl: ty.Any, plugin_id: str, enabled: bool|int
+        self, _setctl: ty.Any, plugin_id: str, enabled: bool | int
     ) -> None:
         from kupfer.core import plugins
 

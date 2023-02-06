@@ -14,7 +14,14 @@ import typing as ty
 from kupfer import config, pretty, scheduler
 from kupfer import conspickle
 from kupfer.obj import base, sources
-from kupfer.obj.base import Source, Action, ActionGenerator, Leaf, TextSource, AnySource
+from kupfer.obj.base import (
+    Source,
+    Action,
+    ActionGenerator,
+    Leaf,
+    TextSource,
+    AnySource,
+)
 from kupfer.core import pluginload
 
 
@@ -402,7 +409,7 @@ class SourceController(pretty.OutputMixin):
         return self.text_sources
 
     def add_content_decorators(
-        self, plugin_id: str, decos: ty.Dict[ty.Any, ty.Set[Source|Leaf]]
+        self, plugin_id: str, decos: ty.Dict[ty.Any, ty.Set[Source | Leaf]]
     ) -> None:
         for typ, val in decos.items():
             self.content_decorators.setdefault(typ, set()).update(val)
@@ -570,7 +577,7 @@ class SourceController(pretty.OutputMixin):
             yield from agenerator.get_actions_for_leaf(leaf)
 
     def decorate_object(
-        self, obj: Leaf, action: ty.Optional[Action] = None
+        self, obj: base.KupferObject, action: ty.Optional[Action] = None
     ) -> None:
         if hasattr(obj, "has_content") and not obj.has_content():
             types = tuple(action.object_types()) if action else ()
@@ -600,7 +607,7 @@ class SourceController(pretty.OutputMixin):
         else:
             self.output_debug("Not writing cache on failed load")
 
-    def save_data(self)->None:
+    def save_data(self) -> None:
         "Save (important) user data/configuration"
         if not self.loaded_successfully:
             self.output_info("Not writing configuration on failed load")
@@ -612,7 +619,7 @@ class SourceController(pretty.OutputMixin):
                 self._save_source(source, pickler=configsaver)
 
     @classmethod
-    def _save_source(cls, source: Source, pickler: ty.Any =None) -> None:
+    def _save_source(cls, source: Source, pickler: ty.Any = None) -> None:
         configsaver = pickler or SourceDataPickler()
         configsaver.save_source(source)
 
@@ -624,7 +631,7 @@ class SourceController(pretty.OutputMixin):
         elif not source.is_dynamic():
             self._pickle_source(source)
 
-    def _pickle_sources(self, sources: ty.Iterable[Source])->None:
+    def _pickle_sources(self, sources: ty.Iterable[Source]) -> None:
         sourcepickler = SourcePickler()
         sourcepickler.rm_old_cachefiles()
         for source in sources:
@@ -636,11 +643,11 @@ class SourceController(pretty.OutputMixin):
             self._pickle_source(source, pickler=sourcepickler)
 
     @classmethod
-    def _pickle_source(cls, source: Source, pickler: ty.Any=None)->None:
+    def _pickle_source(cls, source: Source, pickler: ty.Any = None) -> None:
         sourcepickler = pickler or SourcePickler()
         sourcepickler.pickle_source(source)
 
-    def _try_restore(self, srcs: ty.Iterable[Source])->ty.Iterator[Source]:
+    def _try_restore(self, srcs: ty.Iterable[Source]) -> ty.Iterator[Source]:
         """
         Try to restore the source that is equivalent to the
         "dummy" instance @source, from cache, or from saved configuration.
@@ -657,7 +664,9 @@ class SourceController(pretty.OutputMixin):
             if source:
                 yield source
 
-    def _remove_source(self, source: Source, is_decorator:bool=False)->None:
+    def _remove_source(
+        self, source: Source, is_decorator: bool = False
+    ) -> None:
         "Oust @source from catalog if any exception is raised"
         if not is_decorator:
             self.sources.discard(source)
