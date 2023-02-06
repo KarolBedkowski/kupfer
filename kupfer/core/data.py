@@ -5,6 +5,7 @@ import os
 import sys
 from contextlib import suppress
 import typing as ty
+from enum import IntEnum
 
 from gi.repository import GLib, GObject
 
@@ -26,11 +27,17 @@ from kupfer.ui.uievents import GUIEnvironmentContext
 
 # "Enums"
 # Which pane
-SourcePane, ActionPane, ObjectPane = (1, 2, 3)
+class PaneSel(IntEnum):
+    SOURCE = 1
+    ACTION = 2
+    OBJECT = 3
+
 
 # In two-pane or three-pane mode
-# TODO: enum
-SourceActionMode, SourceActionObjectMode = (1, 2)
+class PaneMode(IntEnum):
+    SOURCE_ACTION = 1
+    SOURCE_ACTION_OBJECT = 2
+
 
 DATA_SAVE_INTERVAL_S = 3660
 
@@ -399,7 +406,7 @@ class PrimaryActionPane(Pane):
 
         using @key, promising to return
         @context in the notification about the result, having selected
-        @item in SourcePane
+        @item in PaneSel.SOURCE
 
         If we already have a call to search, we remove the "source"
         so that we always use the most recently requested search."""
@@ -524,9 +531,9 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.object_pane.connect("new-source", self._new_source)
         self.action_pane = PrimaryActionPane()
         self._panectl_table: ty.Dict[int, LeafPane] = {
-            SourcePane: self.source_pane,
-            ActionPane: self.action_pane,
-            ObjectPane: self.object_pane,
+            PaneSel.SOURCE: self.source_pane,
+            PaneSel.ACTION: self.action_pane,
+            PaneSel.OBJECT: self.object_pane,
         }
         for pane, ctl in list(self._panectl_table.items()):
             ctl.connect("search-result", self._pane_search_result, pane)
@@ -759,9 +766,9 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
     def _new_source(self, ctr: LeafPane, src: AnySource) -> None:
         if ctr is self.source_pane:
-            pane = SourcePane
+            pane = PaneSel.SOURCE
         elif ctr is self.object_pane:
-            pane = ObjectPane
+            pane = PaneSel.OBJECT
 
         root = ctr.is_at_source_root()
         self.emit("source-changed", pane, src, root)
@@ -771,7 +778,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.action_pane.reset()
 
     def soft_reset(self, pane: int) -> ty.Optional[AnySource]:
-        if pane == ActionPane:
+        if pane == PaneSel.ACTION:
             return None
 
         panectl: LeafPane = self._panectl_table[pane]
@@ -843,37 +850,37 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
         self.cancel_search()
         panectl.select(item)
-        if pane is SourcePane:
+        if pane == PaneSel.SOURCE:
             # populate actions
             citem = self._get_pane_object_composed(self.source_pane)
             self.action_pane.set_item(citem)
-            self.search(ActionPane, interactive=True)
-            if self.mode == SourceActionObjectMode:
-                self.object_stack_clear(ObjectPane)
+            self.search(PaneSel.ACTION, interactive=True)
+            if self.mode == PaneMode.SOURCE_ACTION_OBJECT:
+                self.object_stack_clear(PaneSel.OBJECT)
                 self._populate_third_pane()
 
-        elif pane == ActionPane:
-            self.object_stack_clear(ObjectPane)
+        elif pane == PaneSel.ACTION:
+            self.object_stack_clear(PaneSel.OBJECT)
             if item and item.requires_object():
-                newmode = SourceActionObjectMode
+                newmode = PaneMode.SOURCE_ACTION_OBJECT
             else:
-                newmode = SourceActionMode
+                newmode = PaneMode.SOURCE_ACTION
 
             if newmode != self.mode:
                 self.mode = newmode
                 self.emit("mode-changed", self.mode, item)
 
-            if self.mode == SourceActionObjectMode:
+            if self.mode == PaneMode.SOURCE_ACTION_OBJECT:
                 self._populate_third_pane()
 
-        elif pane is ObjectPane:
+        elif pane == PaneSel.OBJECT:
             pass
 
     def _populate_third_pane(self):
         citem = self._get_pane_object_composed(self.source_pane)
         action = self.action_pane.get_selection()
         self.object_pane.set_item_and_action(citem, action)
-        self.search(ObjectPane, lazy=True)
+        self.search(PaneSel.OBJECT, lazy=True)
 
     def get_can_enter_text_mode(self, pane):
         panectl = self._panectl_table[pane]
@@ -909,10 +916,10 @@ class DataController(GObject.GObject, pretty.OutputMixin):
     def browse_up(self, pane) -> bool:
         """Try to browse up to previous sources, from current
         source"""
-        if pane is SourcePane:
+        if pane == PaneSel.SOURCE:
             return self.source_pane.browse_up()
 
-        if pane is ObjectPane:
+        if pane == PaneSel.OBJECT:
             return self.object_pane.browse_up()
 
         return False
@@ -921,7 +928,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         """Browse into @leaf if it's possible
         and save away the previous sources in the stack
         if @alternate, use the Source's alternate method"""
-        if pane == ActionPane:
+        if pane == PaneSel.ACTION:
             return
 
         # record used object if we browse down
@@ -941,7 +948,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         # register search to learning database
         learn.record_search_hit(leaf, self.source_pane.get_latest_key())
         learn.record_search_hit(action, self.action_pane.get_latest_key())
-        if sobject and self.mode is SourceActionObjectMode:
+        if sobject and self.mode == PaneMode.SOURCE_ACTION_OBJECT:
             learn.record_search_hit(sobject, self.object_pane.get_latest_key())
 
         if not leaf or not action:
@@ -982,7 +989,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
     def insert_objects(self, pane, objects):
         "Select @objects in @pane"
-        if pane != SourcePane:
+        if pane != PaneSel.SOURCE:
             raise ValueError("Can only insert in first pane")
 
         self._decorate_object(objects[:-1])
@@ -1001,7 +1008,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             self.source_pane.push_source(ret)
         elif result_type == commandexec.ExecResult.OBJECT:
             self.object_stack_clear_all()
-            self._insert_object(SourcePane, ret)
+            self._insert_object(PaneSel.SOURCE, ret)
         else:
             return
 
@@ -1020,14 +1027,14 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         qf = qfurl.qfurl(url=url)
         found = qf.resolve_in_catalog(sc.sources)
         if found and not found == self.source_pane.get_selection():
-            self._insert_object(SourcePane, found)
+            self._insert_object(PaneSel.SOURCE, found)
 
     def mark_as_default(self, pane):
         """
         Make the object selected on @pane as default
         for the selection in previous pane.
         """
-        if pane is SourcePane or pane is ObjectPane:
+        if pane in (PaneSel.SOURCE, PaneSel.OBJECT):
             raise RuntimeError("Setting default on pane 1 or 3 not supported")
 
         obj = self.source_pane.get_selection()
@@ -1064,7 +1071,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
         self.object_stack_clear_all()
         obj = compose.ComposedLeaf(leaf, action, iobj)
-        self._insert_object(SourcePane, obj)
+        self._insert_object(PaneSel.SOURCE, obj)
 
     def _get_pane_object_composed(self, pane):
         objects = list(pane.object_stack)
@@ -1090,7 +1097,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             return (None, None, None)
 
         iobjects = self._get_pane_object_composed(self.object_pane)
-        if self.mode == SourceActionObjectMode:
+        if self.mode == PaneMode.SOURCE_ACTION_OBJECT:
             if not iobjects:
                 return (None, None, None)
 
@@ -1100,7 +1107,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         return (objects, action, iobjects)
 
     def _has_object_stack(self, pane):
-        return pane in (SourcePane, ObjectPane)
+        return pane in (PaneSel.SOURCE, PaneSel.OBJECT)
 
     def _set_object_stack(self, pane, newstack):
         panectl = self._panectl_table[pane]

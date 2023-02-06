@@ -1333,14 +1333,14 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             "object-stack-changed", self._object_stack_changed
         )
         self.widget_to_pane = {
-            id(self.search): data.SourcePane,
-            id(self.action): data.ActionPane,
-            id(self.third): data.ObjectPane,
+            id(self.search): data.PaneSel.SOURCE,
+            id(self.action): data.PaneSel.ACTION,
+            id(self.third): data.PaneSel.OBJECT,
         }
         self.pane_to_widget = {
-            data.SourcePane: self.search,
-            data.ActionPane: self.action,
-            data.ObjectPane: self.third,
+            data.PaneSel.SOURCE: self.search,
+            data.PaneSel.ACTION: self.action,
+            data.PaneSel.OBJECT: self.third,
         }
         # Setup keyval mapping
         keys = (
@@ -1908,14 +1908,14 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         if self.action.get_match_state() != State.MATCH:
             return False
 
-        self.data_controller.mark_as_default(data.ActionPane)
+        self.data_controller.mark_as_default(data.PaneSel.ACTION)
         return True
 
     def erase_affinity_for_first_pane(self) -> bool:
         if self.search.get_match_state() != State.MATCH:
             return False
 
-        self.data_controller.erase_object_affinity(data.SourcePane)
+        self.data_controller.erase_object_affinity(data.PaneSel.SOURCE)
         return True
 
     def comma_trick(self) -> bool:
@@ -2025,7 +2025,9 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             yield ("\n".join(w_label), self.mark_as_default)
 
         if has_match:
-            if self.data_controller.get_object_has_affinity(data.SourcePane):
+            if self.data_controller.get_object_has_affinity(
+                data.PaneSel.SOURCE
+            ):
                 # TRANS: Removing learned and/or configured bonus search score
                 yield (
                     _('Forget About "%s"')
@@ -2058,7 +2060,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         wid = self._widget_for_pane(pane)
         wid.set_source(source)
         wid.reset()
-        if pane is data.SourcePane:
+        if pane == data.PaneSel.SOURCE:
             self.switch_to_source()
             self.action.reset()
 
@@ -2078,7 +2080,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     def _show_hide_third(
         self, _ctr: ty.Any, mode: int, _ignored: ty.Any
     ) -> None:
-        if mode is data.SourceActionObjectMode:
+        if mode == data.PaneMode.SOURCE_ACTION_OBJECT:
             # use a delay before showing the third pane,
             # but set internal variable to "shown" already now
             self._pane_three_is_visible = True
@@ -2274,7 +2276,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         leaves = list(map(FileLeaf, filter(None, objs)))
         if leaves:
-            self.data_controller.insert_objects(data.SourcePane, leaves)
+            self.data_controller.insert_objects(data.PaneSel.SOURCE, leaves)
 
     def _reset_input_timer(self) -> None:
         # if input is slow/new, we reset
