@@ -2,7 +2,7 @@ import contextlib
 import typing as ty
 
 from kupfer import pretty
-from kupfer.obj.base import Source, ActionGenerator, Action
+from kupfer.obj.base import Source, ActionGenerator, Action, AnySource
 from kupfer.core import plugins
 from kupfer.core.plugins import (
     load_plugin_sources,
@@ -16,11 +16,11 @@ from kupfer.core.plugins import (
 
 
 class PluginDescription:
-    text_sources : ty.List[Source] = []
-    action_decorators : ty.List[Action] = []
-    content_decorators : ty.List[Source] = []
-    action_generators : ty.List[ActionGenerator]= []
-    sources : ty.List[Source] = []
+    text_sources: list[AnySource] = []
+    action_decorators: list[Action] = []
+    content_decorators: list[Source] = []
+    action_generators: list[ActionGenerator] = []
+    sources: list[Source] = []
 
 
 def load_plugin(plugin_id: str) -> PluginDescription:
@@ -28,11 +28,11 @@ def load_plugin(plugin_id: str) -> PluginDescription:
     @S_sources are to be included directly in the catalog,
     @s_souces as just as subitems
     """
-    sources = []
-    text_sources = []
-    action_decorators = []
-    content_decorators = []
-    action_generators = []
+    sources: list[Source] = []
+    text_sources: list[AnySource] = []
+    action_decorators: list[Action] = []
+    content_decorators: list[Source] = []
+    action_generators: list[ActionGenerator] = []
 
     item = plugin_id
 

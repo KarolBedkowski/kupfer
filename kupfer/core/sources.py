@@ -21,6 +21,7 @@ from kupfer.obj.base import (
     Leaf,
     TextSource,
     AnySource,
+    KupferObject,
 )
 from kupfer.core import pluginload
 
@@ -409,14 +410,15 @@ class SourceController(pretty.OutputMixin):
         return self.text_sources
 
     def add_content_decorators(
-        self, plugin_id: str, decos: ty.Dict[ty.Any, ty.Set[Source | Leaf]]
+        self, plugin_id: str, decos: ty.Dict[ty.Any, ty.Set[ty.Any]]
     ) -> None:
+        # FIXME: can't specify set type because of mixins
         for typ, val in decos.items():
             self.content_decorators.setdefault(typ, set()).update(val)
             self._register_plugin_objects(plugin_id, *val)
 
     def add_action_decorators(
-        self, plugin_id: str, decos: dict[ty.Any, ty.Collection[Action]]
+        self, plugin_id: str, decos: dict[ty.Any, list[Action]]
     ) -> None:
         for typ, val in decos.items():
             self.action_decorators.setdefault(typ, set()).update(val)
@@ -501,7 +503,7 @@ class SourceController(pretty.OutputMixin):
 
     @classmethod
     def good_source_for_types(
-        cls, source: Source, types: ty.Tuple[ty.Any, ...]
+        cls, source: AnySource, types: ty.Tuple[ty.Any, ...]
     ) -> bool:
         """return whether @s provides good leaves for @types"""
         if provides := list(source.provides()):
@@ -512,7 +514,7 @@ class SourceController(pretty.OutputMixin):
     def root_for_types(
         self,
         types: ty.Iterable[ty.Any],
-        extra_sources: ty.Optional[ty.Iterable[Source]] = None,
+        extra_sources: ty.Optional[ty.Iterable[AnySource]] = None,
     ) -> sources.MultiSource:
         """
         Get root for a flat catalog of all catalogs

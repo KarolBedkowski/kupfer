@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as ty
 
-from kupfer.obj.base import Leaf, Action, Source, TextSource
+from kupfer.obj.base import Leaf, Action, Source, TextSource, KupferObject
 from kupfer.core.sources import SourceController
 
 
@@ -56,7 +56,9 @@ def iobject_source_for_action(
     return None, False
 
 
-FilteringFunction = ty.Callable[[ty.Iterable[ty.Any]], bool]
+FilteringFunction = ty.Callable[
+    [ty.Iterable[KupferObject]], ty.Iterable[KupferObject]
+]
 
 
 def iobjects_valid_for_action(
