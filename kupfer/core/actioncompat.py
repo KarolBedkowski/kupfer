@@ -62,7 +62,7 @@ FilteringFunction = ty.Callable[
 
 
 def iobjects_valid_for_action(
-    action: Action, for_item: Leaf
+    action: Action, for_item: Leaf | None
 ) -> FilteringFunction:
     """
     Return a filtering *function* that will let through

@@ -541,7 +541,6 @@ class SecondaryObjectPane(LeafPane):
         filter for action @item
         """
         assert self.current_action
-        assert self.current_item
 
         self.latest_key = key
         sources_: ty.Iterable[AnySource] = []
@@ -752,8 +751,8 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         setctl = settings.GetSettingsController()
         for item in sorted(plugins.get_plugin_ids()):
             if setctl.get_plugin_enabled(item):
-                sources = self._load_plugin(item)
-                self._insert_sources(item, sources, initialize=False)
+                sources_ = self._load_plugin(item)
+                self._insert_sources(item, sources_, initialize=False)
 
     def _load_plugin(self, plugin_id: str) -> ty.Set[AnySource]:
         """
@@ -807,15 +806,15 @@ class DataController(GObject.GObject, pretty.OutputMixin):
     def _insert_sources(
         self,
         plugin_id: str,
-        sources: ty.Collection[AnySource],
+        sources_: ty.Collection[AnySource],
         initialize: bool = True,
     ) -> None:
-        if not sources:
+        if not sources_:
             return
 
         sctl = GetSourceController()
         setctl = settings.GetSettingsController()
-        for src in sources:
+        for src in sources_:
             is_toplevel = setctl.get_source_is_toplevel(plugin_id, src)
             sctl.add(
                 plugin_id, (src,), toplevel=is_toplevel, initialize=initialize
@@ -994,7 +993,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
                 if new_stack != panectl.object_stack:
                     self._set_object_stack(pane, new_stack)
 
-    def browse_up(self, pane) -> bool:
+    def browse_up(self, pane: PaneSel) -> bool:
         """Try to browse up to previous sources, from current
         source"""
         if pane == PaneSel.SOURCE:
@@ -1005,7 +1004,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
         return False
 
-    def browse_down(self, pane: int, alternate=False) -> None:
+    def browse_down(self, pane: PaneSel, alternate: bool = False) -> None:
         """Browse into @leaf if it's possible
         and save away the previous sources in the stack
         if @alternate, use the Source's alternate method"""
@@ -1018,7 +1017,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if panectl.browse_down(alternate=alternate):
             learn.record_search_hit(sel, key)
 
-    def activate(self, ui_ctx):
+    def activate(self, ui_ctx: GUIEnvironmentContext) -> None:
         """
         Activate current selection
 
@@ -1045,35 +1044,45 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if not res.is_sync:
             self.emit("launched-action")
 
-    def execute_file(self, filepath, ui_ctx, on_error):
+    def execute_file(
+        self,
+        filepath: str,
+        ui_ctx: GUIEnvironmentContext,
+        on_error: ty.Callable[[commandexec.ExecInfo], None],
+    ) -> bool:
         try:
             cmd_objs = execfile.parse_kfcom_file(filepath)
+            ic(cmd_objs)
             ctx = self._execution_context
             ctx.run(*cmd_objs, ui_ctx=ui_ctx)
             return True
         except commandexec.ActionExecutionError:
             self.output_exc()
-            return
         except execfile.ExecutionError:
             on_error(sys.exc_info())
-            return False
 
-    def _insert_object(self, pane, obj):
+        return False
+
+    def _insert_object(self, pane: PaneSel, obj: KupferObject) -> None:
         "Insert @obj in @pane: prepare the object, then emit pane-reset"
         self._decorate_object(obj)
         self.emit("pane-reset", pane, search.wrap_rankable(obj))
 
-    def _decorate_object(self, *objects):
+    def _decorate_object(self, *objects: KupferObject) -> None:
         sc = GetSourceController()
         for obj in objects:
             sc.decorate_object(obj)
 
-    def insert_objects(self, pane, objects):
+    def insert_objects(
+        self, pane: PaneSel, objects: list[KupferObject]
+    ) -> None:
         "Select @objects in @pane"
         if pane != PaneSel.SOURCE:
             raise ValueError("Can only insert in first pane")
 
-        self._decorate_object(objects[:-1])
+        # FIXME: !!check; added * before objects
+        ic(objects)
+        self._decorate_object(*objects[:-1])
         self._set_object_stack(pane, objects[:-1])
         self._insert_object(pane, objects[-1])
 
@@ -1108,7 +1117,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if self._latest_interaction < id_:
             self._command_execution_result(ctx, result_type, ret, uictx)
 
-    def find_object(self, url):
+    def find_object(self, url: str) -> None:
         """Find object with URI @url and select it in the first pane"""
         sc = GetSourceController()
         qf = qfurl.qfurl(url=url)
@@ -1116,7 +1125,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if found and not found == self.source_pane.get_selection():
             self._insert_object(PaneSel.SOURCE, found)
 
-    def mark_as_default(self, pane):
+    def mark_as_default(self, pane: PaneSel) -> None:
         """
         Make the object selected on @pane as default
         for the selection in previous pane.
@@ -1129,7 +1138,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         assert obj and act
         learn.set_correlation(act, obj)
 
-    def get_object_has_affinity(self, pane):
+    def get_object_has_affinity(self, pane: PaneSel) -> bool:
         """
         Return ``True`` if we have any recorded affinity
         for the object selected in @pane
@@ -1138,20 +1147,18 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if selection := panectl.get_selection():
             return learn.get_object_has_affinity(selection)
 
-        return None
+        return False
 
-    def erase_object_affinity(self, pane):
+    def erase_object_affinity(self, pane: PaneSel) -> None:
         """
         Erase all learned and configured affinity for
         the selection of @pane
         """
         panectl = self._panectl_table[pane]
         if selection := panectl.get_selection():
-            return learn.erase_object_affinity(selection)
+            learn.erase_object_affinity(selection)
 
-        return None
-
-    def compose_selection(self):
+    def compose_selection(self) -> None:
         leaf, action, iobj = self._get_current_command_objects()
         if leaf is None:
             return
