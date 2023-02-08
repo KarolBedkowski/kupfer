@@ -2177,7 +2177,10 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self._activate(None, None)
 
     def execute_file(
-        self, filepath: str, display: Gdk.Display, event_time: float
+        self,
+        filepath: ty.Iterable[str],
+        display: str,
+        event_time: float,
     ) -> None:
         """Execute a .kfcom file"""
 
@@ -2268,7 +2271,8 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     def put_files(
         self, fileuris: ty.Iterable[str], paths: ty.Iterable[str]
     ) -> None:
-        self.output_debug("put-files:", list(fileuris))
+        # don't consume iterable
+        # self.output_debug("put-files:", list(fileuris))
         if paths:
             objs = (Gio.File.new_for_path(U).get_path() for U in fileuris)
         else:
@@ -2952,7 +2956,7 @@ class WindowController(pretty.OutputMixin):
 
     def on_put_files(
         self,
-        sender: Gtk.Widget,
+        sender: ty.any,
         fileuris: ty.Iterable[str],
         display: str,
         timestamp: float,
@@ -2962,7 +2966,7 @@ class WindowController(pretty.OutputMixin):
 
     def on_execute_file(
         self,
-        sender: Gtk.Widget,
+        sender: ty.Any,
         filepath: ty.Iterable[str],
         display: str,
         timestamp: float,

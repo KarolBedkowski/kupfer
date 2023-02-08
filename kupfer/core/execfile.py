@@ -106,7 +106,7 @@ def update_icon(kobj: KupferObject, filepath: str) -> None:
         try:
             gfile.set_attribute_string(
                 icon_key,
-                Gio.File.new_for_path(thumb_filename).get_uri(),
+                Gio.File.new_for_path(str(thumb_filename)).get_uri(),
                 Gio.FileQueryInfoFlags.NONE,
                 None,
             )

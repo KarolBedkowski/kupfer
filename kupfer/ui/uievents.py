@@ -10,7 +10,6 @@ from kupfer import pretty
 from kupfer.ui import keybindings
 
 
-
 class GUIEnvironmentContext:
     """
     Context object for action execution
@@ -19,7 +18,7 @@ class GUIEnvironmentContext:
 
     # _open_displays = set() # FIXME: not used
 
-    def __init__(self, timestamp:float, screen: Gdk.Screen | None = None):
+    def __init__(self, timestamp: float, screen: Gdk.Screen | None = None):
         self._timestamp = timestamp
         self._screen: ty.Optional[Gdk.Screen] = (
             screen or Gdk.Screen.get_default()
@@ -32,7 +31,7 @@ class GUIEnvironmentContext:
         )
 
     @classmethod
-    def ensure_display_open(cls, _display: Gdk.Display|None) -> Gdk.Display:
+    def ensure_display_open(cls, _display: Gdk.Display | None) -> Gdk.Display:
         """
         Return GdkDisplay for name @display.
 
@@ -132,6 +131,7 @@ class GUIEnvironmentContext:
         window.set_screen(self.get_screen())
         window.present_with_time(self.get_timestamp())
 
+
 def gui_context_from_widget(timestamp, widget) -> GUIEnvironmentContext:
     return GUIEnvironmentContext(timestamp, widget.get_screen())
 
@@ -140,7 +140,9 @@ def gui_context_from_timestamp(timestamp) -> GUIEnvironmentContext:
     return GUIEnvironmentContext(timestamp, None)
 
 
-def gui_context_from_keyevent(timestamp, display) -> GUIEnvironmentContext:
+def gui_context_from_keyevent(
+    timestamp: float, display: str
+) -> GUIEnvironmentContext:
     new_display = GUIEnvironmentContext.ensure_display_open(display)
     screen, x, y, modifiers = new_display.get_pointer()
     return GUIEnvironmentContext(timestamp, screen)

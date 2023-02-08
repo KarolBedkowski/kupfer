@@ -19,6 +19,7 @@ from kupfer.obj.objects import ConstructFileLeaf, ConstructFileLeafTypes
 if ty.TYPE_CHECKING:
     _ = str
 
+
 def _representable_fname(fname: str) -> bool:
     "Return False if fname contains surrogate escapes"
     try:
@@ -49,9 +50,11 @@ class FileSource(Source):
 
     def get_items(self) -> ty.Iterable[Leaf]:
         for directory in self.dirlist:
-            files = list(utils.get_dirlist(
-                directory, depth=self.depth, exclude=self._exclude_file
-            ))
+            files = list(
+                utils.get_dirlist(
+                    directory, max_depth=self.depth, exclude=self._exclude_file
+                )
+            )
             yield from map(ConstructFileLeaf, files)
 
     def should_sort_lexically(self) -> bool:

@@ -1050,19 +1050,15 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
     def execute_file(
         self,
-        filepath: ty.Iterable[str],
+        filepath: str,
         ui_ctx: GUIEnvironmentContext,
         on_error: ty.Callable[[commandexec.ExecInfo], None],
     ) -> bool:
-        # TODO: check: this was not supported by file path may be [str]
-        # so probably this should be run in loop
-        assert isinstance(filepath, (list, tuple))
         ctx = self._execution_context
         try:
-            for sfp in filepath:
-                cmd_objs = execfile.parse_kfcom_file(sfp)
-                ctx.run(*cmd_objs, ui_ctx=ui_ctx)
-
+            cmd_objs = execfile.parse_kfcom_file(filepath)
+            assert len(cmd_objs) <= 3
+            ctx.run(*cmd_objs, ui_ctx=ui_ctx)
             return True
         except commandexec.ActionExecutionError:
             self.output_exc()
