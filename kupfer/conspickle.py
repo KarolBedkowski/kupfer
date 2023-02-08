@@ -47,14 +47,14 @@ class ConservativeUnpickler(pickle.Unpickler):
 
         return False
 
-    def find_class(self, module: str, name: str) -> ty.Type[ty.Any]:
+    def find_class(self, module: str, name: str) -> ty.Any:
         if module not in sys.modules:
             raise pickle.UnpicklingError(f"Refusing to load module {module}")
 
         if not self.is_safe_symbol(module, name):
             raise pickle.UnpicklingError(f"Refusing unsafe {module}.{name}")
 
-        return pickle.Unpickler.find_class(self, module, name)  # type: ignore
+        return pickle.Unpickler.find_class(self, module, name)
 
     @classmethod
     def loads(cls, pickledata: bytes) -> ty.Any:

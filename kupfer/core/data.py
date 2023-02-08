@@ -589,7 +589,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.source_pane.connect("new-source", self._new_source)
         self.object_pane.connect("new-source", self._new_source)
         self.action_pane = PrimaryActionPane()
-        self._panectl_table: ty.Dict[int, LeafPane] = {
+        self._panectl_table: ty.Dict[PaneSel, LeafPane] = {
             PaneSel.SOURCE: self.source_pane,
             PaneSel.ACTION: self.action_pane,
             PaneSel.OBJECT: self.object_pane,
@@ -853,31 +853,35 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.source_pane.reset()
         self.action_pane.reset()
 
-    def soft_reset(self, pane: int) -> ty.Optional[AnySource]:
+    def soft_reset(self, pane: PaneSel) -> ty.Optional[AnySource]:
         if pane == PaneSel.ACTION:
             return None
 
         panectl: LeafPane = self._panectl_table[pane]
         return panectl.soft_reset()
 
-    def cancel_search(self, pane: int | None = None) -> None:
+    def cancel_search(self, pane: PaneSel | None = None) -> None:
         """Cancel any outstanding search, or the search for @pane"""
-        panes = (pane,) if pane else iter(self._panectl_table)
-        for pane in panes:
-            ctl = self._panectl_table[pane]
+        panes = (
+            (pane,)
+            if pane
+            else (PaneSel.SOURCE, PaneSel.ACTION, PaneSel.OBJECT)
+        )
+        for pane_ in panes:
+            ctl = self._panectl_table[pane_]
             if ctl.outstanding_search > 0:
                 GLib.source_remove(ctl.outstanding_search)
                 ctl.outstanding_search = -1
 
     def search(
         self,
-        pane: int,
-        key="",
-        context=None,
-        interactive=False,
-        lazy=False,
-        text_mode=False,
-    ):
+        pane: PaneSel,
+        key: str = "",
+        context: str | None = None,
+        interactive: bool = False,
+        lazy: bool = False,
+        text_mode: bool = False,
+    ) -> None:
         """Search: Register the search method in the event loop
 
         Will search in @pane's base using @key, promising to return
@@ -893,16 +897,17 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         wrapcontext = (ctl.outstanding_search_id, context)
         if interactive:
             ctl.search(key, wrapcontext, text_mode)
-        else:
-            timeout = 300 if lazy else 0 if not key else 50 // len(key)
+            return
 
-            def ctl_search(*args):
-                ctl.outstanding_search = -1
-                return ctl.search(*args)
+        timeout = 300 if lazy else 0 if not key else 50 // len(key)
 
-            ctl.outstanding_search = GLib.timeout_add(
-                timeout, ctl_search, key, wrapcontext, text_mode
-            )
+        def ctl_search(*args):
+            ctl.outstanding_search = -1
+            return ctl.search(*args)
+
+        ctl.outstanding_search = GLib.timeout_add(
+            timeout, ctl_search, key, wrapcontext, text_mode
+        )
 
     def _pane_search_result(
         self,
@@ -913,14 +918,14 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         pane: PaneSel,
     ) -> bool:
         search_id, context = wrapcontext
-        if not search_id is panectl.outstanding_search_id:
-            self.output_debug("Skipping late search", match, context)
-            return True
+        if search_id == panectl.outstanding_search_id:
+            self.emit("search-result", pane, match, match_iter, context)
+            return False
 
-        self.emit("search-result", pane, match, match_iter, context)
-        return False
+        self.output_debug("Skipping late search", match, context)
+        return True
 
-    def select(self, pane, item):
+    def select(self, pane: PaneSel, item: KupferObject | None) -> None:
         """Select @item in @pane to self-update
         relevant places"""
         # If already selected, do nothing
@@ -929,7 +934,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             return
 
         self.cancel_search()
-        panectl.select(item)
+        panectl.select(item)  # type: ignore
         if pane == PaneSel.SOURCE:
             # populate actions
             citem = self._get_pane_object_composed(self.source_pane)
@@ -940,6 +945,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
                 self._populate_third_pane()
 
         elif pane == PaneSel.ACTION:
+            assert item is None or isinstance(item, Action), str(type(item))
             self.object_stack_clear(PaneSel.OBJECT)
             if item and item.requires_object():
                 newmode = PaneMode.SOURCE_ACTION_OBJECT
@@ -953,24 +959,22 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             if self.mode == PaneMode.SOURCE_ACTION_OBJECT:
                 self._populate_third_pane()
 
-        elif pane == PaneSel.OBJECT:
-            pass
-
-    def _populate_third_pane(self):
+    def _populate_third_pane(self) -> None:
         citem = self._get_pane_object_composed(self.source_pane)
         action = self.action_pane.get_selection()
+        assert isinstance(action, Action)
         self.object_pane.set_item_and_action(citem, action)
         self.search(PaneSel.OBJECT, lazy=True)
 
-    def get_can_enter_text_mode(self, pane):
+    def get_can_enter_text_mode(self, pane: PaneSel) -> bool:
         panectl = self._panectl_table[pane]
         return panectl.get_can_enter_text_mode()
 
-    def get_should_enter_text_mode(self, pane):
+    def get_should_enter_text_mode(self, pane: PaneSel) -> bool:
         panectl = self._panectl_table[pane]
         return panectl.get_should_enter_text_mode()
 
-    def validate(self):
+    def validate(self) -> None:
         """Check if all selected items are still valid
         (for example after being spawned again, old item
         still focused)
@@ -982,7 +986,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         def valid_check(obj):
             return not (hasattr(obj, "is_valid") and not obj.is_valid())
 
-        for pane, panectl in list(self._panectl_table.items()):
+        for pane, panectl in self._panectl_table.items():
             sel = panectl.get_selection()
             if not valid_check(sel):
                 self.emit("pane-reset", pane, None)
@@ -1046,15 +1050,19 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
     def execute_file(
         self,
-        filepath: str,
+        filepath: ty.Iterable[str],
         ui_ctx: GUIEnvironmentContext,
         on_error: ty.Callable[[commandexec.ExecInfo], None],
     ) -> bool:
+        # TODO: check: this was not supported by file path may be [str]
+        # so probably this should be run in loop
+        assert isinstance(filepath, (list, tuple))
+        ctx = self._execution_context
         try:
-            cmd_objs = execfile.parse_kfcom_file(filepath)
-            ic(cmd_objs)
-            ctx = self._execution_context
-            ctx.run(*cmd_objs, ui_ctx=ui_ctx)
+            for sfp in filepath:
+                cmd_objs = execfile.parse_kfcom_file(sfp)
+                ctx.run(*cmd_objs, ui_ctx=ui_ctx)
+
             return True
         except commandexec.ActionExecutionError:
             self.output_exc()
@@ -1069,19 +1077,17 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.emit("pane-reset", pane, search.wrap_rankable(obj))
 
     def _decorate_object(self, *objects: KupferObject) -> None:
-        sc = GetSourceController()
+        sctl = GetSourceController()
         for obj in objects:
-            sc.decorate_object(obj)
+            sctl.decorate_object(obj)
 
-    def insert_objects(
-        self, pane: PaneSel, objects: list[KupferObject]
-    ) -> None:
+    def insert_objects(self, pane: PaneSel, objects: list[Leaf]) -> None:
         "Select @objects in @pane"
         if pane != PaneSel.SOURCE:
             raise ValueError("Can only insert in first pane")
 
-        # FIXME: !!check; added * before objects
         ic(objects)
+        # FIXME: !!check; added * before objects
         self._decorate_object(*objects[:-1])
         self._set_object_stack(pane, objects[:-1])
         self._insert_object(pane, objects[-1])

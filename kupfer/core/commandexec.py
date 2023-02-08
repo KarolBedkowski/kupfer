@@ -68,7 +68,7 @@ ExecInfo = ty.Union[
     tuple[None, None, None],
 ]
 CmdTuple = tuple[Leaf, Action, ty.Optional[Leaf]]
-Token = tuple[int, CmdTuple]  # TODO: check, probably int
+Token = tuple[int, ty.Optional[CmdTuple]]  # TODO: check, probably int
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -212,7 +212,6 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         The token must be used for posting late results or late errors.
         """
         assert self.last_command_id is not None
-        assert self.last_executed_command
         return (self.last_command_id, self.last_executed_command)
 
     def make_execution_token(

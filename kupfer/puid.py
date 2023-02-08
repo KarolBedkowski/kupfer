@@ -96,7 +96,7 @@ _EXCLUDING: list[AnySource] = []
 
 
 @contextlib.contextmanager
-def _exclusion(src: AnySource) -> ty.Iterator[None]:
+def _exclusion(src):
     try:
         _EXCLUDING.append(src)
         yield
