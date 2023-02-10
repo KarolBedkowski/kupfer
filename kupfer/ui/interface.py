@@ -19,7 +19,7 @@ from kupfer.ui import uievents
 from kupfer.core import data
 from kupfer.core.search import Rankable
 from kupfer.core import settings, actionaccel
-from kupfer.obj.base import AnySource
+from kupfer.obj.base import AnySource, KupferObject
 from kupfer.obj.objects import FileLeaf
 from kupfer import interface
 from kupfer import pretty
@@ -76,6 +76,14 @@ def _prepare_key_book():
     return key_book
 
 
+def _get_accel(key: str, acf: AccelFunc) -> tuple[str, AccelFunc]:
+    """Return name, method pair for @key"""
+    if key not in accelerators.ACCELERATOR_NAMES:
+        raise RuntimeError(f"Missing accelerator: {key}")
+
+    return (accelerators.ACCELERATOR_NAMES[key], acf)
+
+
 class Interface(GObject.GObject, pretty.OutputMixin):
     """
     Controller object that controls the input and
@@ -84,6 +92,10 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     Signals:
     * cancelled: def callback(controller)
         escape was typed
+
+
+    NOTE: some methods are get by getattr and call!
+
     """
 
     __gtype_name__ = "Interface"
@@ -218,7 +230,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self.output_debug("Finished save_config")
 
     def _entry_realized(self, widget: Gtk.Widget) -> None:
-        self.update_text_mode()
+        self._update_text_mode()
 
     def _entry_key_release(self, entry, event):
         return
@@ -278,7 +290,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         # look for action accelerators
         if event_state == self.action.accel_modifier:
             keystr = Gtk.accelerator_name(keyv, 0)
-            if self.action_accelerator(keystr):
+            if self._action_accelerator(keystr):
                 return True
 
         if self._preedit_text:
@@ -371,7 +383,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             ## if typing with shift key, switch to action pane
             if shift_mask and self.current == self.search:
                 self.current.hide_table()
-                self.switch_current()
+                self._switch_current()
 
             if (
                 not self.current.get_current()
@@ -410,7 +422,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             self._back_key_press()
 
         elif keyv in (key_book["Tab"], key_book["ISO_Left_Tab"]):
-            self.switch_current(reverse=(keyv == key_book["ISO_Left_Tab"]))
+            self._switch_current(reverse=(keyv == key_book["ISO_Left_Tab"]))
 
         elif keyv == key_book["Home"]:
             self.current.go_first()
@@ -496,7 +508,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         """
         assert self.current
         if self.current.get_match_state() is State.WAIT:
-            self.toggle_text_mode(False)
+            self._toggle_text_mode(False)
 
         if self.current is self.action or populate:
             self._populate_search()
@@ -509,7 +521,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         while self._browse_up():
             pass
 
-        self.toggle_text_mode(False)
+        self._toggle_text_mode(False)
         self._data_ctrl.object_stack_clear_all()
         self.reset_current()
         self.reset()
@@ -543,7 +555,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
                 self.reset_current()
         else:
             if self._is_text_mode:
-                self.toggle_text_mode(False)
+                self._toggle_text_mode(False)
             elif not self.current.get_table_visible():
                 pane = self._pane_for_widget(self.current)
                 self._data_ctrl.object_stack_clear(pane)
@@ -604,32 +616,35 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             self.soft_reset()
 
         if self.get_can_enter_text_mode():
-            return self.toggle_text_mode(True)
+            return self._toggle_text_mode(True)
 
         return False
 
-    def toggle_text_mode(self, val: bool) -> bool:
+    def _toggle_text_mode(self, val: bool) -> bool:
         """Toggle text mode on/off per @val,
         and return the subsequent on/off state.
         """
         val = val and self.get_can_enter_text_mode()
         self._is_text_mode = val
-        self.update_text_mode()
+        self._update_text_mode()
         self.reset()
         return val
 
     def toggle_text_mode_quick(self) -> None:
-        """Toggle text mode or not, if we can or not, without reset"""
-        self._is_text_mode = not self._is_text_mode
-        self.update_text_mode()
+        """Toggle text mode or not, if we can or not, without reset.
 
-    def disable_text_mode_quick(self) -> None:
+        NOTE: accelerator
+        """
+        self._is_text_mode = not self._is_text_mode
+        self._update_text_mode()
+
+    def _disable_text_mode_quick(self) -> None:
         """Toggle text mode or not, if we can or not, without reset"""
         if self._is_text_mode:
             self._is_text_mode = False
-            self.update_text_mode()
+            self._update_text_mode()
 
-    def update_text_mode(self) -> None:
+    def _update_text_mode(self) -> None:
         """update appearance to whether text mode enabled or not"""
         if self._is_text_mode:
             self._entry.show()
@@ -643,6 +658,9 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self._update_active()
 
     def switch_to_source_init(self) -> None:
+        """
+        NOTE: accelerator
+        """
         # Initial switch to source
         self.current = self.search
         self._update_active()
@@ -650,19 +668,28 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             self.toggle_text_mode_quick()
 
     def switch_to_source(self) -> None:
-        self.switch_current_to(0)
+        """
+        NOTE: accelerator
+        """
+        self._switch_current_to(0)
 
     def switch_to_2(self) -> None:
-        self.switch_current_to(1)
+        """
+        NOTE: accelerator
+        """
+        self._switch_current_to(1)
 
     def switch_to_3(self) -> None:
-        self.switch_current_to(2)
+        """
+        NOTE: accelerator
+        """
+        self._switch_current_to(2)
 
     def focus(self) -> None:
         """called when the interface is focus (after being away)"""
         if self._reset_when_back:
             self._reset_when_back = False
-            self.toggle_text_mode(False)
+            self._toggle_text_mode(False)
         # preserve text mode, but switch to source if we are not in it
         if not self._is_text_mode:
             self.switch_to_source()
@@ -710,9 +737,15 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self.emit("launched-action")
 
     def compose_action(self) -> None:
+        """
+        NOTE: accelerator
+        """
         self._data_ctrl.compose_selection()
 
     def mark_as_default(self) -> bool:
+        """
+        NOTE: accelerator
+        """
         if self.action.get_match_state() != State.MATCH:
             return False
 
@@ -720,6 +753,9 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         return True
 
     def erase_affinity_for_first_pane(self) -> bool:
+        """
+        NOTE: accelerator
+        """
         if self.search.get_match_state() != State.MATCH:
             return False
 
@@ -727,6 +763,9 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         return True
 
     def comma_trick(self) -> bool:
+        """
+        NOTE: accelerator
+        """
         assert self.current
 
         if self.current.get_match_state() != State.MATCH:
@@ -743,7 +782,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         return False
 
-    def action_accelerator(self, keystr: str) -> bool:
+    def _action_accelerator(self, keystr: str) -> bool:
         """
         keystr: accelerator name string
 
@@ -756,7 +795,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         success, activate = self.action.select_action(keystr)
         if success:
             if activate:
-                self.disable_text_mode_quick()
+                self._disable_text_mode_quick()
                 self.activate()
             else:
                 self.switch_to_3()
@@ -766,7 +805,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         return True
 
-    def assign_action_accelerator(self) -> None:
+    def _assign_action_accelerator(self) -> None:
         from kupfer.ui import getkey_dialog
 
         if self.action.get_match_state() != State.MATCH:
@@ -800,21 +839,16 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         """
         assert self.current
 
-        def get_accel(key: str) -> tuple[str, AccelFunc]:
-            """Return name, method pair for @key"""
-            if key not in accelerators.ACCELERATOR_NAMES:
-                raise RuntimeError(f"Missing accelerator: {key}")
-
-            return (accelerators.ACCELERATOR_NAMES[key], getattr(self, key))
-
         has_match = self.current.get_match_state() == State.MATCH
         if has_match:
-            yield get_accel("compose_action")
+            yield _get_accel("compose_action", self.compose_action)
 
-        yield get_accel("select_selected_text")
+        yield _get_accel("select_selected_text", self.select_selected_text)
 
         if self.get_can_enter_text_mode():
-            yield get_accel("toggle_text_mode_quick")
+            yield _get_accel(
+                "toggle_text_mode_quick", self.toggle_text_mode_quick
+            )
 
         if self.action.get_match_state() == State.MATCH:
             smatch = self.search.get_current()
@@ -824,7 +858,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
                 "action": _trunc_long_str(amatch)
             }
             w_label = textwrap.wrap(label, width=40, subsequent_indent="    ")
-            yield ("\n".join(w_label), self.assign_action_accelerator)
+            yield ("\n".join(w_label), self._assign_action_accelerator)
 
             label = _('Make "%(action)s" Default for "%(object)s"') % {
                 "action": _trunc_long_str(amatch),
@@ -842,7 +876,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
                     self.erase_affinity_for_first_pane,
                 )
 
-            yield get_accel("reset_all")
+            yield _get_accel("reset_all", self.reset_all)
 
     def _pane_reset(
         self,
@@ -859,7 +893,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         wid.set_match_plain(item)
         if wid is self.search:
             self.reset()
-            self.toggle_text_mode(False)
+            self._toggle_text_mode(False)
             self.switch_to_source()
 
     def _new_source(
@@ -881,7 +915,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             self.action.reset()
 
         if wid is self.current:
-            self.toggle_text_mode(False)
+            self._toggle_text_mode(False)
             self._reset_to_toplevel = False
             if not at_root:
                 self.reset_current(populate=True)
@@ -926,18 +960,18 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         self._description_changed()
 
-    def switch_current(self, reverse: bool = False) -> None:
+    def _switch_current(self, reverse: bool = False) -> None:
         # Only allow switch if we have match
         if self._pane_three_is_visible:
-            curidx = (self.search, self.action, self.third).index(self.current)
+            curidx = self._pane_for_widget(self.current).value - 1
             newidx = (curidx - 1 if reverse else curidx + 1) % 3
         else:
             # for 2 panels simple switch to other one
             newidx = 0 if self.current == self.action else 1
 
-        self.switch_current_to(newidx)
+        self._switch_current_to(newidx)
 
-    def switch_current_to(self, index: int) -> bool:
+    def _switch_current_to(self, index: int) -> bool:
         """
         Switch selected pane
 
@@ -964,7 +998,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             self.current.hide_table()
             self.current = new_focus
             # Use toggle_text_mode to reset
-            self.toggle_text_mode(False)
+            self._toggle_text_mode(False)
             pane = self._pane_for_widget(new_focus)
             if not pane:
                 return False
@@ -993,7 +1027,10 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self._data_ctrl.activate(ui_ctx=self._make_gui_ctx())
 
     def activate(self) -> None:
-        """Activate current selection (Run action)"""
+        """Activate current selection (Run action)
+
+        NOTE: accelerator
+        """
         self._activate(None, None)
 
     def execute_file(
@@ -1045,7 +1082,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         raise ValueError(f"invalid pane value {pane}")
 
-    def _pane_for_widget(self, widget: GObject.GObject) -> data.PaneSel | None:
+    def _pane_for_widget(self, widget: GObject.GObject) -> data.PaneSel:
         # we have only 3 panels, so this is better than lookup in dict
         if widget == self.search:
             return data.PaneSel.SOURCE
@@ -1071,6 +1108,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     ) -> bool:
         "mouse clicked on a pane widget"
         # activate on double-click
+        # pylint: disable=no-member,protected-acccess
         if event.type == Gdk.EventType._2BUTTON_PRESS:
             self.activate()
             return True
@@ -1078,7 +1116,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         return False
 
     def _selection_changed(
-        self, pane_owner: Search, match: Rankable | None
+        self, pane_owner: Search, match: KupferObject | None
     ) -> None:
         pane = self._pane_for_widget(pane_owner)
         if not pane:
