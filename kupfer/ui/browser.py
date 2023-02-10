@@ -28,7 +28,7 @@ from kupfer import pretty
 import kupfer.config
 import kupfer.environment
 
-from .support import text_direction_is_ltr
+from .support import text_direction_is_ltr, normalize_display_name
 from .interface import Interface
 
 if ty.TYPE_CHECKING:
@@ -86,50 +86,51 @@ class WindowController(pretty.OutputMixin):
     """
 
     def __init__(self):
-        self.window: Gtk.Window = None
-        self.current_screen_handler = 0
-        self.current_screen = None
-        self.interface: Interface = None  # type: ignore
+        self._window: Gtk.Window = None
+        self._current_screen_handler = 0
+        self._interface: Interface = None  # type: ignore
         self._statusicon = None
         self._statusicon_ai = None
         self._window_hide_timer = scheduler.Timer()
 
     def initialize(self, data_controller: data.DataController) -> None:
-        self.window = Gtk.Window(
+        self._window = Gtk.Window(
             type=Gtk.WindowType.TOPLEVEL,
             border_width=WINDOW_BORDER_WIDTH,
             decorated=False,
             name="kupfer",
         )
-        self.window.connect("realize", self._on_window_realize)
-        self.window.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self._window.connect("realize", self._on_window_realize)
+        self._window.add_events(  # pylint: disable=no-member
+            Gdk.EventMask.BUTTON_PRESS_MASK
+        )
 
         data_controller.connect("launched-action", self.launch_callback)
         data_controller.connect("command-result", self.result_callback)
 
-        self.interface = Interface(data_controller, self.window)
-        self.interface.connect("launched-action", self.launch_callback)
-        self.interface.connect("cancelled", self._cancelled)
-        self.window.connect("map-event", self._on_window_map_event)
+        self._interface = Interface(data_controller, self._window)
+        self._interface.connect("launched-action", self.launch_callback)
+        self._interface.connect("cancelled", self._cancelled)
+        self._window.connect("map-event", self._on_window_map_event)
         self._setup_window()
 
         # Accept drops
-        self.window.drag_dest_set(
+        self._window.drag_dest_set(  # pylint: disable=no-member
             Gtk.DestDefaults.ALL, [], Gdk.DragAction.COPY
         )
-        self.window.drag_dest_add_uri_targets()
-        self.window.drag_dest_add_text_targets()
-        self.window.connect("drag-data-received", self._on_drag_data_received)
+        self._window.drag_dest_add_uri_targets()  # pylint: disable=no-member
+        self._window.drag_dest_add_text_targets()  # pylint: disable=no-member
+        self._window.connect("drag-data-received", self._on_drag_data_received)
 
     def _on_window_map_event(self, *_args: ty.Any) -> None:
-        self.interface.update_third()
+        self._interface.update_third()
 
     def _on_window_realize(self, widget: Gtk.Widget) -> None:
         # Load css
         style_provider = Gtk.CssProvider()
         style_provider.load_from_data(KUPFER_CSS)
 
-        Gtk.StyleContext.add_provider_for_screen(
+        Gtk.StyleContext.add_provider_for_screen(  # pylint: disable=no-member
             widget.get_screen(),
             style_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
@@ -237,7 +238,7 @@ class WindowController(pretty.OutputMixin):
 
         menu.append(Gtk.SeparatorMenuItem())
         if context_menu:
-            for name, func in self.interface.get_context_actions():
+            for name, func in self._interface.get_context_actions():
                 mitem = Gtk.MenuItem(label=name)
                 mitem.connect("activate", submenu_callback, func)
                 menu.append(mitem)
@@ -279,19 +280,21 @@ class WindowController(pretty.OutputMixin):
         Returns window
         """
 
-        self.window.connect("delete-event", self._close_window)
-        self.window.connect("focus-out-event", self._lost_focus)
-        self.window.connect("button-press-event", self._window_frame_clicked)
-        widget = self.interface.get_widget()
+        self._window.connect("delete-event", self._close_window)
+        self._window.connect("focus-out-event", self._lost_focus)
+        self._window.connect("button-press-event", self._window_frame_clicked)
+        widget = self._interface.get_widget()
         widget.show()
 
         # Build the window frame with its top bar
         topbar = Gtk.HBox()
+
         vbox = Gtk.VBox()
         vbox.pack_start(topbar, False, False, 0)
         vbox.pack_start(widget, True, True, 0)
         vbox.show()
-        self.window.add(vbox)
+        self._window.add(vbox)  # pylint: disable=no-member
+
         title = Gtk.Label.new("")
         button = Gtk.Label.new("")
         l_programname = version.PROGRAM_NAME.lower()
@@ -318,20 +321,23 @@ class WindowController(pretty.OutputMixin):
         topbar.pack_start(button_box, False, False, 0)
         topbar.show_all()
 
-        self.window.set_title(version.PROGRAM_NAME)
-        self.window.set_icon_name(version.ICON_NAME)
-        self.window.set_type_hint(self._window_type_hint())
-        self.window.set_property("skip-taskbar-hint", True)
-        self.window.set_keep_above(True)
-        pos = self._window_position()
-        if pos != Gtk.WindowPosition.NONE:
-            self.window.set_position(pos)
+        self._window.set_title(version.PROGRAM_NAME)
+        self._window.set_icon_name(version.ICON_NAME)
+        self._window.set_type_hint(  # pylint: disable=no-member
+            self._window_type_hint()
+        )
+        self._window.set_property("skip-taskbar-hint", True)
+        self._window.set_keep_above(True)  # pylint: disable=no-member
+        if (pos := self._window_position()) != Gtk.WindowPosition.NONE:
+            self._window.set_position(pos)  # pylint: disable=no-member
 
         if not text_direction_is_ltr():
-            self.window.set_gravity(Gdk.GRAVITY_NORTH_EAST)
+            self._window.set_gravity(  # pylint: disable=no-member
+                Gdk.GRAVITY_NORTH_EAST
+            )
         # Setting not resizable changes from utility window
         # on metacity
-        self.window.set_resizable(False)
+        self._window.set_resizable(False)
 
     def _window_type_hint(self) -> Gdk.WindowTypeHint:
         type_hint = Gdk.WindowTypeHint.UTILITY
@@ -376,7 +382,7 @@ class WindowController(pretty.OutputMixin):
     ) -> bool:
         "The context menu label was clicked"
         menu = self._setup_menu(True)
-        menu.set_screen(self.window.get_screen())
+        menu.set_screen(self._window.get_screen())  # pylint: disable=no-member
         menu.popup(None, None, None, None, event.button, event.time)
         return True
 
@@ -423,7 +429,7 @@ class WindowController(pretty.OutputMixin):
         # Separate window hide from the action being
         # done. This is to solve a window focus bug when
         # we switch windows using an action
-        self.interface.did_launch()
+        self._interface.did_launch()
         self._window_hide_timer.set_ms(100, self.put_away)
 
     def result_callback(
@@ -432,7 +438,7 @@ class WindowController(pretty.OutputMixin):
         _result_type: ty.Any,
         ui_ctx: uievents.GUIEnvironmentContext,
     ) -> None:
-        self.interface.did_get_result()
+        self._interface.did_get_result()
         if ui_ctx:
             self.on_present(
                 sender, ui_ctx.get_display(), ui_ctx.get_timestamp()
@@ -461,57 +467,44 @@ class WindowController(pretty.OutputMixin):
         self._center_window()
 
     def is_current_display(self, displayname: str) -> bool:
-        def norm_name(name):
-            "Make :0.0 out of :0"
-            # TODO: change
-            if name[-2] == ":":
-                return name + ".0"
-
-            return name
-
-        if not self.window.has_screen():
+        if not self._window.has_screen():  # pylint: disable=no-member
             return False
 
-        cur_disp = self.window.get_screen().get_display().get_name()
-        return norm_name(cur_disp) == norm_name(displayname)
+        # pylint: disable=no-member
+        cur_disp = self._window.get_screen().get_display().get_name()
+        return normalize_display_name(cur_disp) == normalize_display_name(
+            displayname
+        )
 
     def _window_put_on_screen(self, screen: Gdk.Screen) -> None:
-        if self.current_screen_handler:
-            scr = self.window.get_screen()
-            scr.disconnect(self.current_screen_handler)
+        if self._current_screen_handler:
+            scr = self._window.get_screen()  # pylint: disable=no-member
+            scr.disconnect(self._current_screen_handler)
 
-        self.window.set_screen(screen)
-        self.current_screen_handler = screen.connect(
+        self._window.set_screen(screen)  # pylint: disable=no-member
+        self._current_screen_handler = screen.connect(
             "monitors-changed", self._monitors_changed
         )
-        self.current_screen = screen
 
     def _center_window(self, displayname: str | None = None) -> None:
         """Center Window on the monitor the pointer is currently on"""
-
-        def norm_name(name):
-            "Make :0.0 out of :0"
-            # TODO: remove duplicate
-            if name[-2] == ":":
-                return name + ".0"
-
-            return name
-
-        if not displayname and self.window.has_screen():
-            display = self.window.get_display()
+        # pylint: disable=no-member
+        if not displayname and self._window.has_screen():
+            display = self._window.get_display()
         else:
             display = uievents.GUIEnvironmentContext.ensure_display_open(
                 displayname
             )
 
-        screen, x, y, modifiers = display.get_pointer()
+        screen, x, y, _mod = display.get_pointer()
         self._window_put_on_screen(screen)
         monitor_nr = screen.get_monitor_at_point(x, y)
         geo = screen.get_monitor_geometry(monitor_nr)
-        wid, hei = self.window.get_size()
+        wid, hei = self._window.get_size()
         midx = geo.x + geo.width / 2 - wid / 2
         midy = geo.y + geo.height / 2 - hei / 2
-        self.window.move(midx, midy)
+
+        self._window.move(midx, midy)
         uievents.GUIEnvironmentContext.try_close_unused_displays(screen)
 
     def _should_recenter_window(self) -> bool:
@@ -519,21 +512,23 @@ class WindowController(pretty.OutputMixin):
         are on different monitors.
         """
         # Check if the GtkWindow was realized yet
-        if not self.window.get_realized():
+        if not self._window.get_realized():
             return True
 
-        display = self.window.get_screen().get_display()
-        screen, x, y, modifiers = display.get_pointer()
+        # pylint: disable=no-member
+        display = self._window.get_screen().get_display()
+        screen, x, y, _modifiers = display.get_pointer()
         mon_cur = screen.get_monitor_at_point(x, y)
-        mon_win = screen.get_monitor_at_window(self.window.get_window())
-        return mon_cur != mon_win
+        mon_win = screen.get_monitor_at_window(self._window.get_window())
+        return mon_cur != mon_win  # type: ignore
 
-    def activate(self, sender=None) -> None:
-        dispname = self.window.get_screen().make_display_name()
+    def activate(self, sender: ty.Any = None) -> None:
+        # pylint: disable=no-member
+        dispname = self._window.get_screen().make_display_name()
         self.on_present(sender, dispname, Gtk.get_current_event_time())
 
     def on_present(
-        self, sender: ty.Any, display: str | None, timestamp: float
+        self, sender: ty.Any, display: str | None, timestamp: int
     ) -> None:
         """Present on @display, where None means default display"""
         self._window_hide_timer.invalidate()
@@ -541,21 +536,22 @@ class WindowController(pretty.OutputMixin):
             display = Gdk.Display.get_default().get_name()
 
         # Center window before first show
-        if not self.window.get_realized():
+        if not self._window.get_realized():
             self._center_window(display)
 
-        self.window.stick()
-        self.window.present_with_time(timestamp)
-        self.window.get_window().focus(timestamp=timestamp)
-        self.interface.focus()
+        self._window.stick()  # pylint: disable=no-member
+        self._window.present_with_time(timestamp)
+        # pylint: disable=no-member
+        self._window.get_window().focus(timestamp=timestamp)
+        self._interface.focus()
 
         # Center after present if we are moving between monitors
         if self._should_recenter_window():
             self._center_window(display)
 
     def put_away(self) -> None:
-        self.interface.put_away()
-        self.window.hide()
+        self._interface.put_away()
+        self._window.hide()
 
     def _cancelled(self, _obj: Interface) -> None:
         self.put_away()
@@ -566,7 +562,7 @@ class WindowController(pretty.OutputMixin):
         """
         Toggle activate/put-away
         """
-        if self.window.get_property("visible"):
+        if self._window.get_property("visible"):
             self.put_away()
         else:
             self.on_present(sender, display, timestamp)
@@ -580,7 +576,7 @@ class WindowController(pretty.OutputMixin):
         keyobj: keybindings.KeyboundObject,
         keybinding_number: int,
         display: str,
-        timestamp: float,
+        timestamp: int,
     ) -> None:
         """Keybinding activation callback"""
         if keybinding_number == keybindings.KEYBINDING_DEFAULT:
@@ -588,8 +584,8 @@ class WindowController(pretty.OutputMixin):
 
         elif keybinding_number == keybindings.KEYBINDING_MAGIC:
             self.on_present(keyobj, display, timestamp)
-            self.interface.select_selected_text()
-            self.interface.select_selected_file()
+            self._interface.select_selected_text()
+            self._interface.select_selected_file()
 
     def _on_drag_data_received(
         self,
@@ -597,32 +593,32 @@ class WindowController(pretty.OutputMixin):
         context: ty.Any,
         x: int,
         y: int,
-        data,
-        info,
-        time,
+        data_: Gtk.SelectionData,
+        info: ty.Any,
+        time: int,
     ) -> None:
-        uris = data.get_uris()
+        uris = data_.get_uris()
         if uris:
-            self.interface.put_files(uris, paths=False)
+            self._interface.put_files(uris, paths=False)
         else:
-            self.interface.put_text(data.get_text())
+            self._interface.put_text(data_.get_text())
 
     def on_put_text(
-        self, sender: Gtk.Widget, text: str, display: str, timestamp: float
+        self, sender: Gtk.Widget, text: str, display: str, timestamp: int
     ) -> None:
         """We got a search text from dbus"""
         self.on_present(sender, display, timestamp)
-        self.interface.put_text(text)
+        self._interface.put_text(text)
 
     def on_put_files(
         self,
-        sender: ty.any,
+        sender: ty.Any,
         fileuris: ty.Iterable[str],
         display: str,
-        timestamp: float,
+        timestamp: int,
     ) -> None:
         self.on_present(sender, display, timestamp)
-        self.interface.put_files(fileuris, paths=True)
+        self._interface.put_files(fileuris, paths=True)
 
     def on_execute_file(
         self,
@@ -631,27 +627,27 @@ class WindowController(pretty.OutputMixin):
         display: str,
         timestamp: float,
     ) -> None:
-        self.interface.execute_file(filepath, display, timestamp)
+        self._interface.execute_file(filepath, display, timestamp)
 
-    def _close_window(self, window: Gtk.Widget, event) -> bool:
+    def _close_window(self, window: Gtk.Widget, event: ty.Any) -> bool:
         self.put_away()
         return True
 
     def _destroy(self, widget: Gtk.Widget, _data: ty.Any = None) -> None:
         self.quit()
 
-    def _sigterm(self, signal: int, _frame: ty.Any) -> None:
-        self.output_info("Caught signal", signal, "exiting..")
+    def _sigterm(self, signal_: int, _frame: ty.Any) -> None:
+        self.output_info("Caught signal", signal_, "exiting..")
         self.quit()
 
-    def _on_early_interrupt(self, signal: int, _frame: ty.Any) -> None:
+    def _on_early_interrupt(self, _signal: int, _frame: ty.Any) -> None:
         sys.exit(1)
 
     def save_data(self) -> None:
         """Save state before quit"""
         sch = scheduler.get_scheduler()
         sch.finish()
-        self.interface.save_config()
+        self._interface.save_config()
 
     def quit(self, sender: Gtk.Widget | None = None) -> None:
         Gtk.main_quit()
@@ -727,7 +723,7 @@ class WindowController(pretty.OutputMixin):
         client = session.SessionClient()
         client.connect("save-yourself", self._session_save)
         client.connect("die", self._session_die)
-        self.interface.lazy_setup()
+        self._interface.lazy_setup()
 
         self.output_debug("finished lazy_setup")
 
@@ -735,17 +731,20 @@ class WindowController(pretty.OutputMixin):
         """Start WindowController, present its window (if not @quiet)"""
         signal.signal(signal.SIGINT, self._on_early_interrupt)
 
+        kserv1 = None
+        kserv2 = None
+
         try:
-            # NOTE: For a *very short* time we will use both APIs
+            # NOTE: For a *very short* time we will use both APIs  TOOD: off one
             kserv1 = listen.Service()
             kserv2 = listen.ServiceNew()
         except listen.AlreadyRunningError:
             self.output_info("An instance is already running, exiting...")
             self.quit_now()
         except listen.NoConnectionError:
-            kserv1 = None
-            kserv2 = None
-        else:
+            pass
+
+        if kserv1:
             keyobj = keybindings.GetKeyboundObject()
             keyobj.connect(
                 "bound-key-changed",

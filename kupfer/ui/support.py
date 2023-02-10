@@ -24,7 +24,14 @@ def escape_markup_str(mstr: str) -> str:
 
 
 def text_direction_is_ltr() -> bool:
-    return Gtk.Widget.get_default_direction() != Gtk.TextDirection.RTL
+    return Gtk.Widget.get_default_direction() != Gtk.TextDirection.RTL  # type: ignore
+
+
+def normalize_display_name(name: str) -> str:
+    if name[-2] == ":":
+        return name + ".0"
+
+    return name
 
 
 # # NOT IN USE
