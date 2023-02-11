@@ -21,8 +21,8 @@ from kupfer import scheduler
 from kupfer.ui import keybindings
 from kupfer.ui import listen
 from kupfer.ui import uievents
-from kupfer.core import data
 from kupfer.core import settings
+from kupfer.core.datactrl import DataController
 from kupfer import pretty
 import kupfer.config
 import kupfer.environment
@@ -92,7 +92,7 @@ class WindowController(pretty.OutputMixin):
         self._statusicon_ai = None
         self._window_hide_timer = scheduler.Timer()
 
-    def _initialize(self, data_controller: data.DataController) -> None:
+    def _initialize(self, data_controller: DataController) -> None:
         self._window = Gtk.Window(
             type=Gtk.WindowType.TOPLEVEL,
             border_width=WINDOW_BORDER_WIDTH,
@@ -433,7 +433,7 @@ class WindowController(pretty.OutputMixin):
 
     def _result_callback(
         self,
-        sender: data.DataController,
+        sender: DataController,
         _result_type: ty.Any,
         ui_ctx: uievents.GUIEnvironmentContext,
     ) -> None:
@@ -742,7 +742,7 @@ class WindowController(pretty.OutputMixin):
             kserv1.connect("relay-keys", keyobj.relayed_keys)
 
         # Load data
-        data_controller = data.DataController()
+        data_controller = DataController()
         sch = scheduler.get_scheduler()
         sch.load()
         # Now create UI and display

@@ -16,6 +16,7 @@ from kupfer import scheduler
 from kupfer.ui import accelerators
 from kupfer.ui import uievents
 from kupfer.core import data
+from kupfer.core.datactrl import DataController
 from kupfer.core.search import Rankable
 from kupfer.core import settings, actionaccel
 from kupfer.obj.base import AnySource, KupferObject
@@ -98,9 +99,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
     __gtype_name__ = "Interface"
 
-    def __init__(
-        self, controller: data.DataController, window: Gtk.Window
-    ) -> None:
+    def __init__(self, controller: DataController, window: Gtk.Window) -> None:
         """
         @controller: DataController
         @window: toplevel window
@@ -1066,7 +1065,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         raise ValueError("invalid widget")
 
     def _object_stack_changed(
-        self, controller: data.DataController, pane: int  # real data.PaneSel
+        self, controller: DataController, pane: int  # real data.PaneSel
     ) -> None:
         """
         Stack of objects (for comma trick) changed in @pane
