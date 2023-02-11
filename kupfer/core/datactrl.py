@@ -9,6 +9,7 @@ import os
 import sys
 from contextlib import suppress
 import typing as ty
+from enum import IntEnum
 
 from gi.repository import GLib, GObject
 
@@ -71,20 +72,15 @@ class DataController(GObject.GObject, pretty.OutputMixin):
     def __init__(self):
         super().__init__()
 
-        self.source_pane = LeafPane()
-        self.object_pane = SecondaryObjectPane()
-        self.source_pane.connect("new-source", self._new_source)
-        self.object_pane.connect("new-source", self._new_source)
-        self.action_pane = PrimaryActionPane()
-        self._panectl_table: ty.Dict[PaneSel, LeafPane] = {
-            PaneSel.SOURCE: self.source_pane,
-            PaneSel.ACTION: self.action_pane,
-            PaneSel.OBJECT: self.object_pane,
-        }
-        for pane, ctl in list(self._panectl_table.items()):
+        self._source_pane = LeafPane()
+        self._object_pane = SecondaryObjectPane()
+        self._source_pane.connect("new-source", self._new_source)
+        self._object_pane.connect("new-source", self._new_source)
+        self._action_pane = PrimaryActionPane()
+        for pane, ctl in self._all_pane_ctl():
             ctl.connect("search-result", self._pane_search_result, pane)
 
-        self.mode: PaneMode | None = None
+        self._mode: PaneMode | None = None
         self._search_ids = itertools.count(1)
         self._latest_interaction = -1
         self._execution_context = (
@@ -103,6 +99,21 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         sch.connect("load", self._load)
         sch.connect("display", self._display)
         sch.connect("finish", self._finish)
+
+    def _get_panectl(self, pane: PaneSel) -> Pane:
+        if pane == PaneSel.SOURCE:
+            return self._source_pane
+        if pane == PaneSel.ACTION:
+            return self._action_pane
+        if pane == PaneSel.OBJECT:
+            return self._object_pane
+
+        raise ValueError(f"invalid pane {pane}")
+
+    def _all_pane_ctl(self) -> ty.Iterator[tuple[PaneSel, Pane]]:
+        yield PaneSel.SOURCE, self._source_pane
+        yield PaneSel.ACTION, self._action_pane
+        yield PaneSel.OBJECT, self._object_pane
 
     def _register_text_sources(
         self, plugin_id: str, srcs: ty.Iterable[TextSource]
@@ -283,7 +294,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
     def _reload_source_root(self) -> None:
         self.output_debug("Reloading source root")
         sctl = GetSourceController()
-        self.source_pane.source_rebase(sctl.root)
+        self._source_pane.source_rebase(sctl.root)
 
     def _plugin_catalog_changed(
         self, _setctl: ty.Any, _plugin_id: str, _toplevel: ty.Any
@@ -327,24 +338,24 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if not final_invocation:
             self._save_data_timer.set(DATA_SAVE_INTERVAL_S, self._save_data)
 
-    def _new_source(self, ctr: LeafPane, src: AnySource) -> None:
-        if ctr is self.source_pane:
+    def _new_source(self, ctr: Pane, src: AnySource) -> None:
+        if ctr is self._source_pane:
             pane = PaneSel.SOURCE
-        elif ctr is self.object_pane:
+        elif ctr is self._object_pane:
             pane = PaneSel.OBJECT
 
         root = ctr.is_at_source_root()
         self.emit("source-changed", pane, src, root)
 
     def reset(self) -> None:
-        self.source_pane.reset()
-        self.action_pane.reset()
+        self._source_pane.reset()
+        self._action_pane.reset()
 
     def soft_reset(self, pane: PaneSel) -> ty.Optional[AnySource]:
         if pane == PaneSel.ACTION:
             return None
 
-        panectl: LeafPane = self._panectl_table[pane]
+        panectl = self._get_panectl(pane)
         return panectl.soft_reset()
 
     def cancel_search(self, pane: PaneSel | None = None) -> None:
@@ -355,7 +366,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             else (PaneSel.SOURCE, PaneSel.ACTION, PaneSel.OBJECT)
         )
         for pane_ in panes:
-            ctl = self._panectl_table[pane_]
+            ctl = self._get_panectl(pane_)
             if ctl.outstanding_search > 0:
                 GLib.source_remove(ctl.outstanding_search)
                 ctl.outstanding_search = -1
@@ -379,7 +390,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         """
         self.cancel_search(pane)
         self._latest_interaction = self._execution_context.last_command_id
-        ctl = self._panectl_table[pane]
+        ctl = self._get_panectl(pane)
         ctl.outstanding_search_id = next(self._search_ids)
         wrapcontext = (ctl.outstanding_search_id, context)
         if interactive:
@@ -416,18 +427,18 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         """Select @item in @pane to self-update
         relevant places"""
         # If already selected, do nothing
-        panectl = self._panectl_table[pane]
+        panectl = self._get_panectl(pane)
         if item == panectl.get_selection():
             return
 
         self.cancel_search()
-        panectl.select(item)  # type: ignore
+        panectl.select(item)
         if pane == PaneSel.SOURCE:
             # populate actions
-            citem = self._get_pane_object_composed(self.source_pane)
-            self.action_pane.set_item(citem)
+            citem = self._get_pane_object_composed(self._source_pane)
+            self._action_pane.set_item(citem)
             self.search(PaneSel.ACTION, interactive=True)
-            if self.mode == PaneMode.SOURCE_ACTION_OBJECT:
+            if self._mode == PaneMode.SOURCE_ACTION_OBJECT:
                 self.object_stack_clear(PaneSel.OBJECT)
                 self._populate_third_pane()
 
@@ -439,26 +450,26 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             else:
                 newmode = PaneMode.SOURCE_ACTION
 
-            if newmode != self.mode:
-                self.mode = newmode
-                self.emit("mode-changed", self.mode, item)
+            if newmode != self._mode:
+                self._mode = newmode
+                self.emit("mode-changed", self._mode, item)
 
-            if self.mode == PaneMode.SOURCE_ACTION_OBJECT:
+            if self._mode == PaneMode.SOURCE_ACTION_OBJECT:
                 self._populate_third_pane()
 
     def _populate_third_pane(self) -> None:
-        citem = self._get_pane_object_composed(self.source_pane)
-        action = self.action_pane.get_selection()
+        citem = self._get_pane_object_composed(self._source_pane)
+        action = self._action_pane.get_selection()
         assert isinstance(action, Action)
-        self.object_pane.set_item_and_action(citem, action)
+        self._object_pane.set_item_and_action(citem, action)
         self.search(PaneSel.OBJECT, lazy=True)
 
     def get_can_enter_text_mode(self, pane: PaneSel) -> bool:
-        panectl = self._panectl_table[pane]
+        panectl = self._get_panectl(pane)
         return panectl.get_can_enter_text_mode()
 
     def get_should_enter_text_mode(self, pane: PaneSel) -> bool:
-        panectl = self._panectl_table[pane]
+        panectl = self._get_panectl(pane)
         return panectl.get_should_enter_text_mode()
 
     def validate(self) -> None:
@@ -473,7 +484,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         def valid_check(obj):
             return not (hasattr(obj, "is_valid") and not obj.is_valid())
 
-        for pane, panectl in self._panectl_table.items():
+        for pane, panectl in self._all_pane_ctl():
             sel = panectl.get_selection()
             if not valid_check(sel):
                 self.emit("pane-reset", pane, None)
@@ -488,10 +499,10 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         """Try to browse up to previous sources, from current
         source"""
         if pane == PaneSel.SOURCE:
-            return self.source_pane.browse_up()
+            return self._source_pane.browse_up()
 
         if pane == PaneSel.OBJECT:
-            return self.object_pane.browse_up()
+            return self._object_pane.browse_up()
 
         return False
 
@@ -503,7 +514,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             return
 
         # record used object if we browse down
-        panectl = self._panectl_table[pane]
+        panectl = self._get_panectl(pane)
         sel, key = panectl.get_selection(), panectl.get_latest_key()
         if panectl.browse_down(alternate=alternate):
             learn.record_search_hit(sel, key)
@@ -517,10 +528,12 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         leaf, action, sobject = self._get_current_command_objects()
 
         # register search to learning database
-        learn.record_search_hit(leaf, self.source_pane.get_latest_key())
-        learn.record_search_hit(action, self.action_pane.get_latest_key())
-        if sobject and self.mode == PaneMode.SOURCE_ACTION_OBJECT:
-            learn.record_search_hit(sobject, self.object_pane.get_latest_key())
+        learn.record_search_hit(leaf, self._source_pane.get_latest_key())
+        learn.record_search_hit(action, self._action_pane.get_latest_key())
+        if sobject and self._mode == PaneMode.SOURCE_ACTION_OBJECT:
+            learn.record_search_hit(
+                sobject, self._object_pane.get_latest_key()
+            )
 
         if not leaf or not action:
             return
@@ -545,7 +558,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         try:
             cmd_objs = execfile.parse_kfcom_file(filepath)
             assert len(cmd_objs) <= 3
-            ctx.run(*cmd_objs, ui_ctx=ui_ctx)
+            ctx.run(*cmd_objs, ui_ctx=ui_ctx)  # type: ignore
             return True
         except commandexec.ActionExecutionError:
             self.output_exc()
@@ -571,7 +584,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
         # FIXME: !!check; added * before objects
         self._decorate_object(*objects[:-1])
-        self._set_object_stack(pane, objects[:-1])
+        self._set_object_stack(pane, objects[:-1])  # type: ignore
         self._insert_object(pane, objects[-1])
 
     def _command_execution_result(
@@ -584,7 +597,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         result_type = commandexec.ExecResult(result_type)
         if result_type == commandexec.ExecResult.SOURCE:
             self.object_stack_clear_all()
-            self.source_pane.push_source(ret)
+            self._source_pane.push_source(ret)
         elif result_type == commandexec.ExecResult.OBJECT:
             self.object_stack_clear_all()
             self._insert_object(PaneSel.SOURCE, ret)
@@ -607,10 +620,10 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
     def find_object(self, url: str) -> None:
         """Find object with URI @url and select it in the first pane"""
-        sc = GetSourceController()
-        qf = qfurl.qfurl(url=url)
-        found = qf.resolve_in_catalog(sc.sources)
-        if found and not found == self.source_pane.get_selection():
+        sctrl = GetSourceController()
+        qfu = qfurl.qfurl(url=url)
+        found = qfu.resolve_in_catalog(sctrl.sources)
+        if found and not found == self._source_pane.get_selection():
             self._insert_object(PaneSel.SOURCE, found)
 
     def mark_as_default(self, pane: PaneSel) -> None:
@@ -621,9 +634,11 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if pane in (PaneSel.SOURCE, PaneSel.OBJECT):
             raise RuntimeError("Setting default on pane 1 or 3 not supported")
 
-        obj = self.source_pane.get_selection()
-        act = self.action_pane.get_selection()
+        obj = self._source_pane.get_selection()
+        act = self._action_pane.get_selection()
         assert obj and act
+        assert isinstance(act, Leaf)
+        assert isinstance(obj, Leaf)
         learn.set_correlation(act, obj)
 
     def get_object_has_affinity(self, pane: PaneSel) -> bool:
@@ -631,8 +646,9 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         Return ``True`` if we have any recorded affinity
         for the object selected in @pane
         """
-        panectl = self._panectl_table[pane]
+        panectl = self._get_panectl(pane)
         if selection := panectl.get_selection():
+            assert isinstance(selection, Leaf)
             return learn.get_object_has_affinity(selection)
 
         return False
@@ -642,8 +658,9 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         Erase all learned and configured affinity for
         the selection of @pane
         """
-        panectl = self._panectl_table[pane]
+        panectl = self._get_panectl(pane)
         if selection := panectl.get_selection():
+            assert isinstance(selection, Leaf)
             learn.erase_object_affinity(selection)
 
     def compose_selection(self) -> None:
@@ -652,10 +669,11 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             return
 
         self.object_stack_clear_all()
+        assert action
         obj = compose.ComposedLeaf(leaf, action, iobj)
         self._insert_object(PaneSel.SOURCE, obj)
 
-    def _get_pane_object_composed(self, pane):
+    def _get_pane_object_composed(self, pane: Pane) -> Leaf | None:
         objects = list(pane.object_stack)
         sel = pane.get_selection()
         if sel and sel not in objects:
@@ -665,21 +683,23 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             return None
 
         if len(objects) == 1:
-            return objects[0]
+            return objects[0]  # type: ignore
 
         return compose.MultipleLeaf(objects)
 
-    def _get_current_command_objects(self):
+    def _get_current_command_objects(
+        self,
+    ) -> tuple[Leaf, Action, Leaf | None] | tuple[None, None, None]:
         """
         Return a tuple of current (obj, action, iobj)
         """
-        objects = self._get_pane_object_composed(self.source_pane)
-        action = self.action_pane.get_selection()
+        objects = self._get_pane_object_composed(self._source_pane)
+        action: Action = self._action_pane.get_selection()  # type: ignore
         if objects is None or action is None:
             return (None, None, None)
 
-        iobjects = self._get_pane_object_composed(self.object_pane)
-        if self.mode == PaneMode.SOURCE_ACTION_OBJECT:
+        iobjects = self._get_pane_object_composed(self._object_pane)
+        if self._mode == PaneMode.SOURCE_ACTION_OBJECT:
             if not iobjects:
                 return (None, None, None)
 
@@ -688,59 +708,63 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
         return (objects, action, iobjects)
 
-    def _has_object_stack(self, pane):
+    def _has_object_stack(self, pane: PaneSel) -> bool:
         return pane in (PaneSel.SOURCE, PaneSel.OBJECT)
 
-    def _set_object_stack(self, pane, newstack):
-        panectl = self._panectl_table[pane]
-        panectl.object_stack[:] = list(newstack)
+    def _set_object_stack(
+        self, pane: PaneSel, newstack: list[KupferObject]
+    ) -> None:
+        panectl = self._get_panectl(pane)
+        panectl.object_stack = newstack
         self.emit("object-stack-changed", pane)
 
-    def object_stack_push(self, pane, object_):
+    def object_stack_push(self, pane: PaneSel, object_: KupferObject) -> bool:
         """
         Push @object_ onto the stack
         """
         if not self._has_object_stack(pane):
-            return
+            return False
 
-        panectl = self._panectl_table[pane]
+        panectl = self._get_panectl(pane)
         if object_ not in panectl.object_stack:
             panectl.object_stack_push(object_)
             self.emit("object-stack-changed", pane)
 
         return True
 
-    def object_stack_pop(self, pane):
+    def object_stack_pop(self, pane: PaneSel) -> bool:
         if not self._has_object_stack(pane):
-            return
+            return False
 
-        panectl = self._panectl_table[pane]
+        panectl = self._get_panectl(pane)
         obj = panectl.object_stack_pop()
         self._insert_object(pane, obj)
         self.emit("object-stack-changed", pane)
         return True
 
-    def object_stack_clear(self, pane):
+    def object_stack_clear(self, pane: PaneSel) -> None:
         if not self._has_object_stack(pane):
             return
 
-        panectl = self._panectl_table[pane]
-        panectl.object_stack[:] = []  # TODO: change
+        panectl = self._get_panectl(pane)
+        panectl.object_stack.clear()
         self.emit("object-stack-changed", pane)
 
-    def object_stack_clear_all(self):
+    def object_stack_clear_all(self) -> None:
         """
         Clear the object stack for all panes
         """
-        for pane in self._panectl_table:
-            self.object_stack_clear(pane)
+        # action don't have stack
+        # self.object_stack_clear(PaneSel.ACTION)
+        self.object_stack_clear(PaneSel.OBJECT)
+        self.object_stack_clear(PaneSel.SOURCE)
 
-    def get_object_stack(self, pane):
+    def get_object_stack(self, pane: PaneSel) -> list[KupferObject]:
         if not self._has_object_stack(pane):
-            return ()
+            return []
 
-        panectl = self._panectl_table[pane]
-        return panectl.object_stack
+        panectl = self._get_panectl(pane)
+        return panectl.object_stack  # type: ignore
 
 
 # pane cleared or set with new item
