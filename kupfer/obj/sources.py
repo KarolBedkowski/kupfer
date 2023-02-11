@@ -130,7 +130,7 @@ class DirectorySource(Source, PicklingHelperMixin, FilesystemWatchMixin):
     def get_description(self) -> str:
         return _("Directory source %s") % self.directory
 
-    def get_gicon(self) -> GdkPixbuf:
+    def get_gicon(self) -> GdkPixbuf.Pixbuf | None:
         return icons.get_gicon_for_file(self.directory)
 
     def get_icon_name(self) -> str:

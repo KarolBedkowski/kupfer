@@ -137,13 +137,15 @@ class KupferObject(metaclass=_BuiltinObject):
         """
         return None
 
-    def get_thumbnail(self, width: int, height: int) -> ty.Optional[GdkPixbuf]:
+    def get_thumbnail(
+        self, width: int, height: int
+    ) -> GdkPixbuf.Pixbuf | None:
         """Return pixbuf of size @width x @height if available
         Most objects will not implement this
         """
         return None
 
-    def get_pixbuf(self, icon_size: int) -> ty.Optional[GdkPixbuf]:
+    def get_pixbuf(self, icon_size: int) -> GdkPixbuf.Pixbuf | None:
         """
         Returns an icon in pixbuf format with dimension @icon_size
 
@@ -161,7 +163,7 @@ class KupferObject(metaclass=_BuiltinObject):
 
         return icons.get_icon_for_name(self.fallback_icon_name, icon_size)
 
-    def get_icon(self) -> ty.Optional[GdkPixbuf]:
+    def get_icon(self) -> GdkPixbuf.Pixbuf | None:
         """
         Returns an icon in GIcon format
 
@@ -179,7 +181,7 @@ class KupferObject(metaclass=_BuiltinObject):
 
         return icons.get_gicon_for_names(self.fallback_icon_name)
 
-    def get_gicon(self) -> ty.Optional[GdkPixbuf]:
+    def get_gicon(self) -> GdkPixbuf.Pixbuf | None:
         """Return GIcon, if there is one"""
         return None
 
@@ -189,7 +191,9 @@ class KupferObject(metaclass=_BuiltinObject):
         """
         return self.fallback_icon_name
 
+
 T = ty.TypeVar("T")
+
 
 def _aslist(seq: ty.Iterable[T]) -> ty.Collection[T]:
     """Return a list out of @seq, or seq if it is a list"""
@@ -292,7 +296,7 @@ class Action(KupferObject):
 
     def activate(
         self, leaf: ty.Any, iobj: ty.Any = None, ctx: ty.Any = None
-    ) -> Leaf|None:
+    ) -> Leaf | None:
         """Use this action with @obj and @iobj
 
         @leaf:  the direct object (Leaf)
@@ -596,5 +600,6 @@ class ActionGenerator:
     def get_actions_for_leaf(self, leaf: Leaf) -> ty.Iterable[Action]:
         """Return actions appropriate for given leaf."""
         return []
+
 
 AnySource = Source | TextSource

@@ -171,13 +171,13 @@ class FileLeaf(Leaf, TextRepresentation):
 
         return Leaf.content_source(self)
 
-    def get_thumbnail(self, width, height) -> ty.Optional[GdkPixbuf]:
+    def get_thumbnail(self, width, height) -> GdkPixbuf.Pixbuf | None:
         if self.is_dir():
             return None
 
         return icons.get_thumbnail_for_gfile(self.get_gfile(), width, height)
 
-    def get_gicon(self) -> ty.Optional[GdkPixbuf]:
+    def get_gicon(self) -> GdkPixbuf.Pixbuf | None:
         return icons.get_gicon_for_file(self.object)
 
     def get_icon_name(self) -> str:
@@ -248,7 +248,7 @@ class SourceLeaf(Leaf):
     def fallback_icon_name(self) -> str:
         return self.object.fallback_icon_name  # type: ignore
 
-    def get_gicon(self) -> ty.Optional[GdkPixbuf]:
+    def get_gicon(self) -> GdkPixbuf.Pixbuf | None:
         return self.object.get_gicon()
 
     def get_icon_name(self) -> str:
@@ -397,7 +397,7 @@ class AppLeaf(Leaf):
 
         return ret
 
-    def get_gicon(self) -> ty.Optional[GdkPixbuf]:
+    def get_gicon(self) -> GdkPixbuf.Pixbuf | None:
         return self.object.get_icon()
 
     def get_icon_name(self) -> str:
@@ -552,7 +552,7 @@ class RunnableLeaf(Leaf):
     def repr_key(self) -> ty.Any:
         return ""
 
-    def get_gicon(self) -> ty.Optional[GdkPixbuf]:
+    def get_gicon(self) -> GdkPixbuf.Pixbuf | None:
         iname = self.get_icon_name()
         if iname:
             return icons.get_gicon_with_fallbacks(None, (iname,))

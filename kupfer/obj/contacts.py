@@ -52,7 +52,7 @@ class ContactLeaf(GroupingLeaf):
     def get_text_representation(self) -> str:
         return self.get_description()  # type: ignore
 
-    def get_thumbnail(self, width: int, height: int) -> GdkPixbuf:
+    def get_thumbnail(self, width: int, height: int) -> GdkPixbuf.Pixbuf:
         if self.image:
             return icons.get_pixbuf_from_data(self.image, width, height)
 
@@ -104,7 +104,7 @@ class EmailContact(ContactLeaf):
     def get_description(self) -> str:
         return self.object[EMAIL_KEY]  #  type:ignore
 
-    def get_gicon(self) -> GdkPixbuf:
+    def get_gicon(self) -> GdkPixbuf.Pixbuf:
         return icons.ComposedIconSmall(self.get_icon_name(), "stock_mail")
 
 

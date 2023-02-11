@@ -92,7 +92,7 @@ class ComposedLeaf(RunnableLeaf):
         assert hasattr(ctx, "delegated_run")
         ctx.delegated_run(obj, action, iobj)
 
-    def get_gicon(self) -> ty.Optional[GdkPixbuf]:
+    def get_gicon(self) -> GdkPixbuf.Pixbuf | None:
         obj, action, _iobj = self.object
         return icons.ComposedIcon(obj.get_icon(), action.get_icon())
 
