@@ -37,13 +37,25 @@ from .data import (
     LeafPane,
     SecondaryObjectPane,
     PrimaryActionPane,
-    PaneSel,
-    PaneMode,
     WrapContext,
     Pane,
 )
 
 DATA_SAVE_INTERVAL_S = 3660
+
+
+# "Enums"
+# Which pane
+class PaneSel(IntEnum):
+    SOURCE = 1
+    ACTION = 2
+    OBJECT = 3
+
+
+# In two-pane or three-pane mode
+class PaneMode(IntEnum):
+    SOURCE_ACTION = 1
+    SOURCE_ACTION_OBJECT = 2
 
 
 class DataController(GObject.GObject, pretty.OutputMixin):

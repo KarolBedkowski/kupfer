@@ -16,7 +16,7 @@ from kupfer import scheduler
 from kupfer.ui import accelerators
 from kupfer.ui import uievents
 from kupfer.core import data
-from kupfer.core.datactrl import DataController
+from kupfer.core.datactrl import DataController, PaneSel, PaneMode
 from kupfer.core.search import Rankable
 from kupfer.core import settings, actionaccel
 from kupfer.obj.base import AnySource, KupferObject
@@ -503,7 +503,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         if pane := self._pane_for_widget(self.current):
             self._data_ctrl.search(pane, interactive=True)
 
-    def soft_reset(self, pane: data.PaneSel | None = None) -> None:
+    def soft_reset(self, pane: PaneSel | None = None) -> None:
         """Reset @pane or current pane context/source
         softly (without visible update), and unset _reset_to_toplevel marker.
         """
@@ -720,7 +720,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         if self.action.get_match_state() != State.MATCH:
             return False
 
-        self._data_ctrl.mark_as_default(data.PaneSel.ACTION)
+        self._data_ctrl.mark_as_default(PaneSel.ACTION)
         return True
 
     def erase_affinity_for_first_pane(self) -> bool:
@@ -730,7 +730,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         if self.search.get_match_state() != State.MATCH:
             return False
 
-        self._data_ctrl.erase_object_affinity(data.PaneSel.SOURCE)
+        self._data_ctrl.erase_object_affinity(PaneSel.SOURCE)
         return True
 
     def comma_trick(self) -> bool:
@@ -839,7 +839,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             yield ("\n".join(w_label), self.mark_as_default)
 
         if has_match:
-            if self._data_ctrl.get_object_has_affinity(data.PaneSel.SOURCE):
+            if self._data_ctrl.get_object_has_affinity(PaneSel.SOURCE):
                 # TRANS: Removing learned and/or configured bonus search score
                 yield (
                     _('Forget About "%s"')
@@ -852,10 +852,10 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     def _pane_reset(
         self,
         _controller: ty.Any,
-        pane: int,  # real data.PaneSel,
+        pane: int,  # real PaneSel,
         item: Rankable | None,
     ) -> None:
-        pane = data.PaneSel(pane)
+        pane = PaneSel(pane)
         wid = self._widget_for_pane(pane)
         if not item:
             wid.reset()
@@ -870,18 +870,18 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     def _new_source(
         self,
         _sender: ty.Any,
-        pane: int,  # real data.PaneSel,
+        pane: int,  # real PaneSel,
         source: AnySource,
         at_root: bool,
     ) -> None:
         """Notification about a new data source,
         (represented object for the self.search object
         """
-        pane = data.PaneSel(pane)
+        pane = PaneSel(pane)
         wid = self._widget_for_pane(pane)
         wid.set_source(source)
         wid.reset()
-        if pane == data.PaneSel.SOURCE:
+        if pane == PaneSel.SOURCE:
             self.switch_to_source()
             self.action.reset()
 
@@ -901,7 +901,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     def _show_hide_third(
         self, _ctr: ty.Any, mode: int, _ignored: ty.Any
     ) -> None:
-        if mode == data.PaneMode.SOURCE_ACTION_OBJECT:
+        if mode == PaneMode.SOURCE_ACTION_OBJECT:
             # use a delay before showing the third pane,
             # but set internal variable to "shown" already now
             self._pane_three_is_visible = True
@@ -1023,12 +1023,12 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     def _search_result(
         self,
         _sender: ty.Any,
-        pane: int,  # real data.PaneSel
+        pane: int,  # real PaneSel
         matchrankable: Rankable | None,
         matches: ty.Iterable[Rankable],
         key: str | None,
     ) -> None:
-        pane = data.PaneSel(pane)
+        pane = PaneSel(pane)
         # NOTE: "Always-matching" search.
         # If we receive an empty match, we ignore it, to retain the previous
         # results. The user is not served by being met by empty results.
@@ -1042,35 +1042,35 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         wid = self._widget_for_pane(pane)
         wid.update_match(key, matchrankable, matches)
 
-    def _widget_for_pane(self, pane: data.PaneSel) -> Search:
+    def _widget_for_pane(self, pane: PaneSel) -> Search:
         # we have only 3 panels, so this is better than lookup in dict
-        if pane == data.PaneSel.SOURCE:
+        if pane == PaneSel.SOURCE:
             return self.search
-        if pane == data.PaneSel.ACTION:
+        if pane == PaneSel.ACTION:
             return self.action
-        if pane == data.PaneSel.OBJECT:
+        if pane == PaneSel.OBJECT:
             return self.third
 
         raise ValueError(f"invalid pane value {pane}")
 
-    def _pane_for_widget(self, widget: GObject.GObject) -> data.PaneSel:
+    def _pane_for_widget(self, widget: GObject.GObject) -> PaneSel:
         # we have only 3 panels, so this is better than lookup in dict
         if widget == self.search:
-            return data.PaneSel.SOURCE
+            return PaneSel.SOURCE
         if widget == self.action:
-            return data.PaneSel.ACTION
+            return PaneSel.ACTION
         if widget == self.third:
-            return data.PaneSel.OBJECT
+            return PaneSel.OBJECT
 
         raise ValueError("invalid widget")
 
     def _object_stack_changed(
-        self, controller: DataController, pane: int  # real data.PaneSel
+        self, controller: DataController, pane: int  # real PaneSel
     ) -> None:
         """
         Stack of objects (for comma trick) changed in @pane
         """
-        pane = data.PaneSel(pane)
+        pane = PaneSel(pane)
         wid = self._widget_for_pane(pane)
         wid.set_object_stack(controller.get_object_stack(pane))
 
@@ -1126,7 +1126,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             objs = (Gio.File.new_for_uri(U).get_path() for U in fileuris)
 
         if leaves := list(map(FileLeaf, filter(None, objs))):
-            self._data_ctrl.insert_objects(data.PaneSel.SOURCE, leaves)  # type: ignore
+            self._data_ctrl.insert_objects(PaneSel.SOURCE, leaves)  # type: ignore
 
     def _reset_input_timer(self) -> None:
         # if input is slow/new, we reset

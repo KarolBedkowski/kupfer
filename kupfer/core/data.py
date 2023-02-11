@@ -2,7 +2,6 @@ from __future__ import annotations
 import itertools
 import operator
 import typing as ty
-from enum import IntEnum
 
 from gi.repository import GObject
 
@@ -21,20 +20,6 @@ from kupfer.core import actioncompat
 from kupfer.core import search
 from kupfer.core.search import Rankable
 from kupfer.core.sources import GetSourceController
-
-
-# "Enums"
-# Which pane
-class PaneSel(IntEnum):
-    SOURCE = 1
-    ACTION = 2
-    OBJECT = 3
-
-
-# In two-pane or three-pane mode
-class PaneMode(IntEnum):
-    SOURCE_ACTION = 1
-    SOURCE_ACTION_OBJECT = 2
 
 
 ItemCheckFunc = ty.Callable[
