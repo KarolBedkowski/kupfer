@@ -176,8 +176,8 @@ class ComposedIcon:
 
     def __init__(
         self,
-        baseicon: _GIcon | str,
-        emblem: _GIcon | str,
+        baseicon: GIcon | str,
+        emblem: GIcon | str,
         emblem_is_fallback: bool = False,
     ) -> None:
         self.minimum_icon_size = 48
@@ -195,7 +195,7 @@ class ComposedIcon:
 
 # pylint: disable=invalid-name
 def ComposedIconSmall(
-    baseicon: _GIcon | str, emblem: _GIcon | str, **kwargs: ty.Any
+    baseicon: GIcon | str, emblem: GIcon | str, **kwargs: ty.Any
 ) -> ComposedIcon:
     """Create composed icon for leaves with emblem visible on browser list"""
     icon = ComposedIcon(baseicon, emblem, **kwargs)
@@ -203,7 +203,7 @@ def ComposedIconSmall(
     return icon
 
 
-_GIcon = ty.Union[ComposedIcon, ThemedIcon, FileIcon]
+GIcon = ty.Union[ComposedIcon, ThemedIcon, FileIcon]
 
 
 def _render_composed_icon(
@@ -290,7 +290,7 @@ def get_pixbuf_from_file(
     return None
 
 
-def get_gicon_for_file(uri: str) -> GdkPixbuf.Pixbuf | None:
+def get_gicon_for_file(uri: str) -> GIcon | None:
     """
     Return a GIcon representing the file at
     the @uri, which can be *either* and uri or a path
@@ -312,7 +312,7 @@ def get_gicon_for_file(uri: str) -> GdkPixbuf.Pixbuf | None:
 
 
 def get_icon_for_gicon(
-    gicon: _GIcon, icon_size: int
+    gicon: GIcon, icon_size: int
 ) -> GdkPixbuf.Pixbuf | None:
     """
     Return a pixbuf of @icon_size for the @gicon
@@ -464,7 +464,7 @@ def get_icon_from_file(
     return None
 
 
-def is_good(gicon: _GIcon | None) -> bool:
+def is_good(gicon: GIcon | None) -> bool:
     """Return True if it is likely that @gicon will load a visible icon
     (icon name exists in theme, or icon references existing file)
     """
@@ -483,8 +483,8 @@ def is_good(gicon: _GIcon | None) -> bool:
 
 
 def get_gicon_with_fallbacks(
-    gicon: _GIcon | None, names: ty.Iterable[str]
-) -> _GIcon | None:
+    gicon: GIcon | None, names: ty.Iterable[str]
+) -> GIcon | None:
     if is_good(gicon):
         return gicon
 

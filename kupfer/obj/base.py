@@ -163,7 +163,7 @@ class KupferObject(metaclass=_BuiltinObject):
 
         return icons.get_icon_for_name(self.fallback_icon_name, icon_size)
 
-    def get_icon(self) -> GdkPixbuf.Pixbuf | None:
+    def get_icon(self) -> icons.GIcon | None:
         """
         Returns an icon in GIcon format
 
@@ -181,7 +181,7 @@ class KupferObject(metaclass=_BuiltinObject):
 
         return icons.get_gicon_for_names(self.fallback_icon_name)
 
-    def get_gicon(self) -> GdkPixbuf.Pixbuf | None:
+    def get_gicon(self) -> icons.GIcon | None:
         """Return GIcon, if there is one"""
         return None
 
