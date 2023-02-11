@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from contextlib import suppress
 import typing as ty
+import traceback
 
 import gi
 
@@ -29,7 +30,7 @@ from kupfer import plugin_support
 _PLUGIN_LIST_PAGE: ty.Final = 2
 
 # List icon pixel size
-LIST_ICON_SIZE: ty.Final = 18
+_LIST_ICON_SIZE: ty.Final = 18
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -55,7 +56,7 @@ def wrapped_label(text: str | None = None, maxwid: int = -1) -> Gtk.Label:
 
 def kobject_should_show(obj: KupferObject) -> bool:
     with suppress(AttributeError):
-        if leaf_repr := obj.get_leaf_repr():
+        if leaf_repr := obj.get_leaf_repr():  # type: ignore
             if hasattr(leaf_repr, "is_valid") and not leaf_repr.is_valid():
                 return False
 
@@ -221,8 +222,8 @@ class PreferencesWindowController(pretty.OutputMixin):
         checkcell.connect("toggled", self.on_checkplugin_toggled)
 
         icon_cell = Gtk.CellRendererPixbuf()
-        icon_cell.set_property("height", LIST_ICON_SIZE)
-        icon_cell.set_property("width", LIST_ICON_SIZE)
+        icon_cell.set_property("height", _LIST_ICON_SIZE)
+        icon_cell.set_property("width", _LIST_ICON_SIZE)
 
         icon_col = Gtk.TreeViewColumn("icon", icon_cell)
         icon_col.add_attribute(
@@ -258,7 +259,6 @@ class PreferencesWindowController(pretty.OutputMixin):
         self.dir_table.get_selection().set_mode(Gtk.SelectionMode.BROWSE)
 
         icon_cell = Gtk.CellRendererPixbuf()
-
         icon_col = Gtk.TreeViewColumn("icon", icon_cell)
         icon_col.add_attribute(icon_cell, "gicon", 1)
 
@@ -296,12 +296,12 @@ class PreferencesWindowController(pretty.OutputMixin):
         self._show_gkeybindings(setctl)
 
         # Connect to signals at the last point
-        builder.connect_signals(self)
+        builder.connect_signals(self)  # pylint: disable=no-member
 
     def _show_keybindings(self, setctl: settings.SettingsController) -> None:
         names = _KEYBINDING_NAMES
         self.keybind_store.clear()
-        for binding in sorted(names, key=lambda k: names[k]):
+        for binding in sorted(names, key=lambda k: str(names[k])):
             accel = setctl.get_global_keybinding(binding) or ""
             label = Gtk.accelerator_get_label(*Gtk.accelerator_parse(accel))
             self.keybind_store.append((names[binding], label, binding))
@@ -309,7 +309,7 @@ class PreferencesWindowController(pretty.OutputMixin):
     def _show_gkeybindings(self, setctl: settings.SettingsController) -> None:
         names = accelerators.ACCELERATOR_NAMES
         self.gkeybind_store.clear()
-        for binding in sorted(names, key=lambda k: names[k]):
+        for binding in sorted(names, key=lambda k: str(names[k])):
             accel = setctl.get_accelerator(binding) or ""
             label = Gtk.accelerator_get_label(*Gtk.accelerator_parse(accel))
             self.gkeybind_store.append((names[binding], label, binding))
@@ -495,7 +495,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         id_col = self.columns.index("plugin_id")
         for row in self.store:
             if plugin_id == row[id_col]:
-                return row.path  # type: ignore
+                return row.path
 
         raise ValueError(f"No such plugin {plugin_id}")
 
@@ -525,7 +525,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         title_label = Gtk.Label()
         m_localized_name = GLib.markup_escape_text(info["localized_name"])
         title_label.set_markup(f"<b><big>{m_localized_name}</big></b>")
-        version, description, author = plugins.get_plugin_attributes(
+        ver, description, author = plugins.get_plugin_attributes(
             plugin_id,
             (
                 "__version__",
@@ -543,7 +543,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         ):
             if val:
                 label = Gtk.Label()
-                label.set_alignment(0, 0)
+                label.set_alignment(0, 0)  # pylint: disable=no-member
                 label.set_markup(f"<b>{field}</b>")
                 infobox.pack_start(label, False, True, 0)
                 label = wrapped_label()
@@ -552,10 +552,10 @@ class PreferencesWindowController(pretty.OutputMixin):
                 label.set_selectable(True)
                 infobox.pack_start(label, False, True, 0)
 
-        if version:
+        if ver:
             label = wrapped_label()
             label.set_alignment(0, 0)
-            m_version = GLib.markup_escape_text(version)
+            m_version = GLib.markup_escape_text(ver)
             label.set_markup(f"<b>{_('Version')}:</b> {m_version}")
             label.set_selectable(True)
             infobox.pack_start(label, False, True, 0)
@@ -578,8 +578,6 @@ class PreferencesWindowController(pretty.OutputMixin):
             elif issubclass(etype, ImportError):
                 errstr = errmsg
             else:
-                import traceback
-
                 errstr = "".join(traceback.format_exception(*exc_info))
 
             label = wrapped_label()
@@ -595,7 +593,7 @@ class PreferencesWindowController(pretty.OutputMixin):
 
         elif not plugins.is_plugin_loaded(plugin_id):
             label = Gtk.Label()
-            label.set_alignment(0, 0)
+            label.set_alignment(0, 0)  # pylint: disable=no-member
             label.set_text(f"({_('disabled')})")
             about.pack_start(label, False, True, 0)
 
@@ -607,10 +605,10 @@ class PreferencesWindowController(pretty.OutputMixin):
         if oldch := self.plugin_about_parent.get_child():
             self.plugin_about_parent.remove(oldch)
 
-        vp = Gtk.Viewport()
-        vp.set_shadow_type(Gtk.ShadowType.NONE)
-        vp.add(about)
-        self.plugin_about_parent.add(vp)
+        vport = Gtk.Viewport()
+        vport.set_shadow_type(Gtk.ShadowType.NONE)  # pylint: disable=no-member
+        vport.add(about)  # pylint: disable=no-member
+        self.plugin_about_parent.add(vport)
         self.plugin_about_parent.show_all()
 
     def _make_plugin_info_widget(self, plugin_id: str) -> Gtk.Widget:
@@ -632,7 +630,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         def make_objects_frame(objs, title):
             frame_label = Gtk.Label()
             frame_label.set_markup(f"<b>{GLib.markup_escape_text(title)}</b>")
-            frame_label.set_alignment(0, 0)
+            frame_label.set_alignment(0, 0)  # pylint: disable=no-member
             objvbox = Gtk.VBox()
             objvbox.pack_start(frame_label, False, True, 0)
             objvbox.set_property("spacing", 3)
@@ -644,15 +642,12 @@ class PreferencesWindowController(pretty.OutputMixin):
                 hbox = Gtk.HBox()
                 hbox.set_property("spacing", 3)
                 obj = plugin_type()
-                name = str(obj)
-                desc = obj.get_description() or ""
-                gicon = obj.get_icon()
                 image = Gtk.Image()
-                image.set_property("gicon", gicon)
+                image.set_property("gicon", obj.get_icon())
                 image.set_property("pixel-size", small_icon_size)
                 hbox.pack_start(image, False, True, 0)
-                m_name = GLib.markup_escape_text(name)
-                m_desc = GLib.markup_escape_text(desc)
+                m_name = GLib.markup_escape_text(str(obj))  # name
+                m_desc = GLib.markup_escape_text(obj.get_description() or "")
                 name_label = (
                     f"{m_name}\n<small>{m_desc}</small>"
                     if m_desc
@@ -677,9 +672,8 @@ class PreferencesWindowController(pretty.OutputMixin):
 
                 hbox = Gtk.HBox()
                 hbox.set_property("spacing", 3)
-                gicon = leaf_repr.get_icon()
                 image = Gtk.Image()
-                image.set_property("gicon", gicon)
+                image.set_property("gicon", leaf_repr.get_icon())
                 image.set_property("pixel-size", small_icon_size // 2)
                 hbox.pack_start(Gtk.Label.new(_("Content of")), False, True, 0)
                 hbox.pack_start(image, False, True, 0)
@@ -724,11 +718,14 @@ class PreferencesWindowController(pretty.OutputMixin):
     def _get_plugin_credentials_callback(
         self, plugin_id: str, key: str
     ) -> ty.Callable[[Gtk.Widget], None]:
+        # TODO: check, not used / not working probably
         def callback(widget):
             setctl = settings.GetSettingsController()
             val_type = plugin_support.UserNamePassword
+            # pylint: disable=no-member
             backend_name = plugin_support.UserNamePassword.get_backend_name()
             assert backend_name
+            # pylint: disable=no-member
             if plugin_support.UserNamePassword.is_backend_encrypted():
                 information = (
                     _("Using encrypted password storage: %s") % backend_name
@@ -740,10 +737,12 @@ class PreferencesWindowController(pretty.OutputMixin):
                 setctl.get_plugin_config(plugin_id, key, val_type)
                 or plugin_support.UserNamePassword()
             )
+            # pylint: disable=no-member
             user_password = ask_user_credentials(
                 upass.username, upass.password, information
             )
             if user_password:
+                # pylint: disable=no-member
                 upass.username, upass.password = user_password
                 setctl.set_plugin_config(plugin_id, key, upass, val_type)
 
@@ -761,23 +760,20 @@ class PreferencesWindowController(pretty.OutputMixin):
         title_label = Gtk.Label()
         # TRANS: Plugin-specific configuration (header)
         title_label.set_markup(f"<b>{_('Configuration')}</b>")
-        title_label.set_alignment(0, 0)
+        title_label.set_alignment(0, 0)  # pylint: disable=no-member
 
         vbox = Gtk.VBox()
         vbox.pack_start(title_label, False, True, 0)
         # vbox.set_property("spacing", 5)
 
         for setting in plugin_settings or ():
-            typ = plugin_settings.get_value_type(setting)
-            alternatives = plugin_settings.get_alternatives(setting)
-            tooltip = plugin_settings.get_tooltip(setting)
             hbox = Gtk.HBox()
             hbox.set_property("spacing", 10)
-            if tooltip:
+            if tooltip := plugin_settings.get_tooltip(setting):
                 hbox.set_tooltip_text(tooltip)
 
             label = plugin_settings.get_label(setting)
-
+            typ = plugin_settings.get_value_type(setting)
             if issubclass(typ, plugin_support.UserNamePassword):
                 wid = Gtk.Button(label or _("Set username and password"))
                 wid.connect(
@@ -791,7 +787,7 @@ class PreferencesWindowController(pretty.OutputMixin):
             label_wid = wrapped_label(label, maxwid=200)
             label_wid.set_xalign(0.0)
             if issubclass(typ, str):
-                if alternatives:
+                if alternatives := plugin_settings.get_alternatives(setting):
                     wid = Gtk.ComboBoxText.new()
                     val = plugin_settings[setting]
                     active_index = -1
@@ -875,7 +871,9 @@ class PreferencesWindowController(pretty.OutputMixin):
             ),
         )
         chooser_dialog.set_select_multiple(True)
+        # pylint: disable=no-member
         if chooser_dialog.run() == Gtk.ResponseType.ACCEPT:
+            # pylint: disable=no-member
             for selected_dir in chooser_dialog.get_filenames():
                 self._add_directory_model(selected_dir, store=True)
 
@@ -1121,9 +1119,10 @@ class PreferencesWindowController(pretty.OutputMixin):
             _("Reset"),
             Gtk.ResponseType.ACCEPT,
         )
-        result = dlg.run() == Gtk.ResponseType.ACCEPT
+        # pylint: disable=no-member
+        result: bool = dlg.run() == Gtk.ResponseType.ACCEPT
         dlg.destroy()
-        return result  # type: ignore
+        return result
 
 
 _CONF_KEYS_LIST_COLUMNS = [
@@ -1149,7 +1148,7 @@ def _create_conf_keys_list() -> tuple[Gtk.TreeView, Gtk.ListStore]:
     return keybind_table, keybind_store
 
 
-def GetPreferencesWindowController() -> PreferencesWindowController:
+def get_preferences_window_controller() -> PreferencesWindowController:
     return PreferencesWindowController.instance()
 
 
@@ -1182,8 +1181,8 @@ class SourceListController:
         checkcell.connect("toggled", self.on_checktoplevel_enabled)
 
         icon_cell = Gtk.CellRendererPixbuf()
-        icon_cell.set_property("height", LIST_ICON_SIZE)
-        icon_cell.set_property("width", LIST_ICON_SIZE)
+        icon_cell.set_property("height", _LIST_ICON_SIZE)
+        icon_cell.set_property("width", _LIST_ICON_SIZE)
 
         icon_col = Gtk.TreeViewColumn("icon", icon_cell)
         icon_col.add_attribute(icon_cell, "gicon", self.columns.index("icon"))

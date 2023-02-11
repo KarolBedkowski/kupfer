@@ -86,7 +86,7 @@ def show_about_dialog(
 def show_preferences(ctxenv: GUIEnvironmentContext) -> None:
     from kupfer.ui import preferences
 
-    win = preferences.GetPreferencesWindowController()
+    win = preferences.get_preferences_window_controller()
     if ctxenv:
         win.show_on_screen(ctxenv.get_timestamp(), ctxenv.get_screen())
     else:
@@ -96,5 +96,5 @@ def show_preferences(ctxenv: GUIEnvironmentContext) -> None:
 def show_plugin_info(
     plugin_id: str, ctxenv: ty.Optional[GUIEnvironmentContext] = None
 ) -> None:
-    prefs = preferences.GetPreferencesWindowController()
+    prefs = preferences.get_preferences_window_controller()
     prefs.show_focus_plugin(plugin_id, _get_time(ctxenv))
