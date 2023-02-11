@@ -29,7 +29,7 @@ else:
     pretty.print_debug(__name__, "Keybinder disabled")
 
 
-def GetKeyboundObject():
+def get_keybound_object():
     """Get the shared instance"""
     return KeyboundObject.instance()
 
@@ -93,7 +93,7 @@ GObject.signal_new(
     ),
 )
 
-_CURRENTLY_BOUND : dict[int, str|None] = {}
+_CURRENTLY_BOUND: dict[int, str | None] = {}
 
 
 def is_available():
@@ -113,7 +113,7 @@ def get_all_bound_keys() -> list[str]:
     return list(filter(bool, _CURRENTLY_BOUND.values()))
 
 
-def get_current_event_time() -> int|float:
+def get_current_event_time() -> int | float:
     "Return current event time as given by keybinder"
     if Keybinder is None:
         return 0
@@ -121,15 +121,17 @@ def get_current_event_time() -> int|float:
     return Keybinder.get_current_event_time()
 
 
-def _register_bound_key(keystr: str|None, target: int) -> None:
+def _register_bound_key(keystr: str | None, target: int) -> None:
     _CURRENTLY_BOUND[target] = keystr
 
 
-def get_currently_bound_key(target:int=KEYBINDING_DEFAULT)->str|None:
+def get_currently_bound_key(target: int = KEYBINDING_DEFAULT) -> str | None:
     return _CURRENTLY_BOUND.get(target)
 
 
-def bind_key(keystr:str|None, keybinding_target:int=KEYBINDING_DEFAULT)->bool:
+def bind_key(
+    keystr: str | None, keybinding_target: int = KEYBINDING_DEFAULT
+) -> bool:
     """
     Bind @keystr, unbinding any previous key for @keybinding_target.
     If @keystr is a false value, any previous key will be unbound.
@@ -147,13 +149,13 @@ def bind_key(keystr:str|None, keybinding_target:int=KEYBINDING_DEFAULT)->bool:
     if keystr:
 
         def callback(keystr: str) -> bool:
-            GetKeyboundObject().keybinding(keybinding_target)
+            get_keybound_object().keybinding(keybinding_target)
             return False
 
         try:
             succ = Keybinder.bind(keystr, callback)
             pretty.print_debug(__name__, "binding", repr(keystr))
-            GetKeyboundObject().emit_bound_key_changed(keystr, True)
+            get_keybound_object().emit_bound_key_changed(keystr, True)
         except KeyError as exc:
             pretty.print_error(__name__, exc)
             succ = False
@@ -163,14 +165,14 @@ def bind_key(keystr:str|None, keybinding_target:int=KEYBINDING_DEFAULT)->bool:
         if old_keystr and old_keystr != keystr:
             Keybinder.unbind(old_keystr)
             pretty.print_debug(__name__, "unbinding", repr(old_keystr))
-            GetKeyboundObject().emit_bound_key_changed(old_keystr, False)
+            get_keybound_object().emit_bound_key_changed(old_keystr, False)
 
         _register_bound_key(keystr, keybinding_target)
 
     return succ
 
 
-def _is_sane_keybinding(keystr:str|None)->bool:
+def _is_sane_keybinding(keystr: str | None) -> bool:
     "Refuse keys that we absolutely do not want to bind"
     if keystr is None:
         return True

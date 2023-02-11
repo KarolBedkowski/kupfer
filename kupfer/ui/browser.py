@@ -713,7 +713,7 @@ class WindowController(pretty.OutputMixin):
                 + ("success" if succ else "failed")
             )
 
-        keyobj = keybindings.GetKeyboundObject()
+        keyobj = keybindings.get_keybound_object()
         keyobj.connect("keybinding", self._key_binding)
 
         signal.signal(signal.SIGINT, self._sigterm)
@@ -745,7 +745,7 @@ class WindowController(pretty.OutputMixin):
             pass
 
         if kserv1:
-            keyobj = keybindings.GetKeyboundObject()
+            keyobj = keybindings.get_keybound_object()
             keyobj.connect(
                 "bound-key-changed",
                 lambda x, y, z: kserv1.BoundKeyChanged(y, z),

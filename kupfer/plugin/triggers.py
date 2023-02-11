@@ -65,7 +65,7 @@ class Triggers(Source):
 
     def initialize(self):
         Triggers.instance = self
-        keybindings.GetKeyboundObject().connect(
+        keybindings.get_keybound_object().connect(
             "keybinding", self.keybinding_callback
         )
         for target, (keystr, _name, _id) in self.trigger_table.items():
