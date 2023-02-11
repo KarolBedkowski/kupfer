@@ -34,6 +34,7 @@ LIST_ICON_SIZE: ty.Final = 18
 if ty.TYPE_CHECKING:
     _ = str
 
+
 # A major HACK
 # http://tadeboro.blogspot.com/2009/05/wrapping-adn-resizing-gtklabel.html
 def _cb_allocate(
@@ -87,9 +88,9 @@ _KEYBINDING_NAMES: dict[str, str] = {
     "magickeybinding": _("Show with Selection"),
 }
 
-_KEYBINDING_TARGETS: dict[str, int] = {
-    "keybinding": keybindings.KEYBINDING_DEFAULT,
-    "magickeybinding": keybindings.KEYBINDING_MAGIC,
+_KEYBINDING_TARGETS: dict[str, keybindings.KeybindingTarget] = {
+    "keybinding": keybindings.KeybindingTarget.DEFAULT,
+    "magickeybinding": keybindings.KeybindingTarget.MAGIC,
 }
 
 _KUPFER_DESKTOP: ty.Final = "kupfer.desktop"

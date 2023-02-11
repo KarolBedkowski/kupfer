@@ -1,32 +1,35 @@
 from __future__ import annotations
 
 import typing as ty
+from enum import IntEnum
 
 import gi
-from gi.repository import GObject, Gdk, Gtk
+from gi.repository import GObject, Gdk
 
-from kupfer import pretty
 from kupfer import environment
+from kupfer import pretty
 
-# TODO: Enum
-KEYBINDING_DEFAULT = 1
-KEYBINDING_MAGIC = 2
+Keybinder = None  # pylint: disable=invalid-name
+if environment.allows_keybinder():
+    try:
+        gi.require_version("Keybinder", "3.0")
+
+        from gi.repository import Keybinder
+
+        Keybinder.init()
+    except (ValueError, ImportError):
+        pretty.print_debug(__name__, "Keybinder 3.0 not available in gi")
+
+else:
+    pretty.print_debug(__name__, "Keybinder disabled")
 
 KEYRANGE_RESERVED = (3, 0x1000)
 KEYRANGE_TRIGGERS = (0x1000, 0x2000)
 
-Keybinder = None
-if environment.allows_keybinder():
-    try:
-        gi.require_version("Keybinder", "3.0")
-    except ValueError:
-        pretty.print_debug(__name__, "Keybinder 3.0 not available in gi")
-    else:
-        from gi.repository import Keybinder
 
-        Keybinder.init()
-else:
-    pretty.print_debug(__name__, "Keybinder disabled")
+class KeybindingTarget(IntEnum):
+    DEFAULT = 1
+    MAGIC = 2
 
 
 def get_keybound_object():
@@ -110,7 +113,7 @@ def is_available():
 
 
 def get_all_bound_keys() -> list[str]:
-    return list(filter(bool, _CURRENTLY_BOUND.values()))
+    return list(filter(None, _CURRENTLY_BOUND.values()))
 
 
 def get_current_event_time() -> int | float:
@@ -125,19 +128,20 @@ def _register_bound_key(keystr: str | None, target: int) -> None:
     _CURRENTLY_BOUND[target] = keystr
 
 
-def get_currently_bound_key(target: int = KEYBINDING_DEFAULT) -> str | None:
+def _get_currently_bound_key(
+    target: KeybindingTarget = KeybindingTarget.DEFAULT,
+) -> str | None:
     return _CURRENTLY_BOUND.get(target)
 
 
 def bind_key(
-    keystr: str | None, keybinding_target: int = KEYBINDING_DEFAULT
+    keystr: str | None,
+    keybinding_target: KeybindingTarget = KeybindingTarget.DEFAULT,
 ) -> bool:
     """
     Bind @keystr, unbinding any previous key for @keybinding_target.
     If @keystr is a false value, any previous key will be unbound.
     """
-    keybinding_target = int(keybinding_target)
-
     if Keybinder is None:
         return False
 
@@ -161,7 +165,7 @@ def bind_key(
             succ = False
 
     if succ:
-        old_keystr = get_currently_bound_key(keybinding_target)
+        old_keystr = _get_currently_bound_key(keybinding_target)
         if old_keystr and old_keystr != keystr:
             Keybinder.unbind(old_keystr)
             pretty.print_debug(__name__, "unbinding", repr(old_keystr))

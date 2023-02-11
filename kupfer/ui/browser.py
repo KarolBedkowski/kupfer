@@ -579,10 +579,10 @@ class WindowController(pretty.OutputMixin):
         timestamp: int,
     ) -> None:
         """Keybinding activation callback"""
-        if keybinding_number == keybindings.KEYBINDING_DEFAULT:
+        if keybinding_number == keybindings.KeybindingTarget.DEFAULT:
             self._on_show_hide(keyobj, display, timestamp)
 
-        elif keybinding_number == keybindings.KEYBINDING_MAGIC:
+        elif keybinding_number == keybindings.KeybindingTarget.MAGIC:
             self._on_present(keyobj, display, timestamp)
             self._interface.select_selected_text()
             self._interface.select_selected_file()
@@ -706,7 +706,7 @@ class WindowController(pretty.OutputMixin):
 
         if magickeystr := setctl.get_magic_keybinding():
             succ = keybindings.bind_key(
-                magickeystr, keybindings.KEYBINDING_MAGIC
+                magickeystr, keybindings.KeybindingTarget.MAGIC
             )
             self.output_debug(
                 f"Trying to register {magickeystr} to spawn kupfer.. "
@@ -795,8 +795,8 @@ class WindowController(pretty.OutputMixin):
             if kserv:
                 kserv.unregister()
 
-        keybindings.bind_key(None, keybindings.KEYBINDING_DEFAULT)
-        keybindings.bind_key(None, keybindings.KEYBINDING_MAGIC)
+        keybindings.bind_key(None, keybindings.KeybindingTarget.DEFAULT)
+        keybindings.bind_key(None, keybindings.KeybindingTarget.MAGIC)
 
         do_main_iterations(100)
         # if we are still waiting, print a message
