@@ -101,7 +101,7 @@ class Learning:
 _REGISTER: ty.Dict[str, ty.Union[Mnemonics, ty.Dict[str, str]]] = {}
 
 
-def record_search_hit(obj: ty.Any, key: str|None = None) -> None:
+def record_search_hit(obj: ty.Any, key: str | None = None) -> None:
     """
     Record that KupferObject @obj was used, with the optional
     search term @key recording
@@ -139,7 +139,7 @@ def get_record_score(obj: ty.Any, key: str = "") -> float:
     return fav + mnscore
 
 
-def get_correlation_bonus(obj: KupferObject, for_leaf: Leaf|None) -> int:
+def get_correlation_bonus(obj: KupferObject, for_leaf: Leaf | None) -> int:
     """
     Get the bonus rank for @obj when used with @for_leaf
     """

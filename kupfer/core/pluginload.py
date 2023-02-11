@@ -42,22 +42,22 @@ def load_plugin(plugin_id: str) -> PluginDescription:
 
     text_sources.extend(load_plugin_sources(item, text_sources_attribute))
     action_decorators.extend(
-        load_plugin_sources(item, action_decorators_attribute)
+        load_plugin_sources(item, action_decorators_attribute)  # type: ignore
     )
     action_generators.extend(
-        load_plugin_sources(item, action_generators_attribute)
+        load_plugin_sources(item, action_generators_attribute)  # type: ignore
     )
 
     # Register all Sources as (potential) content decorators
     content_decorators.extend(
-        load_plugin_sources(item, sources_attribute, instantiate=False)
+        load_plugin_sources(item, sources_attribute, instantiate=False)  # type: ignore
     )
     content_decorators.extend(
-        load_plugin_sources(
+        load_plugin_sources(  # type: ignore
             item, content_decorators_attribute, instantiate=False
         )
     )
-    sources.extend(load_plugin_sources(item))
+    sources.extend(load_plugin_sources(item))  # type: ignore
 
     desc = PluginDescription()
 

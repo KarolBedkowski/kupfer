@@ -4,10 +4,11 @@ import pkgutil
 import sys
 import textwrap
 import typing as ty
+from enum import Enum
 
 from kupfer import pretty
 from kupfer.core import settings
-from kupfer.obj.base import Source, Action
+from kupfer.obj.base import KupferObject
 
 # import kupfer.icons on demand later
 
@@ -17,6 +18,19 @@ content_decorators_attribute = "__kupfer_contents__"
 action_decorators_attribute = "__kupfer_actions__"
 action_generators_attribute = "__kupfer_action_generators__"
 settings_attribute = "__kupfer_settings__"
+
+initialize_attribute = "initialize_plugin"
+finalize_attribute = "finalize_plugin"
+
+
+class PluginAttr(Enum):
+    SOURCES = "__kupfer_sources__"
+    TEXT_SOURCES = "__kupfer_text_sources__"
+    CONTENT_DECORATORS = "__kupfer_contents__"
+    ACTION_DECORATORS = "__kupfer_actions__"
+    ACTION_GENERATORS = "__kupfer_action_generators__"
+    SETTINGS = "__kupfer_settings__"
+
 
 initialize_attribute = "initialize_plugin"
 finalize_attribute = "finalize_plugin"
@@ -314,6 +328,7 @@ def get_plugin_attributes(
                 pretty.print_info(__name__, f"Plugin {plugin_name}: {exc}")
 
             yield None
+
         else:
             yield obj
 
@@ -329,7 +344,10 @@ def get_plugin_attribute(plugin_name: str, attr: str) -> ty.Optional[ty.Any]:
 
 def load_plugin_sources(
     plugin_name: str, attr: str = sources_attribute, instantiate: bool = True
-) -> ty.Iterable[Source] | ty.Iterable[Action]:
+) -> ty.Iterable[KupferObject]:
+    """Load plugin sources or actions or other type (selected by @attr).
+    Name is misleading.
+    """
     sources = get_plugin_attribute(plugin_name, attr)
     if not sources:
         return
