@@ -13,10 +13,10 @@ from gi.repository.Gio import (
 from kupfer import datatools
 from kupfer import pretty
 from kupfer import scheduler
+from kupfer.core import settings
 from kupfer.kupferstring import tounicode
 
-ICON_CACHE: dict[int, datatools.LruCache[str, GdkPixbuf]] = {}
-
+ICON_CACHE: dict[int, datatools.LruCache[str, GdkPixbuf.Pixbuf]] = {}
 # number of elements in icon lru cache (per icon size)
 ICON_CACHE_SIZE = 15
 
@@ -49,7 +49,7 @@ _local_theme.set_search_path([])
 def parse_load_icon_list(
     icon_list_data: bytes,
     get_data_func: ty.Callable[[str], bytes],
-    plugin_name: ty.Optional[str] = None,
+    plugin_name: str | None = None,
 ) -> None:
     """
     @icon_list_data: A bytestring whose lines identify icons
@@ -86,7 +86,7 @@ def parse_load_icon_list(
 
 
 def _load_icon_from_func(
-    plugin_name: ty.Optional[str],
+    plugin_name: str | None,
     icon_name: str,
     get_data_func: ty.Callable[[str], bytes],
     override: bool,
@@ -128,7 +128,7 @@ def _load_icon_from_func(
     kupfer_locally_installed_names.add(icon_name)
 
 
-def get_icon(key: str, icon_size: int) -> GdkPixbuf:
+def get_icon(key: str, icon_size: int) -> ty.Iterator[GdkPixbuf.Pixbuf]:
     """
     try retrieve icon in cache
     is a generator so it can be concisely called with a for loop
@@ -141,7 +141,7 @@ def get_icon(key: str, icon_size: int) -> GdkPixbuf:
     yield rec
 
 
-def store_icon(key: str, icon_size: int, icon: GdkPixbuf) -> None:
+def store_icon(key: str, icon_size: int, icon: GdkPixbuf.Pixbuf) -> None:
     """
     Store an icon in cache. It must not have been stored before
     """
@@ -152,7 +152,9 @@ def store_icon(key: str, icon_size: int, icon: GdkPixbuf) -> None:
     ICON_CACHE[icon_size][key] = icon
 
 
-def _get_icon_dwim(icon: ty.Union[Icon, str], icon_size: int) -> GdkPixbuf:
+def _get_icon_dwim(
+    icon: ty.Union[Icon, str], icon_size: int
+) -> GdkPixbuf.Pixbuf | None:
     """Make an icon at @icon_size where
     @icon can be either an icon name, or a gicon
     """
@@ -165,6 +167,7 @@ def _get_icon_dwim(icon: ty.Union[Icon, str], icon_size: int) -> GdkPixbuf:
     return None
 
 
+# pylint: disable=too-few-public-methods
 class ComposedIcon:
     """
     A composed icon, which kupfer will render to pixbuf as
@@ -173,24 +176,26 @@ class ComposedIcon:
 
     def __init__(
         self,
-        baseicon: GdkPixbuf,
-        emblem: GdkPixbuf,
+        baseicon: _GIcon | str,
+        emblem: _GIcon | str,
         emblem_is_fallback: bool = False,
     ) -> None:
         self.minimum_icon_size = 48
         self.baseicon = baseicon
         self.emblemicon = emblem
 
-    @classmethod
-    def new(cls, *args, **kwargs):
-        """Contstuct a composed icon from @baseicon and @emblem,
-        which may be GIcons or icon names (strings)
-        """
-        return cls(*args, **kwargs)
+
+#    @classmethod
+#    def new(cls, *args, **kwargs):
+#        """Contstuct a composed icon from @baseicon and @emblem,
+#        which may be GIcons or icon names (strings)
+#        """
+#        return cls(*args, **kwargs)
 
 
+# pylint: disable=invalid-name
 def ComposedIconSmall(
-    baseicon: GdkPixbuf, emblem: GdkPixbuf, **kwargs: ty.Any
+    baseicon: _GIcon | str, emblem: _GIcon | str, **kwargs: ty.Any
 ) -> ComposedIcon:
     """Create composed icon for leaves with emblem visible on browser list"""
     icon = ComposedIcon(baseicon, emblem, **kwargs)
@@ -203,7 +208,7 @@ _GIcon = ty.Union[ComposedIcon, ThemedIcon, FileIcon]
 
 def _render_composed_icon(
     composed_icon: ComposedIcon, icon_size: int
-) -> GdkPixbuf:
+) -> GdkPixbuf.Pixbuf | None:
     # If it's too small, render as fallback icon
     if icon_size < composed_icon.minimum_icon_size:
         return _get_icon_for_standard_gicon(composed_icon.baseicon, icon_size)
@@ -239,7 +244,7 @@ def _render_composed_icon(
 
 def get_thumbnail_for_gfile(
     gfile: Gio.File, width: int = -1, height: int = -1
-) -> GdkPixbuf:
+) -> GdkPixbuf.Pixbuf | None:
     """
     Return a Pixbuf thumbnail for the file at
     gfile: Gio.File
@@ -259,8 +264,8 @@ def get_thumbnail_for_gfile(
 
 
 def get_pixbuf_from_file(
-    thumb_path: str|None, width: int = -1, height: int = -1
-) -> ty.Optional[GdkPixbuf]:
+    thumb_path: str | None, width: int = -1, height: int = -1
+) -> GdkPixbuf.Pixbuf | None:
     """
     Return a Pixbuf thumbnail for the file at @thumb_path
     sized @width x @height
@@ -285,7 +290,7 @@ def get_pixbuf_from_file(
     return None
 
 
-def get_gicon_for_file(uri: str) -> ty.Optional[GdkPixbuf]:
+def get_gicon_for_file(uri: str) -> GdkPixbuf.Pixbuf | None:
     """
     Return a GIcon representing the file at
     the @uri, which can be *either* and uri or a path
@@ -308,7 +313,7 @@ def get_gicon_for_file(uri: str) -> ty.Optional[GdkPixbuf]:
 
 def get_icon_for_gicon(
     gicon: _GIcon, icon_size: int
-) -> ty.Optional[GdkPixbuf]:
+) -> GdkPixbuf.Pixbuf | None:
     """
     Return a pixbuf of @icon_size for the @gicon
 
@@ -329,7 +334,7 @@ def get_icon_for_gicon(
 
 def _get_icon_for_standard_gicon(
     gicon: ty.Any, icon_size: int
-) -> ty.Optional[GdkPixbuf]:
+) -> GdkPixbuf.Pixbuf | None:
     """Render ThemedIcon and FileIcon"""
     if isinstance(gicon, FileIcon):
         ifile = gicon.get_file()
@@ -351,7 +356,7 @@ class IconRenderer:
     @classmethod
     def pixbuf_for_name(
         cls, icon_name: str, icon_size: int
-    ) -> ty.Optional[GdkPixbuf]:
+    ) -> GdkPixbuf.Pixbuf | None:
         if icon_name in kupfer_locally_installed_names:
             with suppress(GError):
                 return _local_theme.load_icon(
@@ -374,7 +379,7 @@ class IconRenderer:
     @classmethod
     def pixbuf_for_file(
         cls, file_path: str, icon_size: int
-    ) -> ty.Optional[GdkPixbuf]:
+    ) -> GdkPixbuf.Pixbuf | None:
         try:
             icon = GdkPixbuf.Pixbuf.new_from_file_at_size(
                 file_path, icon_size, icon_size
@@ -387,12 +392,10 @@ class IconRenderer:
         return None
 
 
-_ICON_RENDERER = IconRenderer
+_ICON_RENDERER = IconRenderer  # pylint: disable=invalid-name
 
 
 def _setup_icon_renderer(_sched: ty.Any) -> None:
-    from kupfer.core import settings
-
     setctl = settings.GetSettingsController()
     setctl.connect("alternatives-changed::icon_renderer", _icon_render_change)
     setctl.connect("value-changed::tools.icon_renderer", _icon_render_change)
@@ -417,8 +420,8 @@ scheduler.get_scheduler().connect("loaded", _setup_icon_renderer)
 def get_icon_for_name(
     icon_name: str,
     icon_size: int,
-    icon_names: ty.Optional[ty.Iterable[str]] = None,
-) -> ty.Optional[GdkPixbuf]:
+    icon_names: ty.Iterable[str] | None = None,
+) -> GdkPixbuf.Pixbuf | None:
     for i in get_icon(icon_name, icon_size):
         return i
 
@@ -449,7 +452,7 @@ def get_icon_for_name(
 
 def get_icon_from_file(
     icon_file: str, icon_size: int
-) -> ty.Optional[GdkPixbuf]:
+) -> GdkPixbuf.Pixbuf | None:
     # try to load from cache
     for icon in get_icon(icon_file, icon_size):
         return icon
@@ -461,7 +464,7 @@ def get_icon_from_file(
     return None
 
 
-def is_good(gicon: _GIcon|None) -> bool:
+def is_good(gicon: _GIcon | None) -> bool:
     """Return True if it is likely that @gicon will load a visible icon
     (icon name exists in theme, or icon references existing file)
     """
@@ -480,8 +483,8 @@ def is_good(gicon: _GIcon|None) -> bool:
 
 
 def get_gicon_with_fallbacks(
-    gicon: _GIcon|None, names: ty.Iterable[str]
-) -> ty.Optional[_GIcon]:
+    gicon: _GIcon | None, names: ty.Iterable[str]
+) -> _GIcon | None:
     if is_good(gicon):
         return gicon
 
@@ -494,7 +497,7 @@ def get_gicon_with_fallbacks(
     return None
 
 
-def get_good_name_for_icon_names(names: ty.Iterable[str]) -> ty.Optional[str]:
+def get_good_name_for_icon_names(names: ty.Iterable[str]) -> str | None:
     """Return first name in @names that exists
     in current icon theme, or None
     """
@@ -511,9 +514,9 @@ def get_gicon_for_names(*names: str) -> ThemedIcon:
 
 def get_pixbuf_from_data(
     data: bytes,
-    width: ty.Optional[int] = None,
-    height: ty.Optional[int] = None,
-) -> GdkPixbuf:
+    width: int | None = None,
+    height: int | None = None,
+) -> GdkPixbuf.Pixbuf:
     """Create pixbuf object from data with optional scaling
 
     @data: picture as raw data
@@ -524,7 +527,9 @@ def get_pixbuf_from_data(
 
     if width and height:
 
-        def set_size(img: GdkPixbuf, img_width: int, img_height: int) -> None:
+        def set_size(
+            img: GdkPixbuf.PixbufLoader, img_width: int, img_height: int
+        ) -> None:
             assert width and height
             scale = min(width / float(img_width), height / float(img_height))
             new_width, new_height = int(img_width * scale), int(
