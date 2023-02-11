@@ -68,7 +68,7 @@ ExecInfo = ty.Union[
     tuple[None, None, None],
 ]
 CmdTuple = tuple[Leaf, Action, ty.Optional[Leaf]]
-Token = tuple[int, ty.Optional[CmdTuple]]  # TODO: check, probably int
+Token = tuple[int, ty.Optional[CmdTuple]]
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -248,8 +248,9 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         elif isinstance(exc_info, BaseException):
             exc_info = (type(exc_info), exc_info, None)
 
-        assert exc_info
         _command_id, cmdtuple = token
+        assert exc_info
+        assert cmdtuple
         self._do_error_conversion(cmdtuple, exc_info)
 
     def register_late_result(
@@ -266,7 +267,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         If @show, possibly display the result to the user.
         """
         self.output_debug("Late result", repr(result), "for", token)
-        command_id, (_ign1, action, _ign2) = token
+        command_id, (_ign1, action, _ign2) = token  # type: ignore
         if result is None:
             raise ActionExecutionError(f"Late result from {action} was None")
 
