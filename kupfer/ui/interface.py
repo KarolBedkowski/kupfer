@@ -12,7 +12,6 @@ from gi.repository import Gtk, Gdk, GObject
 from gi.repository import Gio, Pango
 
 from kupfer import kupferui
-
 from kupfer import scheduler
 from kupfer.ui import accelerators
 from kupfer.ui import uievents
@@ -27,7 +26,11 @@ from kupfer import uiutils
 from .support import escape_markup_str, text_direction_is_ltr
 from .search import Search, LeafSearch, ActionSearch, State
 
-ELLIPSIZE_MIDDLE = Pango.EllipsizeMode.MIDDLE
+_ELLIPSIZE_MIDDLE = Pango.EllipsizeMode.MIDDLE
+_SLOW_INPUT_INTERVAL = 2
+_KEY_PRESS_INTERVAL = 0.3
+_KEY_PRESS_REPEAT_THRESHOLD = 0.02
+
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -39,11 +42,6 @@ def _trunc_long_str(instr: ty.Any) -> str:
     "truncate long object names"
     ustr = str(instr)
     return ustr[:25] + "…" if len(ustr) > 27 else ustr
-
-
-_SLOW_INPUT_INTERVAL = 2
-_KEY_PRESS_INTERVAL = 0.3
-_KEY_PRESS_REPEAT_THRESHOLD = 0.02
 
 
 def _prepare_key_book():
@@ -143,7 +141,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self._label.set_width_chars(50)
         self._label.set_max_width_chars(50)
         self._label.set_single_line_mode(True)
-        self._label.set_ellipsize(ELLIPSIZE_MIDDLE)
+        self._label.set_ellipsize(_ELLIPSIZE_MIDDLE)
         self._label.set_name("kupfer-description")
 
         self.switch_to_source_init()
@@ -234,27 +232,24 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
     def _entry_key_release(self, entry, event):
         return
-        # check for key repeat activation (disabled)
-        # FIXME: check; not used;
-        # if self._key_repeat_key == event.keyval:
-        #     if self._key_repeat_active:
-        #         self.activate()
 
-        #     self._key_repeat_key = None
-        #     self._key_repeat_active = False
-        #     self._update_active()
+    def _process_accels(self, keyv, event_state) -> bool:
+        setctl = settings.GetSettingsController()
+        # process accelerators
+        for action, accel in setctl.get_accelerators().items():
+            akeyv, amodf = Gtk.accelerator_parse(accel)
+            if akeyv and akeyv == keyv and amodf == event_state:
+                if action_method := getattr(self, action, None):
+                    action_method()
+                else:
+                    pretty.print_error(__name__, f"Action invalid '{action}'")
 
-    def _entry_key_press(self, entry: Gtk.Entry, event: Gdk.EventKey) -> bool:
-        """
-        Intercept arrow keys and manipulate table
-        without losing focus from entry field
-        """
-        assert self.current is not None
-        direct_text_key = Gdk.keyval_from_name("period")
-        init_text_keys = list(
-            map(Gdk.keyval_from_name, ("slash", "equal", "question"))
-        )
-        init_text_keys.append(direct_text_key)
+                return True
+
+        return False
+
+    @staticmethod
+    def _translate_keys(event: Gdk.EventKey) -> tuple[int, int, bool]:
         event_state = event.get_state()
         # translate keys properly
         (
@@ -272,20 +267,27 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         ) == Gdk.ModifierType.SHIFT_MASK
         event_state &= all_modifiers & ~consumed
 
-        # curtime = time.time()
+        return event_state, keyv, shift_mask
+
+    def _entry_key_press(self, entry: Gtk.Entry, event: Gdk.EventKey) -> bool:
+        """
+        Intercept arrow keys and manipulate table
+        without losing focus from entry field
+        """
+        assert self.current is not None
+        direct_text_key: int = Gdk.keyval_from_name("period")
+        init_text_keys = list(
+            map(Gdk.keyval_from_name, ("slash", "equal", "question"))
+        )
+        init_text_keys.append(direct_text_key)
+        # translate keys properly
+        event_state, keyv, shift_mask = self._translate_keys(event)
+
         self._reset_input_timer()
 
-        setctl = settings.GetSettingsController()
         # process accelerators
-        for action, accel in setctl.get_accelerators().items():
-            akeyv, amodf = Gtk.accelerator_parse(accel)
-            if akeyv and akeyv == keyv and amodf == event_state:
-                if action_method := getattr(self, action, None):
-                    action_method()
-                else:
-                    pretty.print_error(__name__, f"Action invalid '{action}'")
-
-                return True
+        if self._process_accels(keyv, event_state):
+            return True
 
         # look for action accelerators
         if event_state == self.action.accel_modifier:
@@ -297,7 +299,9 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             return False
 
         key_book = self._key_book
-        use_command_keys = setctl.get_use_command_keys()
+        use_command_keys = (
+            settings.GetSettingsController().get_use_command_keys()
+        )
         has_selection = self.current.get_match_state() == State.MATCH
         if not self._is_text_mode and use_command_keys:
             # translate extra commands to normal commands here
@@ -315,8 +319,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             elif keyv in init_text_keys:
                 if self.try_enable_text_mode():
                     # swallow if it is the direct key
-                    swallow: bool = keyv == direct_text_key
-                    return swallow
+                    return keyv == direct_text_key
 
         if self._is_text_mode and keyv in (
             key_book["Left"],
@@ -334,35 +337,6 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             ):
                 return False
 
-        # disabled  repeat-key activation and shift-to-action selection
-        # check for repeated key activation
-        # """
-        # if ((not text_mode) and self._key_repeat_key == keyv and
-        #         keyv not in self.keys_sensible and
-        #         curtime - self._key_press_time > _KEY_PRESS_REPEAT_THRESHOLD):
-        #     if curtime - self._key_press_time > _KEY_PRESS_INTERVAL:
-        #         self._key_repeat_active = True
-        #         self._update_active()
-        #     return True
-        # else:
-        #     # cancel repeat key activation if a new key is pressed
-        #     self._key_press_time = curtime
-        #     self._key_repeat_key = keyv
-        #     if self._key_repeat_active:
-        #         self._key_repeat_active = False
-        #         self._update_active()
-        # """
-
-        # """
-        #     ## if typing with shift key, switch to action pane
-        #     if not text_mode and use_command_keys and shift_mask:
-        #         uchar = Gdk.keyval_to_unicode(keyv)
-        #         if (uchar and unichr(uchar).isupper() and
-        #             self.current == self.search):
-        #             self.current.hide_table()
-        #             self.switch_current()
-        #     return False
-        # """
         # exit here if it's not a special key
         if keyv not in self._keys_sensible:
             return False
@@ -436,7 +410,6 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     def _entry_copy_clipboard(self, entry: Gtk.Entry) -> bool:
         # Copy current selection to clipboard
         # delegate to text entry when in text mode
-
         if self._is_text_mode:
             return False
 
@@ -528,8 +501,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
     def _populate_search(self) -> None:
         """Do a blanket search/empty search to populate current pane"""
-        pane = self._pane_for_widget(self.current)
-        if pane:
+        if pane := self._pane_for_widget(self.current):
             self._data_ctrl.search(pane, interactive=True)
 
     def soft_reset(self, pane: data.PaneSel | None = None) -> None:
@@ -1108,7 +1080,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     ) -> bool:
         "mouse clicked on a pane widget"
         # activate on double-click
-        # pylint: disable=no-member,protected-acccess
+        # pylint: disable=no-member,protected-access
         if event.type == Gdk.EventType._2BUTTON_PRESS:
             self.activate()
             return True
@@ -1133,7 +1105,8 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         match = self.current.get_current()
         # Use invisible WORD JOINER instead of empty, to maintain vertical size
         desc = match and match.get_description() or "\N{WORD JOINER}"
-        markup = f"<small>{escape_markup_str(desc)}</small>"
+        desc = escape_markup_str(desc)
+        markup = f"<small>{desc}</small>"
         self._label.set_markup(markup)
 
     def put_text(self, text: str) -> None:
@@ -1153,8 +1126,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         else:
             objs = (Gio.File.new_for_uri(U).get_path() for U in fileuris)
 
-        leaves = list(map(FileLeaf, filter(None, objs)))
-        if leaves:
+        if leaves := list(map(FileLeaf, filter(None, objs))):
             self._data_ctrl.insert_objects(data.PaneSel.SOURCE, leaves)  # type: ignore
 
     def _reset_input_timer(self) -> None:

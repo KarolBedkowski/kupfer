@@ -17,7 +17,6 @@ except (ValueError, ImportError):
 
 from kupfer import kupferui
 from kupfer import version
-
 from kupfer import scheduler
 from kupfer.ui import keybindings
 from kupfer.ui import listen
@@ -28,7 +27,7 @@ from kupfer import pretty
 import kupfer.config
 import kupfer.environment
 
-from .support import text_direction_is_ltr, normalize_display_name
+from .support import text_direction_is_ltr
 from .interface import Interface
 
 if ty.TYPE_CHECKING:
@@ -93,7 +92,7 @@ class WindowController(pretty.OutputMixin):
         self._statusicon_ai = None
         self._window_hide_timer = scheduler.Timer()
 
-    def initialize(self, data_controller: data.DataController) -> None:
+    def _initialize(self, data_controller: data.DataController) -> None:
         self._window = Gtk.Window(
             type=Gtk.WindowType.TOPLEVEL,
             border_width=WINDOW_BORDER_WIDTH,
@@ -105,11 +104,11 @@ class WindowController(pretty.OutputMixin):
             Gdk.EventMask.BUTTON_PRESS_MASK
         )
 
-        data_controller.connect("launched-action", self.launch_callback)
-        data_controller.connect("command-result", self.result_callback)
+        data_controller.connect("launched-action", self._launch_callback)
+        data_controller.connect("command-result", self._result_callback)
 
         self._interface = Interface(data_controller, self._window)
-        self._interface.connect("launched-action", self.launch_callback)
+        self._interface.connect("launched-action", self._launch_callback)
         self._interface.connect("cancelled", self._cancelled)
         self._window.connect("map-event", self._on_window_map_event)
         self._setup_window()
@@ -136,14 +135,14 @@ class WindowController(pretty.OutputMixin):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
-    def show_statusicon(self) -> None:
+    def _show_statusicon(self) -> None:
         if not self._statusicon:
             self._statusicon = self._setup_gtk_status_icon(self._setup_menu())
 
         with suppress(AttributeError):
             self._statusicon.set_visible(True)
 
-    def hide_statusicon(self) -> None:
+    def _hide_statusicon(self) -> None:
         if self._statusicon:
             try:
                 self._statusicon.set_visible(False)
@@ -159,11 +158,11 @@ class WindowController(pretty.OutputMixin):
     ) -> None:
         "callback from SettingsController"
         if value:
-            self.show_statusicon()
+            self._show_statusicon()
         else:
-            self.hide_statusicon()
+            self._hide_statusicon()
 
-    def show_statusicon_ai(self) -> None:
+    def _show_statusicon_ai(self) -> None:
         if not self._statusicon_ai:
             self._statusicon_ai = self._setup_appindicator(self._setup_menu())
 
@@ -172,7 +171,7 @@ class WindowController(pretty.OutputMixin):
 
         self._statusicon_ai.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
 
-    def hide_statusicon_ai(self) -> None:
+    def _hide_statusicon_ai(self) -> None:
         if self._statusicon_ai and AppIndicator3 is not None:
             self._statusicon_ai.set_status(
                 AppIndicator3.IndicatorStatus.PASSIVE
@@ -186,9 +185,9 @@ class WindowController(pretty.OutputMixin):
         value: ty.Any,
     ) -> None:
         if value:
-            self.show_statusicon_ai()
+            self._show_statusicon_ai()
         else:
-            self.hide_statusicon_ai()
+            self._hide_statusicon_ai()
 
     def _setup_menu(self, context_menu: bool = False) -> Gtk.Menu:
         menu = Gtk.Menu()
@@ -234,7 +233,7 @@ class WindowController(pretty.OutputMixin):
         if context_menu:
             add_menu_item(Gtk.STOCK_CLOSE, self.put_away, with_ctx=False)
         else:
-            add_menu_item(None, self.activate, _("Show Main Interface"))
+            add_menu_item(None, self._activate, _("Show Main Interface"))
 
         menu.append(Gtk.SeparatorMenuItem())
         if context_menu:
@@ -249,7 +248,7 @@ class WindowController(pretty.OutputMixin):
         add_menu_item(Gtk.STOCK_HELP, kupferui.show_help)
         add_menu_item(Gtk.STOCK_ABOUT, kupferui.show_about_dialog)
         menu.append(Gtk.SeparatorMenuItem())
-        add_menu_item(Gtk.STOCK_QUIT, self.quit, with_ctx=False)
+        add_menu_item(Gtk.STOCK_QUIT, self._quit, with_ctx=False)
         menu.show_all()
 
         return menu
@@ -259,7 +258,7 @@ class WindowController(pretty.OutputMixin):
         status.set_tooltip_text(version.PROGRAM_NAME)
 
         status.connect("popup-menu", self._popup_menu, menu)
-        status.connect("activate", self.show_hide)
+        status.connect("activate", self._show_hide)
         return status
 
     def _setup_appindicator(self, menu: Gtk.Menu) -> ty.Any:
@@ -425,14 +424,14 @@ class WindowController(pretty.OutputMixin):
             activate_time,
         )
 
-    def launch_callback(self, sender: ty.Any) -> None:
+    def _launch_callback(self, sender: ty.Any) -> None:
         # Separate window hide from the action being
         # done. This is to solve a window focus bug when
         # we switch windows using an action
         self._interface.did_launch()
         self._window_hide_timer.set_ms(100, self.put_away)
 
-    def result_callback(
+    def _result_callback(
         self,
         sender: data.DataController,
         _result_type: ty.Any,
@@ -440,11 +439,11 @@ class WindowController(pretty.OutputMixin):
     ) -> None:
         self._interface.did_get_result()
         if ui_ctx:
-            self.on_present(
+            self._on_present(
                 sender, ui_ctx.get_display(), ui_ctx.get_timestamp()
             )
         else:
-            self.on_present(sender, "", Gtk.get_current_event_time())
+            self._on_present(sender, "", Gtk.get_current_event_time())
 
     def _lost_focus(self, window: Gtk.Window, event: Gdk.EventFocus) -> None:
         if not kupfer.config.has_capability("HIDE_ON_FOCUS_OUT"):
@@ -466,15 +465,16 @@ class WindowController(pretty.OutputMixin):
     def _monitors_changed(self, *_ignored: ty.Any) -> None:
         self._center_window()
 
-    def is_current_display(self, displayname: str) -> bool:
-        if not self._window.has_screen():  # pylint: disable=no-member
-            return False
+    # not in use
+    # def is_current_display(self, displayname: str) -> bool:
+    #     if not self._window.has_screen():  # pylint: disable=no-member
+    #         return False
 
-        # pylint: disable=no-member
-        cur_disp = self._window.get_screen().get_display().get_name()
-        return normalize_display_name(cur_disp) == normalize_display_name(
-            displayname
-        )
+    #     # pylint: disable=no-member
+    #     cur_disp = self._window.get_screen().get_display().get_name()
+    #     return normalize_display_name(cur_disp) == normalize_display_name(
+    #         displayname
+    #     )
 
     def _window_put_on_screen(self, screen: Gdk.Screen) -> None:
         if self._current_screen_handler:
@@ -522,12 +522,12 @@ class WindowController(pretty.OutputMixin):
         mon_win = screen.get_monitor_at_window(self._window.get_window())
         return mon_cur != mon_win  # type: ignore
 
-    def activate(self, sender: ty.Any = None) -> None:
+    def _activate(self, sender: ty.Any = None) -> None:
         # pylint: disable=no-member
         dispname = self._window.get_screen().make_display_name()
-        self.on_present(sender, dispname, Gtk.get_current_event_time())
+        self._on_present(sender, dispname, Gtk.get_current_event_time())
 
-    def on_present(
+    def _on_present(
         self, sender: ty.Any, display: str | None, timestamp: int
     ) -> None:
         """Present on @display, where None means default display"""
@@ -556,8 +556,8 @@ class WindowController(pretty.OutputMixin):
     def _cancelled(self, _obj: Interface) -> None:
         self.put_away()
 
-    def on_show_hide(
-        self, sender: ty.Any, display: str, timestamp: float
+    def _on_show_hide(
+        self, sender: ty.Any, display: str, timestamp: int
     ) -> None:
         """
         Toggle activate/put-away
@@ -565,11 +565,11 @@ class WindowController(pretty.OutputMixin):
         if self._window.get_property("visible"):
             self.put_away()
         else:
-            self.on_present(sender, display, timestamp)
+            self._on_present(sender, display, timestamp)
 
-    def show_hide(self, sender: Gtk.Widget) -> None:
+    def _show_hide(self, sender: Gtk.Widget) -> None:
         "GtkStatusIcon callback"
-        self.on_show_hide(sender, "", Gtk.get_current_event_time())
+        self._on_show_hide(sender, "", Gtk.get_current_event_time())
 
     def _key_binding(
         self,
@@ -580,10 +580,10 @@ class WindowController(pretty.OutputMixin):
     ) -> None:
         """Keybinding activation callback"""
         if keybinding_number == keybindings.KEYBINDING_DEFAULT:
-            self.on_show_hide(keyobj, display, timestamp)
+            self._on_show_hide(keyobj, display, timestamp)
 
         elif keybinding_number == keybindings.KEYBINDING_MAGIC:
-            self.on_present(keyobj, display, timestamp)
+            self._on_present(keyobj, display, timestamp)
             self._interface.select_selected_text()
             self._interface.select_selected_file()
 
@@ -607,7 +607,7 @@ class WindowController(pretty.OutputMixin):
         self, sender: Gtk.Widget, text: str, display: str, timestamp: int
     ) -> None:
         """We got a search text from dbus"""
-        self.on_present(sender, display, timestamp)
+        self._on_present(sender, display, timestamp)
         self._interface.put_text(text)
 
     def on_put_files(
@@ -617,7 +617,7 @@ class WindowController(pretty.OutputMixin):
         display: str,
         timestamp: int,
     ) -> None:
-        self.on_present(sender, display, timestamp)
+        self._on_present(sender, display, timestamp)
         self._interface.put_files(fileuris, paths=True)
 
     def on_execute_file(
@@ -634,11 +634,11 @@ class WindowController(pretty.OutputMixin):
         return True
 
     def _destroy(self, widget: Gtk.Widget, _data: ty.Any = None) -> None:
-        self.quit()
+        self._quit()
 
     def _sigterm(self, signal_: int, _frame: ty.Any) -> None:
         self.output_info("Caught signal", signal_, "exiting..")
-        self.quit()
+        self._quit()
 
     def _on_early_interrupt(self, _signal: int, _frame: ty.Any) -> None:
         sys.exit(1)
@@ -649,10 +649,10 @@ class WindowController(pretty.OutputMixin):
         sch.finish()
         self._interface.save_config()
 
-    def quit(self, sender: Gtk.Widget | None = None) -> None:
+    def _quit(self, sender: Gtk.Widget | None = None) -> None:
         Gtk.main_quit()
 
-    def quit_now(self) -> None:
+    def _quit_now(self) -> None:
         """Quit immediately (state save should already be done)"""
         raise SystemExit
 
@@ -670,7 +670,7 @@ class WindowController(pretty.OutputMixin):
         quit now, without saving, since we already do that on
         Session save!
         """
-        self.quit_now()
+        self._quit_now()
 
     def lazy_setup(self) -> None:
         """Do all setup that can be done after showing main interface.
@@ -683,10 +683,10 @@ class WindowController(pretty.OutputMixin):
 
         setctl = settings.GetSettingsController()
         if setctl.get_show_status_icon():
-            self.show_statusicon()
+            self._show_statusicon()
 
         if setctl.get_show_status_icon_ai():
-            self.show_statusicon_ai()
+            self._show_statusicon_ai()
 
         setctl.connect(
             "value-changed::kupfer.showstatusicon",
@@ -740,7 +740,7 @@ class WindowController(pretty.OutputMixin):
             kserv2 = listen.ServiceNew()
         except listen.AlreadyRunningError:
             self.output_info("An instance is already running, exiting...")
-            self.quit_now()
+            self._quit_now()
         except listen.NoConnectionError:
             pass
 
@@ -757,27 +757,20 @@ class WindowController(pretty.OutputMixin):
         sch = scheduler.get_scheduler()
         sch.load()
         # Now create UI and display
-        self.initialize(data_controller)
+        self._initialize(data_controller)
         sch.display()
 
-        if kserv1:
-            kserv1.connect("present", self.on_present)
-            kserv1.connect("show-hide", self.on_show_hide)
-            kserv1.connect("put-text", self.on_put_text)
-            kserv1.connect("put-files", self.on_put_files)
-            kserv1.connect("execute-file", self.on_execute_file)
-            kserv1.connect("quit", self.quit)
-
-        if kserv2:
-            kserv2.connect("present", self.on_present)
-            kserv2.connect("show-hide", self.on_show_hide)
-            kserv2.connect("put-text", self.on_put_text)
-            kserv2.connect("put-files", self.on_put_files)
-            kserv2.connect("execute-file", self.on_execute_file)
-            kserv2.connect("quit", self.quit)
+        for kserv in (kserv1, kserv2):
+            if kserv:
+                kserv.connect("present", self._on_present)
+                kserv.connect("show-hide", self._on_show_hide)
+                kserv.connect("put-text", self.on_put_text)
+                kserv.connect("put-files", self.on_put_files)
+                kserv.connect("execute-file", self.on_execute_file)
+                kserv.connect("quit", self._quit)
 
         if not quiet:
-            self.activate()
+            self._activate()
 
         GLib.idle_add(self.lazy_setup)
 
@@ -798,11 +791,9 @@ class WindowController(pretty.OutputMixin):
             self.save_data()
 
         # tear down but keep hanging
-        if kserv1:
-            kserv1.unregister()
-
-        if kserv2:
-            kserv2.unregister()
+        for kserv in (kserv1, kserv2):
+            if kserv:
+                kserv.unregister()
 
         keybindings.bind_key(None, keybindings.KEYBINDING_DEFAULT)
         keybindings.bind_key(None, keybindings.KEYBINDING_MAGIC)

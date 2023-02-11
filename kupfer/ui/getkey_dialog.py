@@ -29,9 +29,9 @@ class GetKeyDialogController:
         builder.set_translation_domain(version.PACKAGE_NAME)
 
         builder.add_from_file(config.get_data_file("getkey_dialog.ui"))
-        builder.connect_signals(self)
+        builder.connect_signals(self)  # pylint: disable=no-member
         self.window = builder.get_object("dialoggetkey")
-        #self.labelkey = builder.get_object("labelkey")
+        # self.labelkey = builder.get_object("labelkey")
         self.imagekeybindingaux = builder.get_object("imagekeybindingaux")
         self.labelkeybindingaux = builder.get_object("labelkeybindingaux")
         self.labelaccelerator = builder.get_object("labelaccelerator")
@@ -53,8 +53,8 @@ class GetKeyDialogController:
         if parent:
             self.window.set_transient_for(parent)
 
-        self.window.connect("focus-in-event", self.on_window_focus_in)
-        self.window.connect("focus-out-event", self.on_window_focus_out)
+        self.window.connect("focus-in-event", self._on_window_focus_in)
+        self.window.connect("focus-out-event", self._on_window_focus_out)
 
     def run(self) -> str | None:
         """Run dialog, return key codes or None when user press cancel"""
@@ -69,20 +69,20 @@ class GetKeyDialogController:
         self.window.hide()
 
     def on_buttoncancel_activate(self, _widget: Gtk.Widget) -> bool:
-        self.return_cancel()
+        self._return_cancel()
         return True
 
     def on_buttonclear_activate(self, _widget: Gtk.Widget) -> bool:
-        self.return_clear()
+        self._return_clear()
         return True
 
-    def return_cancel(self) -> None:
+    def _return_cancel(self) -> None:
         self._return(None)
 
-    def return_clear(self) -> None:
+    def _return_clear(self) -> None:
         self._return("")
 
-    def translate_keyboard_event(
+    def _translate_keyboard_event(
         self, widget: Gtk.Widget, event: Gdk.EventKey
     ) -> tuple[int, int]:
         keymap = Gdk.Keymap.get_for_display(widget.get_display())
@@ -101,7 +101,7 @@ class GetKeyDialogController:
 
         return keyval, state
 
-    def update_accelerator_label(self, keyval: int, state: int) -> None:
+    def _update_accelerator_label(self, keyval: int, state: int) -> None:
         accel_label = Gtk.accelerator_get_label(keyval, state)
         self.labelaccelerator.set_text(accel_label)
 
@@ -112,15 +112,15 @@ class GetKeyDialogController:
         self.labelkeybindingaux.hide()
         self._press_time = event.time
 
-        keyval, state = self.translate_keyboard_event(widget, event)
+        keyval, state = self._translate_keyboard_event(widget, event)
         state = Gdk.ModifierType(state)
         keyname = Gtk.accelerator_name(keyval, state)
         if keyname == "Escape":
-            self.return_cancel()
+            self._return_cancel()
         elif keyname == "BackSpace":
-            self.return_clear()
+            self._return_clear()
 
-        self.update_accelerator_label(keyval, state)
+        self._update_accelerator_label(keyval, state)
 
     def on_dialoggetkey_key_release_event(
         self, widget: Gtk.Widget, event: Gdk.EventKey
@@ -128,14 +128,14 @@ class GetKeyDialogController:
         if not self._press_time:
             return
 
-        keyval, state = self.translate_keyboard_event(widget, event)
-        self.update_accelerator_label(0, 0)
+        keyval, state = self._translate_keyboard_event(widget, event)
+        self._update_accelerator_label(0, 0)
 
         state = Gdk.ModifierType(state)
         if Gtk.accelerator_valid(keyval, state):
             key = Gtk.accelerator_name(keyval, state)
             if self._previous_key is not None and key == self._previous_key:
-                self.return_cancel()
+                self._return_cancel()
                 return
 
             if self._check_callback is None or self._check_callback(key):
@@ -144,12 +144,12 @@ class GetKeyDialogController:
                 self.imagekeybindingaux.show()
                 self.labelkeybindingaux.show()
 
-    def on_window_focus_in(
+    def _on_window_focus_in(
         self, _window: Gtk.Window, _event: Gdk.EventFocus
     ) -> None:
         pass
 
-    def on_window_focus_out(
+    def _on_window_focus_out(
         self, _window: Gtk.Window, _event: Gdk.EventFocus
     ) -> None:
         pass
