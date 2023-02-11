@@ -31,6 +31,8 @@ class SessionClient(GObject.GObject, pretty.OutputMixin):
         """Set up program as client to current Session"""
         GObject.GObject.__init__(self)
         self._session_ended = False
+        self._client_id = None
+
         succ = False
         try:
             succ = self._connect_session_manager()
@@ -44,11 +46,11 @@ class SessionClient(GObject.GObject, pretty.OutputMixin):
             except dbus.DBusException as exc:
                 self.output_error(exc)
 
-        succ = succ or self._connect_gnomeui()
+        self._enabled = succ or self._connect_gnomeui()
 
         # unset autostart id so that it is not transferred
         os.putenv("DESKTOP_AUTOSTART_ID", "")
-        self._enabled = succ
+
         if not self.enabled:
             self.output_info(
                 "Warning: Not able to connect to current "
@@ -65,9 +67,8 @@ class SessionClient(GObject.GObject, pretty.OutputMixin):
             "org.freedesktop.DBus", "/org/freedesktop/DBus"
         )
         dbus_iface = dbus.Interface(proxy_obj, "org.freedesktop.DBus")
-        service_name = "org.gnome.SessionManager"
+        iface_name = service_name = "org.gnome.SessionManager"
         obj_name = "/org/gnome/SessionManager"
-        iface_name = service_name
 
         if not dbus_iface.NameHasOwner(service_name):
             self.output_debug("D-Bus name", service_name, "not found")
@@ -83,10 +84,10 @@ class SessionClient(GObject.GObject, pretty.OutputMixin):
 
         app_id = version.PACKAGE_NAME
         startup_id = os.getenv("DESKTOP_AUTOSTART_ID") or ""
-        self.client_id = smanager.RegisterClient(app_id, startup_id)
+        self._client_id = smanager.RegisterClient(app_id, startup_id)
         self._session_ended = False
         self.output_debug(
-            "Connected to session as client", self.client_id, startup_id
+            "Connected to session as client", self._client_id, startup_id
         )
 
         private_iface_name = "org.gnome.SessionManager.ClientPrivate"
@@ -135,14 +136,14 @@ class SessionClient(GObject.GObject, pretty.OutputMixin):
     def _get_response_obj(self) -> ty.Any:
         """Return D-Bus session object for ClientPrivate Interface"""
         service_name = "org.gnome.SessionManager"
-        obj_name = self.client_id
+        obj_name = self._client_id
         iface_name = "org.gnome.SessionManager.ClientPrivate"
 
         try:
             bus = dbus.Bus()
             obj = bus.get_object(service_name, obj_name)
-        except dbus.DBusException as e:
-            pretty.print_error(__name__, e)
+        except dbus.DBusException as exc:
+            pretty.print_error(__name__, exc)
             return None
 
         smanager = dbus.Interface(obj, iface_name)

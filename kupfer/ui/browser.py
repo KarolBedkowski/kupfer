@@ -465,17 +465,6 @@ class WindowController(pretty.OutputMixin):
     def _monitors_changed(self, *_ignored: ty.Any) -> None:
         self._center_window()
 
-    # not in use
-    # def is_current_display(self, displayname: str) -> bool:
-    #     if not self._window.has_screen():  # pylint: disable=no-member
-    #         return False
-
-    #     # pylint: disable=no-member
-    #     cur_disp = self._window.get_screen().get_display().get_name()
-    #     return normalize_display_name(cur_disp) == normalize_display_name(
-    #         displayname
-    #     )
-
     def _window_put_on_screen(self, screen: Gdk.Screen) -> None:
         if self._current_screen_handler:
             scr = self._window.get_screen()  # pylint: disable=no-member
@@ -505,7 +494,7 @@ class WindowController(pretty.OutputMixin):
         midy = geo.y + geo.height / 2 - hei / 2
 
         self._window.move(midx, midy)
-        uievents.GUIEnvironmentContext.try_close_unused_displays(screen)
+        uievents.try_close_unused_displays(screen)
 
     def _should_recenter_window(self) -> bool:
         """Return True if the mouse pointer and the window
