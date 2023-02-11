@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 """
 This module has a singleton Service for dbus callbacks,
 and ensures there is only one unique service in the Session

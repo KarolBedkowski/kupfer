@@ -39,7 +39,6 @@ def tounicode(utf8str: ty.Union[str, bytes, None]) -> str:
     if isinstance(utf8str, str):
         return utf8str
 
-    ic(utf8str)
     return utf8str.decode("UTF-8", "replace") if utf8str is not None else ""
 
 

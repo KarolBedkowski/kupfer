@@ -35,45 +35,44 @@ class ProgressDialogController:
         safe to call from any thread.
         """
         self.aborted = False
-        self.max_value = float(max_value)
+        self._max_value = float(max_value)
         ui_file = config.get_data_file("progress_dialog.ui")
         self._construct_dialog(ui_file, title, header)
 
     @idle_call
     def _construct_dialog(self, ui_file: str, title: str, header: str) -> None:
-
         builder = Gtk.Builder()
         builder.set_translation_domain(version.PACKAGE_NAME)
 
         builder.add_from_file(ui_file)
-        builder.connect_signals(self)
-        self.window = builder.get_object("window_progress")
-        self.button_abort = builder.get_object("button_abort")
-        self.progressbar = builder.get_object("progressbar")
-        self.label_info = builder.get_object("label_info")
-        self.label_header = builder.get_object("label_header")
+        builder.connect_signals(self)  # pylint: disable=no-member
+        self._window = builder.get_object("window_progress")
+        self._button_abort = builder.get_object("button_abort")
+        self._progressbar = builder.get_object("progressbar")
+        self._label_info = builder.get_object("label_info")
 
-        self.window.set_title(title)
+        label_header = builder.get_object("label_header")
         if header:
-            self.label_header.set_markup(
+            label_header.set_markup(
                 _HEADER_MARKUP % glib.markup_escape_text(header)
             )
         else:
-            self.label_header.hide()
+            label_header.hide()
 
+        self._window.set_title(title)
         self.update(0, "", "")
 
     def on_button_abort_clicked(self, widget: Gtk.Button) -> None:
         self.aborted = True
-        self.button_abort.set_sensitive(False)
+        self._button_abort.set_sensitive(False)
 
     @idle_call
     def show(self) -> None:
-        self.window.present()
+        self._window.present()
 
     @idle_call
     def hide(self) -> None:
-        self.window.hide()
+        self._window.hide()
 
     @idle_call
     def update(self, value: int | float, label: str, text: str) -> bool:
@@ -85,8 +84,8 @@ class ProgressDialogController:
 
         @return true when abort button was pressed
         """
-        self.progressbar.set_fraction(min(value / self.max_value, 1.0))
-        self.label_info.set_markup(
+        self._progressbar.set_fraction(min(value / self._max_value, 1.0))
+        self._label_info.set_markup(
             "<b>"
             + glib.markup_escape_text(label)
             + "</b>"
