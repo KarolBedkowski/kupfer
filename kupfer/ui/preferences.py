@@ -615,9 +615,9 @@ class PreferencesWindowController(pretty.OutputMixin):
         sources, actions, text_sources = plugins.get_plugin_attributes(
             plugin_id,
             (
-                plugins.sources_attribute,
-                plugins.action_decorators_attribute,
-                plugins.text_sources_attribute,
+                plugins.PluginAttr.SOURCES,
+                plugins.PluginAttr.ACTION_DECORATORS,
+                plugins.PluginAttr.TEXT_SOURCES,
             ),
         )
         vbox = Gtk.VBox()
@@ -752,7 +752,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         self, plugin_id: str
     ) -> Gtk.Widget | None:
         plugin_settings = plugins.get_plugin_attribute(
-            plugin_id, plugins.settings_attribute
+            plugin_id, plugins.PluginAttr.SETTINGS
         )
         if not plugin_settings:
             return None

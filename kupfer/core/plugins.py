@@ -12,16 +12,6 @@ from kupfer.obj.base import KupferObject
 
 # import kupfer.icons on demand later
 
-sources_attribute = "__kupfer_sources__"
-text_sources_attribute = "__kupfer_text_sources__"
-content_decorators_attribute = "__kupfer_contents__"
-action_decorators_attribute = "__kupfer_actions__"
-action_generators_attribute = "__kupfer_action_generators__"
-settings_attribute = "__kupfer_settings__"
-
-initialize_attribute = "initialize_plugin"
-finalize_attribute = "finalize_plugin"
-
 
 class PluginAttr(Enum):
     SOURCES = "__kupfer_sources__"
@@ -30,10 +20,9 @@ class PluginAttr(Enum):
     ACTION_DECORATORS = "__kupfer_actions__"
     ACTION_GENERATORS = "__kupfer_action_generators__"
     SETTINGS = "__kupfer_settings__"
+    INITIALIZE = "initialize_plugin"
+    FINALIZE = "finalize_plugin"
 
-
-initialize_attribute = "initialize_plugin"
-finalize_attribute = "finalize_plugin"
 
 _INFO_ATTRIBUTES = [
     "__kupfer_name__",
@@ -305,7 +294,7 @@ def _plugin_path(name: str) -> ty.Tuple[str, ...]:
 # Plugin Attributes
 def get_plugin_attributes(
     plugin_name: str, attrs: ty.Tuple[str, ...], warn: bool = False
-) -> ty.Iterator[ty.Optional[ty.Any]]:
+) -> ty.Iterator[ty.Any]:
     """Generator of the attributes named @attrs
     to be found in plugin @plugin_name
     if the plugin is not found, we write an error
@@ -333,18 +322,22 @@ def get_plugin_attributes(
             yield obj
 
 
-def get_plugin_attribute(plugin_name: str, attr: str) -> ty.Optional[ty.Any]:
+def get_plugin_attribute(
+    plugin_name: str, attr: PluginAttr
+) -> tuple[ty.Any, ...] | None:
     """Get single plugin attribute"""
-    attrs = tuple(get_plugin_attributes(plugin_name, (attr,)))
-    if attrs:
-        return attrs[0]
+    attrs = tuple(get_plugin_attributes(plugin_name, (attr.value,)))
+    if attrs and attrs[0]:
+        return attrs[0]  # type: ignore
 
     return None
 
 
 def load_plugin_sources(
-    plugin_name: str, attr: str = sources_attribute, instantiate: bool = True
-) -> ty.Iterable[KupferObject]:
+    plugin_name: str,
+    attr: PluginAttr = PluginAttr.SOURCES,
+    instantiate: bool = True,
+) -> ty.Iterable[ty.Any]:
     """Load plugin sources or actions or other type (selected by @attr).
     Name is misleading.
     """
@@ -412,13 +405,13 @@ def initialize_plugin(plugin_name: str) -> None:
     Find settings attribute if defined, and initialize it
     """
     _load_icons(plugin_name)
-    if settings_dict := get_plugin_attribute(plugin_name, settings_attribute):
+    if settings_dict := get_plugin_attribute(plugin_name, PluginAttr.SETTINGS):
         settings_dict.initialize(plugin_name)
 
-    if initialize := get_plugin_attribute(plugin_name, initialize_attribute):
+    if initialize := get_plugin_attribute(plugin_name, PluginAttr.INITIALIZE):
         initialize(plugin_name)
 
-    if finalize := get_plugin_attribute(plugin_name, finalize_attribute):
+    if finalize := get_plugin_attribute(plugin_name, PluginAttr.FINALIZE):
         register_plugin_unimport_hook(plugin_name, finalize, plugin_name)
 
 

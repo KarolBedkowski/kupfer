@@ -5,12 +5,8 @@ from kupfer import pretty
 from kupfer.obj.base import Source, ActionGenerator, Action, AnySource
 from kupfer.core import plugins
 from kupfer.core.plugins import (
+    PluginAttr,
     load_plugin_sources,
-    sources_attribute,
-    action_decorators_attribute,
-    text_sources_attribute,
-    content_decorators_attribute,
-    action_generators_attribute,
     initialize_plugin,
 )
 
@@ -40,21 +36,21 @@ def load_plugin(plugin_id: str) -> PluginDescription:
     if not plugins.is_plugin_loaded(item):
         return PluginDescription()
 
-    text_sources.extend(load_plugin_sources(item, text_sources_attribute))
+    text_sources.extend(load_plugin_sources(item, PluginAttr.TEXT_SOURCES))
     action_decorators.extend(
-        load_plugin_sources(item, action_decorators_attribute)  # type: ignore
+        load_plugin_sources(item, PluginAttr.ACTION_DECORATORS)  # type: ignore
     )
     action_generators.extend(
-        load_plugin_sources(item, action_generators_attribute)  # type: ignore
+        load_plugin_sources(item, PluginAttr.ACTION_GENERATORS)  # type: ignore
     )
 
     # Register all Sources as (potential) content decorators
     content_decorators.extend(
-        load_plugin_sources(item, sources_attribute, instantiate=False)  # type: ignore
+        load_plugin_sources(item, PluginAttr.SOURCES, instantiate=False)  # type: ignore
     )
     content_decorators.extend(
         load_plugin_sources(  # type: ignore
-            item, content_decorators_attribute, instantiate=False
+            item, PluginAttr.CONTENT_DECORATORS, instantiate=False
         )
     )
     sources.extend(load_plugin_sources(item))  # type: ignore
