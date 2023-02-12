@@ -103,21 +103,21 @@ def score_objects(
     """
     key = key.lower()
     _score = _score_for_key(key)
-    for rb in rankables:
+    for rankable in rankables:
         # Rank object
-        rank = rb.rank = _score(rb.value, key) * 100
+        rank = rankable.rank = _score(rankable.value, key) * 100
         if rank < 90:
-            for alias in rb.aliases:
+            for alias in rankable.aliases:
                 # consider aliases and change rb.value if alias is better
                 # aliases rank lower so that value is chosen when close
                 if (arank := _score(alias, key) * 95) > rank:
                     rank = arank
-                    rb.value = alias
+                    rankable.value = alias
 
-            rb.rank = rank
+            rankable.rank = rank
 
-        if rb.rank > 10:
-            yield rb
+        if rankable.rank > 10:
+            yield rankable
 
 
 def score_actions(
@@ -128,33 +128,34 @@ def score_actions(
     """
     get_record_score = learn.get_record_score
     for obj in rankables:
-        ra = obj.object.rank_adjust
-        ra += learn.get_correlation_bonus(obj.object, for_leaf)
-        if ra > 0:
-            obj.rank = 50 + ra + get_record_score(obj.object) // 2
-        elif ra == 0:
+        rank_adj = obj.object.rank_adjust
+        rank_adj += learn.get_correlation_bonus(obj.object, for_leaf)
+
+        if rank_adj > 0:
+            obj.rank = 50 + rank_adj + get_record_score(obj.object) // 2
+        elif rank_adj == 0:
             obj.rank = get_record_score(obj.object)
         else:
-            obj.rank = -50 + ra + get_record_score(obj.object)
+            obj.rank = -50 + rank_adj + get_record_score(obj.object)
 
         yield obj
 
 
-def _max_multiple(iterables, key):
-    # TODO: not in use
-    maxval = None
-    for iterable in iterables:
-        try:
-            new_max = max(iterable, key=key)
-        except ValueError:
-            continue
+# K: not in use
+# def _max_multiple(iterables, key):
+#     maxval = None
+#     for iterable in iterables:
+#         try:
+#             new_max = max(iterable, key=key)
+#         except ValueError:
+#             continue
 
-        if maxval is None:
-            maxval = new_max
-        else:
-            maxval = max(maxval, new_max, key=key)
+#         if maxval is None:
+#             maxval = new_max
+#         else:
+#             maxval = max(maxval, new_max, key=key)
 
-    return maxval
+#     return maxval
 
 
 def find_best_sort(
