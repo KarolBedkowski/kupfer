@@ -28,12 +28,6 @@ from .exceptions import (
 )
 
 
-def ConstructFileLeafTypes():
-    """Return a seq of the Leaf types returned by ConstructFileLeaf"""
-    yield FileLeaf
-    yield AppLeaf
-
-
 def ConstructFileLeaf(obj: str) -> Leaf:
     """
     If the path in @obj points to a Desktop Item file,
@@ -45,25 +39,6 @@ def ConstructFileLeaf(obj: str) -> Leaf:
             return AppLeaf(init_path=obj)
 
     return FileLeaf(obj)
-
-
-def _directory_content(dirpath: str, show_hidden: bool) -> Source:
-    from kupfer.obj.sources import DirectorySource
-
-    return DirectorySource(dirpath, show_hidden)
-
-
-def _as_gfile(file_path: str) -> Gio.File:
-    return Gio.File.new_for_path(file_path)
-
-
-def _display_name(g_file: Gio.File) -> str:
-    info = g_file.query_info(
-        Gio.FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
-        Gio.FileQueryInfoFlags.NONE,
-        None,
-    )
-    return info.get_attribute_string(Gio.FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME)  # type: ignore
 
 
 class FileLeaf(Leaf, TextRepresentation):
@@ -156,7 +131,7 @@ class FileLeaf(Leaf, TextRepresentation):
         """
         Return a Gio.File of self
         """
-        return _as_gfile(self.object)
+        return Gio.File.new_for_path(self.object)
 
     def get_description(self) -> ty.Optional[str]:
         return utils.get_display_path_for_bytestring(self.canonical_path())
@@ -178,7 +153,9 @@ class FileLeaf(Leaf, TextRepresentation):
 
     def content_source(self, alternate: bool = False) -> Source | None:
         if self.is_dir():
-            return _directory_content(self.object, alternate)
+            from .sources import DirectorySource
+
+            return DirectorySource(self.object, show_hidden=alternate)
 
         return Leaf.content_source(self)
 

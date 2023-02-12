@@ -13,9 +13,9 @@ from .base import Leaf, Source
 from .helplib import FilesystemWatchMixin, PicklingHelperMixin
 from .objects import (
     ConstructFileLeaf,
-    ConstructFileLeafTypes,
     FileLeaf,
     SourceLeaf,
+    AppLeaf,
 )
 
 if ty.TYPE_CHECKING:
@@ -75,7 +75,8 @@ class FileSource(Source):
         return "folder-saved-search"
 
     def provides(self) -> ty.Iterator[ty.Type[Leaf]]:
-        return ConstructFileLeafTypes()
+        yield FileLeaf
+        yield AppLeaf
 
 
 class DirectorySource(Source, PicklingHelperMixin, FilesystemWatchMixin):
@@ -86,7 +87,7 @@ class DirectorySource(Source, PicklingHelperMixin, FilesystemWatchMixin):
         super().__init__(name)
         self.directory = directory
         self.show_hidden = show_hidden
-        self.monitor = None
+        self.monitor: ty.Any = None
 
     def __repr__(self) -> str:
         mod = self.__class__.__module__
@@ -150,7 +151,8 @@ class DirectorySource(Source, PicklingHelperMixin, FilesystemWatchMixin):
         return FileLeaf(self.directory, alias=alias)
 
     def provides(self) -> ty.Iterable[ty.Type[Leaf]]:
-        return ConstructFileLeafTypes()
+        yield FileLeaf
+        yield AppLeaf
 
 
 class SourcesSource(Source):
@@ -206,7 +208,7 @@ class MultiSource(Source):
             S.toplevel_source() for S in self.sources
         )
         for src in uniq_srcs:
-            yield from src.get_leaves()
+            yield from src.get_leaves() or ()
 
     def get_description(self) -> str:
         return _("Root catalog")
