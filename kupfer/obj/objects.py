@@ -8,22 +8,24 @@ see the main program file, and COPYING for details.
 from __future__ import annotations
 
 import os
-from os import path
+import typing as ty
 import zlib
 from contextlib import suppress
-import typing as ty
+from os import path
 
-from gi.repository import GLib, Gio, Gtk
-from gi.repository import GdkPixbuf
+from gi.repository import GdkPixbuf, Gio, GLib
 
 from kupfer import icons, launch, utils
-from kupfer.support import pretty, kupferstring
-from kupfer.obj.base import Leaf, Action, Source
-from kupfer.obj import fileactions
 from kupfer.interface import TextRepresentation
+from kupfer.support import kupferstring, pretty
 from kupfer.version import DESKTOP_ID
 
-from .exceptions import InvalidDataError, OperationError
+from .base import Action, Leaf, Source
+from .exceptions import (
+    InvalidDataError,
+    NoDefaultApplicationError,
+    OperationError,
+)
 
 
 def ConstructFileLeafTypes():
@@ -133,7 +135,7 @@ class FileLeaf(Leaf, TextRepresentation):
 
     def canonical_path(self) -> str:
         """Return the true path of the File (without symlinks)"""
-        return path.realpath(self.object)
+        return path.realpath(self.object)  # type: ignore
 
     def is_valid(self) -> bool:
         return os.access(self.object, os.R_OK)
@@ -145,7 +147,7 @@ class FileLeaf(Leaf, TextRepresentation):
         return path.isdir(self.object)
 
     def get_text_representation(self) -> str:
-        return GLib.filename_display_name(self.object)
+        return GLib.filename_display_name(self.object)  # type: ignore
 
     def get_urilist_representation(self) -> ty.List[str]:
         return [self.get_gfile().get_uri()]
@@ -160,18 +162,27 @@ class FileLeaf(Leaf, TextRepresentation):
         return utils.get_display_path_for_bytestring(self.canonical_path())
 
     def get_actions(self) -> ty.Iterable[Action]:
-        return fileactions.get_actions_for_file(self)
+        yield Open()
+        yield GetParent()
+
+        if self.is_dir():
+            yield OpenTerminal()
+
+        elif self.is_valid():
+            if self._is_good_executable():
+                yield Execute()
+                yield Execute(in_terminal=True)
 
     def has_content(self) -> bool:
         return self.is_dir() or Leaf.has_content(self)
 
-    def content_source(self, alternate: bool = False) -> Source:
+    def content_source(self, alternate: bool = False) -> Source | None:
         if self.is_dir():
             return _directory_content(self.object, alternate)
 
         return Leaf.content_source(self)
 
-    def get_thumbnail(self, width, height) -> GdkPixbuf.Pixbuf | None:
+    def get_thumbnail(self, width: int, height: int) -> GdkPixbuf.Pixbuf | None:
         if self.is_dir():
             return None
 
@@ -196,9 +207,7 @@ class FileLeaf(Leaf, TextRepresentation):
         if not gfile.query_exists(None):
             return None
 
-        info = gfile.query_info(
-            content_attr, Gio.FileQueryInfoFlags.NONE, None
-        )
+        info = gfile.query_info(content_attr, Gio.FileQueryInfoFlags.NONE, None)
         content_type = info.get_attribute_string(content_attr)
         return content_type  # type: ignore
 
@@ -219,11 +228,16 @@ class FileLeaf(Leaf, TextRepresentation):
         if not gfile.query_exists(None):
             return False
 
-        info = gfile.query_info(
-            content_attr, Gio.FileQueryInfoFlags.NONE, None
-        )
+        info = gfile.query_info(content_attr, Gio.FileQueryInfoFlags.NONE, None)
         content_type = info.get_attribute_string(content_attr)
         return predicate(content_type, ctype)  # type: ignore
+
+    def _is_good_executable(self):
+        if not self._is_executable():
+            return False
+
+        ctype, uncertain = Gio.content_type_guess(self.object, None)
+        return uncertain or Gio.content_type_can_be_executable(ctype)
 
 
 class SourceLeaf(Leaf):
@@ -288,9 +302,7 @@ class AppLeaf(Leaf):
         return hash(str(self))
 
     def __eq__(self, other: ty.Any) -> bool:
-        return (
-            isinstance(other, type(self)) and self.get_id() == other.get_id()
-        )
+        return isinstance(other, type(self)) and self.get_id() == other.get_id()
 
     def __getstate__(self) -> ty.Dict[str, ty.Any]:
         self.init_item_id = self.object and self.object.get_id()
@@ -320,14 +332,14 @@ class AppLeaf(Leaf):
                 elif self.init_item_id:
                     item = Gio.DesktopAppInfo.new(self.init_item_id)
 
-            except TypeError:
+            except TypeError as exc:
                 pretty.print_debug(
                     __name__,
                     "Application not found:",
                     self.init_item_id,
                     self.init_path,
                 )
-                raise InvalidDataError
+                raise InvalidDataError from exc
 
         self.object = item
         if not self.object:
@@ -337,7 +349,7 @@ class AppLeaf(Leaf):
         return self.get_id()
 
     def _get_package_name(self) -> str:
-        return GLib.filename_display_basename(self.get_id())
+        return GLib.filename_display_basename(self.get_id())  # type: ignore
 
     def launch(
         self,
@@ -362,8 +374,8 @@ class AppLeaf(Leaf):
                 desktop_file=self.init_path,
                 screen=ctx and ctx.environment.get_screen(),
             )
-        except launch.SpawnError as exc:
-            raise OperationError(exc)
+        except launch.SpawnError as exc:  # type: ignore
+            raise OperationError(exc) from exc
 
     def get_id(self) -> str:
         """Return the unique ID for this app.
@@ -479,6 +491,7 @@ class LaunchAgain(Launch):
         yield AppLeaf
 
     def valid_for_item(self, leaf: Leaf) -> bool:
+        assert isinstance(leaf, AppLeaf)
         return launch.application_is_running(leaf.get_id())
 
     def get_description(self) -> str:
@@ -502,6 +515,7 @@ class CloseAll(Action):
         yield AppLeaf
 
     def valid_for_item(self, leaf: Leaf) -> bool:
+        assert isinstance(leaf, AppLeaf)
         return launch.application_is_running(leaf.get_id())
 
     def get_description(self) -> str:
@@ -523,7 +537,7 @@ class UrlLeaf(Leaf, TextRepresentation):
         yield OpenUrl()
 
     def get_description(self) -> ty.Optional[str]:
-        return self.object
+        return self.object  # type:ignore
 
     def get_icon_name(self) -> str:
         return "text-html"
@@ -639,3 +653,140 @@ class TextLeaf(Leaf, TextRepresentation):
 
     def get_icon_name(self) -> str:
         return "edit-select-all"
+
+
+class Open(Action):
+    """Open with default application"""
+
+    action_accelerator = "o"
+    rank_adjust = 5
+
+    def __init__(self, name=_("Open")):
+        Action.__init__(self, name)
+
+    @classmethod
+    def default_application_for_leaf(cls, leaf: FileLeaf) -> Gio.AppInfo:
+        content_attr = Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE
+        gfile = leaf.get_gfile()
+        info = gfile.query_info(content_attr, Gio.FileQueryInfoFlags.NONE, None)
+        content_type = info.get_attribute_string(content_attr)
+        def_app = Gio.app_info_get_default_for_type(content_type, False)
+        if not def_app:
+            raise NoDefaultApplicationError(
+                (
+                    _("No default application for %(file)s (%(type)s)")
+                    % {"file": str(leaf), "type": content_type}
+                )
+                + "\n"
+                + _('Please use "%s"') % _("Set Default Application...")
+            )
+
+        return def_app
+
+    def wants_context(self) -> bool:
+        return True
+
+    def activate(self, leaf, iobj=None, ctx=None):
+        assert ctx
+        self.activate_multiple((leaf,), ctx)
+
+    def activate_multiple(
+        self, objects: ty.Iterable[FileLeaf], ctx: ty.Any
+    ) -> None:
+        appmap: dict[str, Gio.AppInfo] = {}
+        leafmap: dict[str, list[FileLeaf]] = {}
+        for obj in objects:
+            app = self.default_application_for_leaf(obj)
+            id_ = app.get_id()
+            appmap[id_] = app
+            leafmap.setdefault(id_, []).append(obj)
+
+        for id_, leaves in leafmap.items():
+            app = appmap[id_]
+            launch.launch_application(
+                app,
+                paths=[L.object for L in leaves],
+                activate=False,
+                screen=ctx and ctx.environment.get_screen(),
+            )
+
+    def get_description(self) -> ty.Optional[str]:
+        return _("Open with default application")
+
+
+class GetParent(Action):
+    action_accelerator = "p"
+    rank_adjust = -5
+
+    def __init__(self, name=_("Get Parent Folder")):
+        super().__init__(name)
+
+    def has_result(self) -> bool:
+        return True
+
+    def activate(
+        self, leaf: FileLeaf, iobj: ty.Any = None, ctx: ty.Any = None
+    ) -> FileLeaf:
+        fileloc = leaf.object
+        parent = os.path.normpath(os.path.join(fileloc, os.path.pardir))
+        return FileLeaf(parent)
+
+    def get_description(self) -> ty.Optional[str]:
+        return None
+
+    def get_icon_name(self):
+        return "folder-open"
+
+
+class OpenTerminal(Action):
+    action_accelerator = "t"
+
+    def __init__(self, name=_("Open Terminal Here")):
+        super().__init__(name)
+
+    def wants_context(self):
+        return True
+
+    def activate(self, leaf, iobj=None, ctx=None):
+        assert ctx
+        try:
+            utils.spawn_terminal(leaf.object, ctx.environment.get_screen())
+        except utils.SpawnError as exc:
+            raise OperationError(exc)
+
+    def get_description(self) -> ty.Optional[str]:
+        return _("Open this location in a terminal")
+
+    def get_icon_name(self):
+        return "utilities-terminal"
+
+
+class Execute(Action):
+    """Execute executable file (FileLeaf)"""
+
+    rank_adjust = 10
+
+    def __init__(self, in_terminal=False, quoted=True):
+        name = _("Run in Terminal") if in_terminal else _("Run (Execute)")
+        super().__init__(name)
+        self.in_terminal = in_terminal
+        self.quoted = quoted
+
+    def repr_key(self):
+        return (self.in_terminal, self.quoted)
+
+    def activate(self, leaf, iobj=None, ctx=None):
+        if self.quoted:
+            argv = [leaf.object]
+        else:
+            argv = utils.argv_for_commandline(leaf.object)
+        if self.in_terminal:
+            utils.spawn_in_terminal(argv)
+        else:
+            utils.spawn_async(argv)
+
+    def get_description(self) -> ty.Optional[str]:
+        if self.in_terminal:
+            return _("Run this program in a Terminal")
+
+        return _("Run this program")

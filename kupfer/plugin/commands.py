@@ -20,7 +20,7 @@ import os
 
 from kupfer.objects import TextSource, TextLeaf, Action, FileLeaf
 from kupfer.objects import OperationError
-from kupfer.obj.fileactions import Execute
+from kupfer.obj.objects import Execute
 from kupfer import utils, icons
 from kupfer.support import pretty, kupferstring
 

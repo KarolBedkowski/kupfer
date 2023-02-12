@@ -304,7 +304,7 @@ Action
 ``class Action`` inherits from KupferObject.
 
 An Action represents a command using a direct object and an optional
-indirect object. One example is ``kupfer.obj.fileactions.Open`` that
+indirect object. One example is ``kupfer.obj.objects.Open`` that
 will open its direct object (which must be a file), with its default
 viewer.
 
