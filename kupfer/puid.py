@@ -70,7 +70,7 @@ def get_unique_id(obj: ty.Any) -> PuID | None:
         return None
 
     if hasattr(obj, "qf_id"):
-        return str(qfurl.qfurl(obj))
+        return str(qfurl.Qfurl(obj))
 
     if getattr(obj, SERIALIZABLE_ATTRIBUTE, None) is not None:
         try:
@@ -112,7 +112,7 @@ def _find_obj_in_catalog(
     puid: str, catalog: ty.Collection[AnySource]
 ) -> Leaf | None:
     if puid.startswith(qfurl.QFURL_SCHEME):
-        qfu = qfurl.qfurl(url=puid)
+        qfu = qfurl.Qfurl(url=puid)
         return qfu.resolve_in_catalog(catalog)
 
     for src in catalog:

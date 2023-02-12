@@ -19,10 +19,10 @@ class QfurlError(Exception):
     pass
 
 
-class qfurl:
-    """A qfurl is a URI to locate unique objects in kupfer's catalog.
+class Qfurl:
+    """A Qfurl is a URI to locate unique objects in kupfer's catalog.
 
-    The qfurl is built up as follows:
+    The Qfurl is built up as follows:
     ``qpfer://mother/qfid#module_and_type_hint``
 
     The mother part is a mother source identifier and is optional.
@@ -31,14 +31,14 @@ class qfurl:
     A short url looks like the following:
     ``qpfer:identifier``
 
-    This class provides methods to get the qfurl for an object,
+    This class provides methods to get the Qfurl for an object,
     and resolve the object in a catalog.
 
     >>> class Object (object):
     ...     qf_id = "token"
     ...
-    >>> q = qfurl(Object())
-    >>> qfurl.reduce_url(q.url)
+    >>> q = Qfurl(Object())
+    >>> Qfurl.reduce_url(q.url)
     'qpfer:token'
 
     >>> class Source (object):
@@ -52,13 +52,13 @@ class qfurl:
     """
 
     def __init__(self, obj=None, url=None):
-        """Create a new qfurl for object @obj"""
+        """Create a new Qfurl for object @obj"""
         if obj:
             typname = f"{type(obj).__module__}.{type(obj).__name__}"
             try:
                 qfid = obj.qf_id
-            except AttributeError:
-                raise QfurlError(f"{obj} has no qfurl")
+            except AttributeError as exe:
+                raise QfurlError(f"{obj} has no Qfurl") from exe
 
             self.url = _urlunparse((QFURL_SCHEME, "", qfid, "", "", typname))
         else:
@@ -77,7 +77,7 @@ class qfurl:
     def reduce_url(cls, url: str) -> str:
         """
         >>> url = "qpfer://mother/qfid#module_and_type_hint"
-        >>> qfurl.reduce_url(url)
+        >>> Qfurl.reduce_url(url)
         'qpfer://mother/qfid'
         """
         return urllib.parse.urldefrag(url)[0].replace("///", "", 1)
@@ -86,7 +86,7 @@ class qfurl:
     def _parts_mother_id_typename(cls, url: str) -> ty.Tuple[str, str, str]:
         """
         >>> murl = "qpfer://mother/qfid#module_and_type_hint"
-        >>> qfurl._parts_mother_id_typename(murl)
+        >>> Qfurl._parts_mother_id_typename(murl)
         ('mother', 'qfid', 'module_and_type_hint')
         """
         scheme, mother, qfid, _ign, _ore, typname = _urlparse(url)
@@ -120,7 +120,7 @@ class qfurl:
                     continue
 
                 with suppress(QfurlError):
-                    if self == qfurl(obj):
+                    if self == Qfurl(obj):
                         return obj
 
         pretty.print_debug(__name__, "No match found for", self)

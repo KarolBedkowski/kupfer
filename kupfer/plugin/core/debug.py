@@ -46,7 +46,7 @@ class DebugInfo(Action):
 
         def get_qfurl(leaf):
             try:
-                return qfurl.qfurl(leaf)
+                return qfurl.Qfurl(leaf)
             except qfurl.QfurlError:
                 pass
 
