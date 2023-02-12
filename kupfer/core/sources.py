@@ -3,27 +3,28 @@ from __future__ import annotations
 import gzip
 import hashlib
 import itertools
-import pickle
 import os
+import pickle
 import threading
 import time
+import typing as ty
 import weakref
 from pathlib import Path
-import typing as ty
+import traceback
 
 from kupfer import config
-from kupfer.support import pretty, scheduler, conspickle
-from kupfer.obj import base, sources
+from kupfer.core import pluginload
+from kupfer.obj import sources
 from kupfer.obj.base import (
-    Source,
     Action,
     ActionGenerator,
-    Leaf,
-    TextSource,
     AnySource,
     KupferObject,
+    Leaf,
+    Source,
+    TextSource,
 )
-from kupfer.core import pluginload
+from kupfer.support import conspickle, pretty, scheduler
 
 
 class InternalError(Exception):
@@ -44,59 +45,59 @@ class PeriodicRescanner(pretty.OutputMixin):
     def __init__(
         self, period: int = 5, startup: int = 10, campaign: int = 3600
     ) -> None:
-        self.startup = startup
-        self.period = period
-        self.campaign = campaign
-        self.timer = scheduler.Timer()
+        self._startup = startup
+        self._period = period
+        self._campaign = campaign
+        self._timer = scheduler.Timer()
         # Source -> time mapping
-        self.latest_rescan_time: weakref.WeakKeyDictionary[
+        self._latest_rescan_time: weakref.WeakKeyDictionary[
             Source, float
         ] = weakref.WeakKeyDictionary()
         self._min_rescan_interval = campaign // 4
+        self._catalog: ty.Iterable[Source] = []
+        self._catalog_cur: ty.Iterator[Source] | None = None
 
     def set_catalog(self, catalog: ty.Iterable[Source]) -> None:
-        self.catalog = catalog
-        self.cur = iter(self.catalog)
-        self.output_debug(f"Registering new campaign, in {self.startup} s")
-        self.timer.set(self.startup, self._new_campaign)
+        self._catalog = catalog
+        self._catalog_cur = iter(self._catalog)
+        self.output_debug(f"Registering new campaign, in {self._startup} s")
+        self._timer.set(self._startup, self._new_campaign)
 
     def _new_campaign(self) -> None:
-        self.output_info(f"Starting new campaign, interval {self.period} s")
-        self.cur = iter(self.catalog)
-        self.timer.set(self.period, self._periodic_rescan_helper)
+        self.output_info(f"Starting new campaign, interval {self._period} s")
+        self._catalog_cur = iter(self._catalog)
+        self._timer.set(self._period, self._periodic_rescan_helper)
 
     def _periodic_rescan_helper(self) -> None:
         # Advance until we find a source that was not recently rescanned
-        for next in self.cur:
-            oldtime = self.latest_rescan_time.get(next, 0)
+        for source in self._catalog_cur or ():
+            oldtime = self._latest_rescan_time.get(source, 0)
             if (time.time() - oldtime) > self._min_rescan_interval:
-                self.timer.set(self.period, self._periodic_rescan_helper)
-                self._start_source_rescan(next)
+                self._timer.set(self._period, self._periodic_rescan_helper)
+                self._start_source_rescan(source)
                 return
 
         # No source to scan found
-        self.output_info(f"Campaign finished, pausing {self.campaign} s")
-        self.timer.set(self.campaign, self._new_campaign)
+        self.output_info(f"Campaign finished, pausing {self._campaign} s")
+        self._timer.set(self._campaign, self._new_campaign)
 
     def rescan_now(self, source: Source, force_update: bool = False) -> None:
         "Rescan @source immediately"
         if force_update:
             # if forced update, we know that it was brought up to date
-            self.latest_rescan_time[source] = time.time()
+            self._latest_rescan_time[source] = time.time()
 
         self.rescan_source(source, force_update=force_update)
 
     def _start_source_rescan(self, source: Source) -> None:
-        self.latest_rescan_time[source] = time.time()
+        self._latest_rescan_time[source] = time.time()
         if not source.is_dynamic():
-            thread = threading.Thread(
-                target=self.rescan_source, args=(source,)
-            )
+            thread = threading.Thread(target=self.rescan_source, args=(source,))
             thread.daemon = True
             thread.start()
 
     def rescan_source(self, source: Source, force_update: bool = True) -> None:
-        list(source.get_leaves(force_update=force_update))
+        list(source.get_leaves(force_update=force_update) or ())
 
 
 class SourcePickler(pretty.OutputMixin):
@@ -112,7 +113,7 @@ class SourcePickler(pretty.OutputMixin):
 
     @classmethod
     def should_use_cache(cls) -> bool:
-        return config.has_capability("CACHE")  # type: ignore
+        return config.has_capability("CACHE")
 
     @classmethod
     def should_use_cache_for_source(cls, source: Source) -> bool:
@@ -122,7 +123,9 @@ class SourcePickler(pretty.OutputMixin):
         """Checks if there are old cachefiles from last version,
         and deletes those
         """
-        for dpath, _dirs, files in os.walk(config.get_cache_home()):
+        home = config.get_cache_home()
+        assert home
+        for dpath, _dirs, files in os.walk(home):
             # Look for files matching beginning and end of
             # name_template, with the previous file version
             chead, ctail = self.name_template.split("%s")
@@ -139,7 +142,7 @@ class SourcePickler(pretty.OutputMixin):
             )
             for fpath in obsolete_files:
                 # be overly careful
-                assert fpath.startswith(config.get_cache_home())
+                assert fpath.startswith(home)
                 assert "kupfer" in fpath
                 Path(fpath).unlink()
 
@@ -150,7 +153,9 @@ class SourcePickler(pretty.OutputMixin):
         source_id = f"{source!r}{source}{source.version}"
         hash_str = hashlib.md5(source_id.encode("utf-8")).hexdigest()
         filename = self.name_template % (hash_str, self.format_version)
-        return os.path.join(config.get_cache_home(), filename)
+        home = config.get_cache_home()
+        assert home
+        return os.path.join(home, filename)
 
     def unpickle_source(self, source: Source) -> ty.Any:
         if not self.should_use_cache_for_source(source):
@@ -169,9 +174,7 @@ class SourcePickler(pretty.OutputMixin):
         try:
             pfile = Path(pickle_file).read_bytes()
             source = pickle.loads(pfile)
-            assert isinstance(
-                source, base.Source
-            ), "Stored object not a Source"
+            assert isinstance(source, Source), "Stored object not a Source"
             sname = os.path.basename
             self.output_debug("Loading", source, "from", sname(pickle_file))
             return source
@@ -228,9 +231,12 @@ class SourceDataPickler(pretty.OutputMixin):
     @classmethod
     def get_filename(cls, source: Source) -> str:
         """Return filename for @source"""
-        name = source.config_save_name()
+        assert hasattr(source, "config_save_name")
+        name = source.config_save_name()  # type: ignore
         filename = cls.name_template % (name, cls.format_version)
-        return config.save_config_file(filename)
+        filepath = config.save_config_file(filename)
+        assert filepath
+        return filepath
 
     @classmethod
     def source_has_config(cls, source: Source) -> ty.Any:
@@ -264,8 +270,6 @@ class SourceDataPickler(pretty.OutputMixin):
         try:
             data = pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)
         except pickle.PickleError:
-            import traceback
-
             self.output_error("Unable to save configuration for", source)
             self.output_error("Saving configuration raised an exception:")
             traceback.print_exc()
@@ -300,18 +304,18 @@ class SourceController(pretty.OutputMixin):
         return cls._instance
 
     def __init__(self):
-        self.rescanner = PeriodicRescanner(period=3)
-        self.sources: ty.Set[Source] = set()
-        self.toplevel_sources: ty.Set[Source] = set()
-        self.text_sources: ty.Set[TextSource] = set()
-        self.content_decorators: ty.Dict[ty.Any, ty.Set[Source]] = {}
+        self._sources: ty.Set[Source] = set()
         self.action_decorators: ty.Dict[ty.Any, ty.Set[Action]] = {}
-        self.action_generators: ty.List[ActionGenerator] = []
-        self.plugin_object_map: weakref.WeakKeyDictionary[
+        self._rescanner = PeriodicRescanner(period=3)
+        self._toplevel_sources: ty.Set[Source] = set()
+        self._text_sources: ty.Set[TextSource] = set()
+        self._content_decorators: ty.Dict[ty.Any, ty.Set[Source]] = {}
+        self._action_generators: ty.List[ActionGenerator] = []
+        self._plugin_object_map: weakref.WeakKeyDictionary[
             ty.Any, str
         ] = weakref.WeakKeyDictionary()
-        self.loaded_successfully = False
-        self.did_finalize_sources = False
+        self._loaded_successfully = False
+        self._did_finalize_sources = False
         self._pre_root: ty.Optional[ty.List[Source]] = None
 
     def add(
@@ -325,44 +329,44 @@ class SourceController(pretty.OutputMixin):
         new_srcs = set(self._try_restore(srcs))
         new_srcs.update(srcs)
 
-        self.sources.update(new_srcs)
+        self._sources.update(new_srcs)
         if toplevel:
-            self.toplevel_sources.update(new_srcs)
+            self._toplevel_sources.update(new_srcs)
 
         if initialize:
             self._initialize_sources(new_srcs)
             self._cache_sources(new_srcs)
-            self.rescanner.set_catalog(self.sources)
+            self._rescanner.set_catalog(self._sources)
 
         if plugin_id:
             self._register_plugin_objects(plugin_id, *new_srcs)
 
-    def set_toplevel(self, src: AnySource, toplevel: bool) -> None:
-        assert src in self.sources, "Source is not tracked in SourceController"
+    def set_toplevel(self, src: Source, toplevel: bool) -> None:
+        assert src in self._sources, "Source is not tracked in SourceController"
         self._invalidate_root()
         if toplevel:
-            self.toplevel_sources.add(src)
+            self._toplevel_sources.add(src)
         else:
-            self.toplevel_sources.discard(src)
+            self._toplevel_sources.discard(src)
 
     def _register_plugin_objects(
         self, plugin_id: str, *objects: ty.Any
     ) -> None:
         "Register a plugin id mapping for @objects"
         for obj in objects:
-            self.plugin_object_map[obj] = plugin_id
+            self._plugin_object_map[obj] = plugin_id
             pretty.print_debug(__name__, "Add", repr(obj))
 
-    def _remove(self, src: AnySource) -> None:
+    def _remove(self, src: Source) -> None:
         self._invalidate_root()
-        self.toplevel_sources.discard(src)
-        self.sources.discard(src)
-        self.rescanner.set_catalog(self.sources)
+        self._toplevel_sources.discard(src)
+        self._sources.discard(src)
+        self._rescanner.set_catalog(self._sources)
         self._finalize_source(src)
         pretty.print_debug(__name__, "Remove", repr(src))
 
     def get_plugin_id_for_object(self, obj: ty.Any) -> ty.Optional[str]:
-        id_ = self.plugin_object_map.get(obj)
+        id_ = self._plugin_object_map.get(obj)
         # self.output_debug("Object", repr(obj), "has id", id_, id(obj))
         return id_
 
@@ -375,7 +379,7 @@ class SourceController(pretty.OutputMixin):
         self.output_debug("Removing objects for plugin:", plugin_id)
 
         # sources
-        for src in list(self.sources):
+        for src in list(self._sources):
             if self.get_plugin_id_for_object(src) == plugin_id:
                 self._remove(src)
                 removed_source = True
@@ -387,34 +391,34 @@ class SourceController(pretty.OutputMixin):
                     collection.remove(obj)
                     pretty.print_debug(__name__, "Remove", repr(obj))
 
-        remove_matching_objects(self.text_sources, plugin_id)
+        remove_matching_objects(self._text_sources, plugin_id)
 
-        for typ_v in self.content_decorators.values():
+        for typ_v in self._content_decorators.values():
             remove_matching_objects(typ_v, plugin_id)
 
         for a_typ_v in self.action_decorators.values():
             remove_matching_objects(a_typ_v, plugin_id)
 
-        remove_matching_objects(self.action_generators, plugin_id)
+        remove_matching_objects(self._action_generators, plugin_id)
 
         return removed_source
 
     def get_sources(self) -> ty.Set[Source]:
-        return self.sources
+        return self._sources
 
     def add_text_sources(self, plugin_id, srcs):
-        self.text_sources.update(srcs)
+        self._text_sources.update(srcs)
         self._register_plugin_objects(plugin_id, *srcs)
 
     def get_text_sources(self) -> ty.Set[TextSource]:
-        return self.text_sources
+        return self._text_sources
 
     def add_content_decorators(
         self, plugin_id: str, decos: ty.Dict[ty.Any, ty.Set[ty.Any]]
     ) -> None:
         # FIXME: can't specify set type because of mixins
         for typ, val in decos.items():
-            self.content_decorators.setdefault(typ, set()).update(val)
+            self._content_decorators.setdefault(typ, set()).update(val)
             self._register_plugin_objects(plugin_id, *val)
 
     def add_action_decorators(
@@ -430,7 +434,7 @@ class SourceController(pretty.OutputMixin):
     def add_action_generator(
         self, plugin_id: str, agenerator: ActionGenerator
     ) -> None:
-        self.action_generators.append(agenerator)
+        self._action_generators.append(agenerator)
         self._register_plugin_objects(plugin_id, agenerator)
 
     def _disambiguate_actions(self, actions: ty.Iterable[Action]) -> None:
@@ -453,7 +457,7 @@ class SourceController(pretty.OutputMixin):
                 action.name += plugin_suffix
 
     def __contains__(self, src: AnySource) -> bool:
-        return src in self.sources
+        return src in self._sources
 
     def __getitem__(self, src: AnySource) -> AnySource:
         # TODO: ???
@@ -462,7 +466,7 @@ class SourceController(pretty.OutputMixin):
 
         self.output_debug(f"__getitem__ {src!r}")
 
-        for s in self.sources:
+        for s in self._sources:
             if s == src:
                 return s
 
@@ -471,9 +475,9 @@ class SourceController(pretty.OutputMixin):
     @property
     def root(self) -> ty.Optional[Source]:
         """Get the root source of catalog"""
-        if len(self.sources) == 1:
-            (root_catalog,) = self.sources
-        elif len(self.sources) > 1:
+        if len(self._sources) == 1:
+            (root_catalog,) = self._sources
+        elif len(self._sources) > 1:
             firstlevel = self.firstlevel
             root_catalog = sources.MultiSource(firstlevel)
         else:
@@ -490,14 +494,14 @@ class SourceController(pretty.OutputMixin):
         if self._pre_root:
             return self._pre_root
 
-        sourceindex = set(self.sources)
-        kupfer_sources = sources.SourcesSource(self.sources)
+        sourceindex = set(self._sources)
+        kupfer_sources = sources.SourcesSource(self._sources)
         sourceindex.add(kupfer_sources)
         # Make sure firstlevel is ordered
         # So that it keeps the ordering.. SourcesSource first
         firstlevel: ty.List[Source] = []
         firstlevel.append(sources.SourcesSource(sourceindex))
-        firstlevel.extend(self.toplevel_sources)
+        firstlevel.extend(self._toplevel_sources)
         self._pre_root = firstlevel
         return firstlevel
 
@@ -514,7 +518,7 @@ class SourceController(pretty.OutputMixin):
     def root_for_types(
         self,
         types: ty.Iterable[ty.Any],
-        extra_sources: ty.Optional[ty.Iterable[AnySource]] = None,
+        extra_sources: ty.Optional[ty.Iterable[Source]] = None,
     ) -> sources.MultiSource:
         """
         Get root for a flat catalog of all catalogs
@@ -531,10 +535,10 @@ class SourceController(pretty.OutputMixin):
         firstlevel = set(extra_sources or [])
         # include the Catalog index since we want to include
         # the top of the catalogs (like $HOME)
-        catalog_index = (sources.SourcesSource(self.sources),)
+        catalog_index = (sources.SourcesSource(self._sources),)
         firstlevel.update(
             s
-            for s in itertools.chain(self.sources, catalog_index)
+            for s in itertools.chain(self._sources, catalog_index)
             if self.good_source_for_types(s, ttypes)
         )
 
@@ -554,7 +558,7 @@ class SourceController(pretty.OutputMixin):
     ) -> ty.Iterator[Source]:
         """Iterator of content sources for @leaf,
         providing @types (or None for all)"""
-        for typ, val in self.content_decorators.items():
+        for typ, val in self._content_decorators.items():
             if not isinstance(leaf, typ):
                 continue
 
@@ -575,11 +579,11 @@ class SourceController(pretty.OutputMixin):
             if isinstance(leaf, typ):
                 yield from val
 
-        for agenerator in self.action_generators:
+        for agenerator in self._action_generators:
             yield from agenerator.get_actions_for_leaf(leaf)
 
     def decorate_object(
-        self, obj: base.KupferObject, action: ty.Optional[Action] = None
+        self, obj: KupferObject, action: ty.Optional[Action] = None
     ) -> None:
         if hasattr(obj, "has_content") and not obj.has_content():
             types = tuple(action.object_types()) if action else ()
@@ -594,29 +598,29 @@ class SourceController(pretty.OutputMixin):
 
     def finalize(self) -> None:
         "Finalize all sources, equivalent to deactivating all sources"
-        for src in self.sources:
+        for src in self._sources:
             src.finalize()
 
-        self.did_finalize_sources = True
+        self._did_finalize_sources = True
 
     def save_cache(self) -> None:
         "Save all caches (non-important data)"
-        if not self.did_finalize_sources:
+        if not self._did_finalize_sources:
             raise InternalError("Called save_cache without finalize!")
 
-        if self.loaded_successfully:
-            self._pickle_sources(self.sources)
+        if self._loaded_successfully:
+            self._pickle_sources(self._sources)
         else:
             self.output_debug("Not writing cache on failed load")
 
     def save_data(self) -> None:
         "Save (important) user data/configuration"
-        if not self.loaded_successfully:
+        if not self._loaded_successfully:
             self.output_info("Not writing configuration on failed load")
             return
 
         configsaver = SourceDataPickler()
-        for source in self.sources:
+        for source in self._sources:
             if configsaver.source_has_config(source):
                 self._save_source(source, pickler=configsaver)
 
@@ -671,21 +675,21 @@ class SourceController(pretty.OutputMixin):
     ) -> None:
         "Oust @source from catalog if any exception is raised"
         if not is_decorator:
-            self.sources.discard(source)
-            self.toplevel_sources.discard(source)
+            self._sources.discard(source)
+            self._toplevel_sources.discard(source)
             source_type = type(source)
         else:
             source_type = source  # type: ignore
 
-        for cdv in self.content_decorators.values():
+        for cdv in self._content_decorators.values():
             cdv.discard(source_type)  # type: ignore
 
     def initialize(self) -> None:
         "Initialize all sources and cache toplevel sources"
-        self._initialize_sources(self.sources)
-        self.rescanner.set_catalog(self.sources)
-        self._cache_sources(self.toplevel_sources)
-        self.loaded_successfully = True
+        self._initialize_sources(self._sources)
+        self._rescanner.set_catalog(self._sources)
+        self._cache_sources(self._toplevel_sources)
+        self._loaded_successfully = True
 
     def _initialize_sources(self, srcs: ty.Iterable[Source]) -> None:
         for src in srcs:
@@ -697,7 +701,7 @@ class SourceController(pretty.OutputMixin):
         # either newly rescanned or the cache is fully loaded
         for src in srcs:
             with pluginload.exception_guard(src, self._remove_source, src):
-                self.rescanner.rescan_now(src, force_update=False)
+                self._rescanner.rescan_now(src, force_update=False)
 
 
 def GetSourceController() -> SourceController:

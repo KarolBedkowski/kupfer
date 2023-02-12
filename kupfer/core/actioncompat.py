@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import typing as ty
 
-from kupfer.obj.base import Leaf, Action, Source, TextSource, KupferObject
-from kupfer.core.sources import SourceController
+from kupfer.obj.base import Action, KupferObject, Leaf, Source, TextSource
+
+from .sources import SourceController
 
 
 def _get_leaf_members(leaf: Leaf) -> ty.Iterable[Leaf]:
@@ -40,7 +41,7 @@ def actions_for_item(
 
 def iobject_source_for_action(
     action: Action, for_item: Leaf
-) -> tuple[Source | TextSource | None, bool]:
+) -> tuple[Source | None, bool]:
     """
     Return (src, use_catalog)
 

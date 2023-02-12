@@ -622,7 +622,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         """Find object with URI @url and select it in the first pane"""
         sctrl = GetSourceController()
         qfu = qfurl.Qfurl(url=url)
-        found = qfu.resolve_in_catalog(sctrl.sources)
+        found = qfu.resolve_in_catalog(sctrl.get_sources())
         if found and not found == self._source_pane.get_selection():
             self._insert_object(PaneSel.SOURCE, found)
 
