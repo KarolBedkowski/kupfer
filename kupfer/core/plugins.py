@@ -293,7 +293,9 @@ def _plugin_path(name: str) -> ty.Tuple[str, ...]:
 
 # Plugin Attributes
 def get_plugin_attributes(
-    plugin_name: str, attrs: ty.Tuple[str, ...], warn: bool = False
+    plugin_name: str,
+    attrs: ty.Tuple[str | PluginAttr, ...],
+    warn: bool = False,
 ) -> ty.Iterator[ty.Any]:
     """Generator of the attributes named @attrs
     to be found in plugin @plugin_name
@@ -310,8 +312,10 @@ def get_plugin_attributes(
         return
 
     for attr in attrs:
+        if isinstance(attr, PluginAttr):
+            attr = attr.value
         try:
-            obj = getattr(plugin, attr)
+            obj = getattr(plugin, str(attr))
         except AttributeError as exc:
             if warn:
                 pretty.print_info(__name__, f"Plugin {plugin_name}: {exc}")
@@ -323,10 +327,10 @@ def get_plugin_attributes(
 
 
 def get_plugin_attribute(
-    plugin_name: str, attr: PluginAttr
+    plugin_name: str, attr: PluginAttr | str
 ) -> tuple[ty.Any, ...] | None:
     """Get single plugin attribute"""
-    attrs = tuple(get_plugin_attributes(plugin_name, (attr.value,)))
+    attrs = tuple(get_plugin_attributes(plugin_name, (attr,)))
     if attrs and attrs[0]:
         return attrs[0]  # type: ignore
 
