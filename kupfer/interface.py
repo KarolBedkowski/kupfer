@@ -5,30 +5,8 @@ import typing as ty
 from gi.repository import Gtk, Gdk
 from kupfer.obj.base import KupferObject
 
-
-class TextRepresentation:
-    """
-    Kupfer Objects that implement this interface have a plain text
-    representation that can be used for Copy & Paste etc
-    """
-
-    def get_text_representation(self) -> str:
-        """The default implementation returns the represented object"""
-        return str(self.object)  # pylint: disable=no-member
-
-
-class UriListRepresentation:
-    """
-    Kupfer Objects that implement this interface have a uri-list
-    representation that can be used for Copy & Paste etc
-
-    get_urilist_representation should return a sequence of bytestring
-    URIs.
-    """
-
-    def get_urilist_representation(self) -> list[ty.AnyStr]:
-        """The default implementation raises notimplementederror"""
-        raise NotImplementedError
+# NOTE: TextRepresentation moved into obj.representation
+from kupfer.obj.representation import TextRepresentation, UriListRepresentation
 
 
 def get_text_representation(obj: ty.Any) -> str | None:

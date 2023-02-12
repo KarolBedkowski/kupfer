@@ -16,11 +16,11 @@ from os import path
 from gi.repository import GdkPixbuf, Gio, GLib
 
 from kupfer import icons, launch, utils
-from kupfer.interface import TextRepresentation
 from kupfer.support import kupferstring, pretty
 from kupfer.version import DESKTOP_ID
 
 from .base import Action, Leaf, Source
+from .representation import TextRepresentation
 from .exceptions import (
     InvalidDataError,
     NoDefaultApplicationError,

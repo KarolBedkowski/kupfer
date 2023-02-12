@@ -841,7 +841,7 @@ can reuse.
 
     ..
 
-.. topic:: ``kupfer.interface``
+.. topic:: ``kupfer.obj.representation``
 
     This module does not need to be imported just to implement the
     interface it defines.
