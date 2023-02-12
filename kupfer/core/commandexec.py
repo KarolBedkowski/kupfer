@@ -36,8 +36,7 @@ from enum import IntEnum
 
 from gi.repository import GObject
 
-from kupfer.support import pretty
-from kupfer import task
+from kupfer.support import pretty, task
 from kupfer import uiutils
 from kupfer.obj.exceptions import OperationError
 from kupfer.obj.base import Leaf, Source, Action, KupferObject

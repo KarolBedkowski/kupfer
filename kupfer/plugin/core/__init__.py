@@ -21,8 +21,7 @@ from kupfer.objects import InvalidLeafError
 from kupfer.obj.sources import MultiSource
 from kupfer import objects
 from kupfer import interface
-from kupfer.support import pretty
-from kupfer import task
+from kupfer.support import pretty, task
 
 
 def _is_debug():

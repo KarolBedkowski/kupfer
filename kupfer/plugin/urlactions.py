@@ -19,7 +19,8 @@ import urllib.error
 import typing as ty
 
 from kupfer.objects import Action, UrlLeaf, FileLeaf
-from kupfer import utils, task
+from kupfer import utils
+from kupfer.support import task
 
 
 def url_name(url):

@@ -20,8 +20,7 @@ from gi.repository import Gio, GLib
 
 from kupfer.objects import Action, FileLeaf, TextLeaf, TextSource
 from kupfer.objects import OperationError
-from kupfer.support import pretty
-from kupfer import task
+from kupfer.support import pretty, task
 
 
 def _good_destination(dpath, spath):

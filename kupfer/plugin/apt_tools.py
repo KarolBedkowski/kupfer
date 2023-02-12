@@ -16,9 +16,9 @@ import subprocess
 
 from kupfer.objects import Action, Source, Leaf
 from kupfer.objects import TextLeaf
-from kupfer import icons, task, uiutils, utils
+from kupfer import icons, uiutils, utils
 from kupfer import plugin_support
-from kupfer.support import kupferstring
+from kupfer.support import kupferstring, task
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {
