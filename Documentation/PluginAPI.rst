@@ -896,7 +896,7 @@ can reuse.
 
     ..
 
-.. topic:: ``kupfer.textutils``
+.. topic:: ``kupfer.support.textutils``
 
     ..
 

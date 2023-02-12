@@ -10,7 +10,7 @@ __author__ = "US"
 
 from kupfer.objects import Action, Leaf, TextLeaf
 from kupfer import icons, uiutils
-from kupfer import textutils
+from kupfer.support import textutils
 
 
 class ShowText(Action):

@@ -15,8 +15,7 @@ __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>, US"
 import dbus
 
 from kupfer import plugin_support
-from kupfer.support import pretty, weaklib
-from kupfer import textutils
+from kupfer.support import pretty, weaklib, textutils
 from kupfer.objects import Leaf, Action, Source
 from kupfer.objects import TextLeaf, NotAvailableError, AppLeaf
 from kupfer.obj.apps import AppLeafContentMixin

@@ -35,8 +35,7 @@ from kupfer.objects import (
 from kupfer.obj.apps import ApplicationSource
 from kupfer.objects import TextSource
 from kupfer import icons, plugin_support
-from kupfer import textutils
-from kupfer.support import pretty, weaklib
+from kupfer.support import pretty, weaklib, textutils
 
 
 PROGRAM_IDS = ["gnote", "tomboy", "kzrnote"]
