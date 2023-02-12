@@ -7,7 +7,7 @@ from gi.repository import GLib
 from gi.repository import Gio
 from gi.repository import GdkPixbuf
 
-from kupfer import datatools
+from kupfer.support import datatools
 from kupfer import icons
 from kupfer import utils
 

@@ -10,8 +10,7 @@ from gi.repository.Gio import (
     FILE_ATTRIBUTE_THUMBNAIL_PATH,
 )
 
-from kupfer import datatools
-from kupfer.support import scheduler, pretty, kupferstring
+from kupfer.support import scheduler, pretty, kupferstring, datatools
 from kupfer.core import settings
 
 ICON_CACHE: dict[int, datatools.LruCache[str, GdkPixbuf.Pixbuf]] = {}

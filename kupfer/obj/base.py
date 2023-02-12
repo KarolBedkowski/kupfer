@@ -4,9 +4,8 @@ import typing as ty
 
 from gi.repository import GdkPixbuf
 
-from kupfer import datatools
 from kupfer import icons
-from kupfer.support import pretty, kupferstring
+from kupfer.support import pretty, kupferstring, datatools
 from kupfer.utils import locale_sort
 
 __all__ = [

@@ -3,9 +3,8 @@ import typing as ty
 from gi.repository import GdkPixbuf
 
 from kupfer import icons
-from kupfer.support import pretty, scheduler
+from kupfer.support import pretty, scheduler, datatools
 from kupfer import utils
-from kupfer import datatools
 from kupfer import puid
 
 from kupfer.obj.base import Leaf, Action, Source

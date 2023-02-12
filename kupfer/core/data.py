@@ -14,8 +14,7 @@ from kupfer.obj.base import (
     TextSource,
     KupferObject,
 )
-from kupfer.support import pretty
-from kupfer import datatools
+from kupfer.support import pretty, datatools
 from kupfer.core import actioncompat
 from kupfer.core import search
 from kupfer.core.search import Rankable
