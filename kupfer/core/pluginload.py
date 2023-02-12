@@ -3,14 +3,11 @@ import traceback
 
 # import typing as ty
 
+from kupfer.obj.base import Action, ActionGenerator, AnySource, Source
 from kupfer.support import pretty
-from kupfer.obj.base import Source, ActionGenerator, Action, AnySource
-from kupfer.core import plugins
-from kupfer.core.plugins import (
-    PluginAttr,
-    load_plugin_objects,
-    initialize_plugin,
-)
+
+from . import plugins
+from .plugins import PluginAttr, initialize_plugin, load_plugin_objects
 
 
 # pylint: disable=too-few-public-methods
@@ -37,9 +34,7 @@ def load_plugin(plugin_id: str) -> PluginDescription:
     if not plugins.is_plugin_loaded(plugin_id):
         return PluginDescription()
 
-    text_sources.extend(
-        load_plugin_objects(plugin_id, PluginAttr.TEXT_SOURCES)
-    )
+    text_sources.extend(load_plugin_objects(plugin_id, PluginAttr.TEXT_SOURCES))
     action_decorators.extend(
         load_plugin_objects(plugin_id, PluginAttr.ACTION_DECORATORS)
     )

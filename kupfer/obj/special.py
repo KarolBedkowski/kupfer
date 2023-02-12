@@ -2,8 +2,9 @@ __version__ = "2010-01-21"
 
 import typing as ty
 
-from kupfer.obj.objects import RunnableLeaf
 from kupfer import kupferui
+
+from .objects import RunnableLeaf
 
 
 class PleaseConfigureLeaf(RunnableLeaf):

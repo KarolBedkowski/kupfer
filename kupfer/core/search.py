@@ -1,10 +1,12 @@
 from __future__ import annotations
+
+import itertools
+import operator
 import typing as ty
 
-import operator
-import itertools
-from kupfer.core import learn, relevance
-from kupfer.obj.base import Leaf, KupferObject
+from kupfer.obj.base import KupferObject, Leaf
+
+from . import learn, relevance
 
 
 def make_rankables(

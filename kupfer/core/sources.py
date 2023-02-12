@@ -7,13 +7,12 @@ import os
 import pickle
 import threading
 import time
+import traceback
 import typing as ty
 import weakref
 from pathlib import Path
-import traceback
 
 from kupfer import config
-from kupfer.core import pluginload
 from kupfer.obj import sources
 from kupfer.obj.base import (
     Action,
@@ -25,6 +24,8 @@ from kupfer.obj.base import (
     TextSource,
 )
 from kupfer.support import conspickle, pretty, scheduler
+
+from . import pluginload
 
 
 class InternalError(Exception):

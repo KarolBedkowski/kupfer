@@ -4,43 +4,39 @@
 DataController
 """
 from __future__ import annotations
+
 import itertools
 import os
 import sys
-from contextlib import suppress
 import typing as ty
+from contextlib import suppress
 from enum import IntEnum
 
 from gi.repository import GLib, GObject
 
-from kupfer.obj import sources, compose
+from kupfer.obj import compose, sources
 from kupfer.obj.base import (
     Action,
+    ActionGenerator,
+    AnySource,
+    KupferObject,
     Leaf,
     Source,
-    AnySource,
     TextSource,
-    KupferObject,
-    ActionGenerator,
 )
 from kupfer.support import pretty, scheduler
-from kupfer.core import commandexec
-from kupfer.core import execfile
-from kupfer.core import pluginload
-from kupfer.core import qfurl
-from kupfer.core import search, learn
-from kupfer.core import settings
-from kupfer.core.search import Rankable
-from kupfer.core.sources import GetSourceController
 from kupfer.ui.uievents import GUIEnvironmentContext
 
+from . import commandexec, execfile, learn, pluginload, qfurl, search, settings
 from .data import (
     LeafPane,
-    SecondaryObjectPane,
-    PrimaryActionPane,
-    WrapContext,
     Pane,
+    PrimaryActionPane,
+    SecondaryObjectPane,
+    WrapContext,
 )
+from .search import Rankable
+from .sources import GetSourceController
 
 DATA_SAVE_INTERVAL_S = 3660
 
@@ -83,9 +79,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self._mode: PaneMode | None = None
         self._search_ids = itertools.count(1)
         self._latest_interaction = -1
-        self._execution_context = (
-            commandexec.default_action_execution_context()
-        )
+        self._execution_context = commandexec.default_action_execution_context()
         self._execution_context.connect(
             "command-result", self._command_execution_result
         )
@@ -531,9 +525,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         learn.record_search_hit(leaf, self._source_pane.get_latest_key())
         learn.record_search_hit(action, self._action_pane.get_latest_key())
         if sobject and self._mode == PaneMode.SOURCE_ACTION_OBJECT:
-            learn.record_search_hit(
-                sobject, self._object_pane.get_latest_key()
-            )
+            learn.record_search_hit(sobject, self._object_pane.get_latest_key())
 
         if not leaf or not action:
             return

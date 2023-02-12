@@ -1,11 +1,11 @@
+import typing as ty
 import urllib.parse
+from contextlib import suppress
 from urllib.parse import urlparse as _urlparse
 from urllib.parse import urlunparse as _urlunparse
-from contextlib import suppress
-import typing as ty
 
-from kupfer.support import pretty
 from kupfer.obj.base import Leaf, Source
+from kupfer.support import pretty
 
 QFURL_SCHEME = "qpfer"
 

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import configparser
 import copy
-import os
 import locale
+import os
 import typing as ty
 
 from gi.repository import GLib, GObject

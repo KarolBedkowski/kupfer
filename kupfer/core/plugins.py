@@ -3,13 +3,14 @@ from __future__ import annotations
 import pkgutil
 import sys
 import textwrap
-import typing as ty
-import types
 import traceback
+import types
+import typing as ty
 from enum import Enum
 
 from kupfer.support import pretty
-from kupfer.core import settings
+
+from . import settings
 
 # import kupfer.icons on demand later
 
@@ -88,9 +89,7 @@ def get_plugin_info() -> ty.Iterator[ty.Dict[str, ty.Any]]:
 
             plugin = vars(plugin)
         except ImportError as exc:
-            pretty.print_error(
-                __name__, f"import plugin '{plugin_name}':", exc
-            )
+            pretty.print_error(__name__, f"import plugin '{plugin_name}':", exc)
             continue
         except Exception:
             pretty.print_error(__name__, f"Could not load '{plugin_name}'")

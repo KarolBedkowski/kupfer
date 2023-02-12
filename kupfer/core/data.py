@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import itertools
 import operator
 import typing as ty
@@ -8,18 +9,17 @@ from gi.repository import GObject
 from kupfer.obj import base
 from kupfer.obj.base import (
     Action,
+    AnySource,
+    KupferObject,
     Leaf,
     Source,
-    AnySource,
     TextSource,
-    KupferObject,
 )
-from kupfer.support import pretty, datatools
-from kupfer.core import actioncompat
-from kupfer.core import search
-from kupfer.core.search import Rankable
-from kupfer.core.sources import GetSourceController
+from kupfer.support import datatools, pretty
 
+from . import actioncompat, search
+from .search import Rankable
+from .sources import GetSourceController
 
 ItemCheckFunc = ty.Callable[
     [ty.Iterable[KupferObject]], ty.Iterable[KupferObject]

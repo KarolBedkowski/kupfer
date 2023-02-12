@@ -89,7 +89,9 @@ class DirectorySource(Source, PicklingHelperMixin, FilesystemWatchMixin):
     def __repr__(self) -> str:
         mod = self.__class__.__module__
         cname = self.__class__.__name__
-        return f'{mod}.{cname}("{self.directory}", show_hidden={self.show_hidden})'
+        return (
+            f'{mod}.{cname}("{self.directory}", show_hidden={self.show_hidden})'
+        )
 
     def initialize(self) -> None:
         self.monitor = self.monitor_directories(self.directory)
