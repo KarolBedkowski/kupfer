@@ -61,12 +61,7 @@ class ExecResult(IntEnum):
 
 _MAX_LAST_RESULTS = 10
 
-ExecInfo = ty.Union[
-    tuple[
-        ty.Type[BaseException], BaseException, ty.Optional[types.TracebackType]
-    ],
-    tuple[None, None, None],
-]
+ExecInfo = pretty.ExecInfo
 CmdTuple = tuple[Leaf, Action, ty.Optional[Leaf]]
 Token = tuple[int, ty.Optional[CmdTuple]]
 

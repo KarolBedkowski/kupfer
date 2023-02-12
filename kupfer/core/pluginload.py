@@ -1,5 +1,7 @@
 import contextlib
-import typing as ty
+import traceback
+
+# import typing as ty
 
 from kupfer import pretty
 from kupfer.obj.base import Source, ActionGenerator, Action, AnySource
@@ -11,6 +13,7 @@ from kupfer.core.plugins import (
 )
 
 
+# pylint: disable=too-few-public-methods
 class PluginDescription:
     text_sources: list[AnySource] = []
     action_decorators: list[Action] = []
@@ -30,30 +33,30 @@ def load_plugin(plugin_id: str) -> PluginDescription:
     content_decorators: list[Source] = []
     action_generators: list[ActionGenerator] = []
 
-    item = plugin_id
-
-    initialize_plugin(item)
-    if not plugins.is_plugin_loaded(item):
+    initialize_plugin(plugin_id)
+    if not plugins.is_plugin_loaded(plugin_id):
         return PluginDescription()
 
-    text_sources.extend(load_plugin_objects(item, PluginAttr.TEXT_SOURCES))
+    text_sources.extend(
+        load_plugin_objects(plugin_id, PluginAttr.TEXT_SOURCES)
+    )
     action_decorators.extend(
-        load_plugin_objects(item, PluginAttr.ACTION_DECORATORS)  # type: ignore
+        load_plugin_objects(plugin_id, PluginAttr.ACTION_DECORATORS)
     )
     action_generators.extend(
-        load_plugin_objects(item, PluginAttr.ACTION_GENERATORS)  # type: ignore
+        load_plugin_objects(plugin_id, PluginAttr.ACTION_GENERATORS)
     )
 
     # Register all Sources as (potential) content decorators
     content_decorators.extend(
-        load_plugin_objects(item, PluginAttr.SOURCES, instantiate=False)  # type: ignore
+        load_plugin_objects(plugin_id, PluginAttr.SOURCES, instantiate=False)
     )
     content_decorators.extend(
-        load_plugin_objects(  # type: ignore
-            item, PluginAttr.CONTENT_DECORATORS, instantiate=False
+        load_plugin_objects(
+            plugin_id, PluginAttr.CONTENT_DECORATORS, instantiate=False
         )
     )
-    sources.extend(load_plugin_objects(item))  # type: ignore
+    sources.extend(load_plugin_objects(plugin_id))
 
     desc = PluginDescription()
 
@@ -71,8 +74,6 @@ def exception_guard(name, *args, callback=None, **kwargs):
     try:
         yield
     except Exception:
-        import traceback
-
         pretty.print_error(__name__, f"Loading {name} raised an exception:")
         traceback.print_exc()
         pretty.print_error(__name__, "This error is probably a bug in", name)

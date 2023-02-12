@@ -4,11 +4,12 @@ import pkgutil
 import sys
 import textwrap
 import typing as ty
+import types
+import traceback
 from enum import Enum
 
 from kupfer import pretty
 from kupfer.core import settings
-from kupfer.obj.base import KupferObject
 
 # import kupfer.icons on demand later
 
@@ -31,6 +32,9 @@ _INFO_ATTRIBUTES = [
     "__author__",
 ]
 
+_PLUGIN_ICON_FILE = "icon-list"
+_PLUGIN_HOOKS: ty.Dict[str, list[tuple[ty.Callable[..., None], ty.Any]]] = {}
+
 
 class NotEnabledError(Exception):
     "Plugin may not be imported since it is not enabled"
@@ -49,6 +53,7 @@ def get_plugin_ids() -> ty.Iterator[str]:
             yield modname
 
 
+# pylint: disable=too-few-public-methods
 class FakePlugin:
     def __init__(self, plugin_id, attributes, exc_info):
         self.is_fake_plugin = True
@@ -58,6 +63,11 @@ class FakePlugin:
 
     def __repr__(self):
         return f"<{type(self).__name__} {self.__name__}>"
+
+
+PluginModule = ty.Union[types.ModuleType, FakePlugin]
+# imported plugins, none=not existing
+_IMPORTED_PLUGINS: ty.Dict[str, PluginModule | None] = {}
 
 
 def get_plugin_info() -> ty.Iterator[ty.Dict[str, ty.Any]]:
@@ -125,10 +135,6 @@ def get_plugin_desc() -> str:
     return "\n".join(map(format_desc, infos))
 
 
-_IMPORTED_PLUGINS: ty.Dict[str, ty.Any] = {}
-_PLUGIN_HOOKS: ty.Dict[str, tuple[ty.Callable[..., None], ty.Any]] = {}
-
-
 class LoadingError(ImportError):
     pass
 
@@ -163,7 +169,9 @@ def _truncate_source(text: str, find_attributes: ty.Iterable[str]) -> str:
     return "\n".join(lines)
 
 
-def _import_plugin_fake(modpath: str, error=None) -> FakePlugin:
+def _import_plugin_fake(
+    modpath: str, error: pretty.ExecInfo | None = None
+) -> FakePlugin | None:
     """
     Return an object that has the plugin info attributes we can rescue
     from a plugin raising on import.
@@ -174,23 +182,24 @@ def _import_plugin_fake(modpath: str, error=None) -> FakePlugin:
     if not loader:
         return None
 
-    code = loader.get_source(modpath)
+    code = loader.get_source(modpath)  # type: ignore
     if not code:
         return None
 
     try:
-        filename = loader.get_filename(modpath)
+        filename = loader.get_filename(modpath)  # type: ignore
     except AttributeError:
         try:
-            filename = loader.archive + loader.prefix
+            filename = loader.archive + loader.prefix  # type: ignore
         except AttributeError:
             filename = f"<{modpath}>"
 
     env = {"__name__": modpath, "__file__": filename, "__builtins__": {"_": _}}
     code = _truncate_source(code, _INFO_ATTRIBUTES)
     try:
+        # pylint: disable=eval-used
         eval(compile(code, filename, "exec"), env)
-    except Exception as exc:
+    except Exception:
         pretty.print_error(__name__, "When loading", modpath)
         pretty.print_exc(__name__)
 
@@ -199,12 +208,12 @@ def _import_plugin_fake(modpath: str, error=None) -> FakePlugin:
     return FakePlugin(modpath, attributes, error)
 
 
-def _import_hook_fake(pathcomps: ty.Iterable[str]) -> FakePlugin:
+def _import_hook_fake(pathcomps: ty.Iterable[str]) -> PluginModule | None:
     modpath = ".".join(pathcomps)
     return _import_plugin_fake(modpath)
 
 
-def _import_hook_true(pathcomps: ty.Collection[str]) -> ty.Any:
+def _import_hook_true(pathcomps: tuple[str, ...]) -> PluginModule:
     """@pathcomps path components to the import"""
     path = ".".join(pathcomps)
     fromlist = pathcomps[-1:]
@@ -214,24 +223,24 @@ def _import_hook_true(pathcomps: ty.Collection[str]) -> ty.Any:
             raise NotEnabledError(f"{pathcomps[-1]} is not enabled")
 
         plugin = __import__(path, fromlist=fromlist)
+        pretty.print_debug(__name__, f"Loading {plugin.__name__}")
+        pretty.print_debug(__name__, f"  from {plugin.__file__}")
+        return plugin
 
     except ImportError as exc:
         # Try to find a fake plugin if it exists
-        plugin = _import_plugin_fake(path, error=sys.exc_info())
-        if not plugin:
+        fake_plugin = _import_plugin_fake(path, error=sys.exc_info())
+        if not fake_plugin:
             raise
 
         pretty.print_error(
-            __name__, f"Could not import plugin '{plugin.__name__}': {exc}"
+            __name__,
+            f"Could not import plugin '{fake_plugin.__name__}': {exc}",
         )
-    else:
-        pretty.print_debug(__name__, f"Loading {plugin.__name__}")
-        pretty.print_debug(__name__, f"  from {plugin.__file__}")
-
-    return plugin
+        return fake_plugin
 
 
-def _import_plugin_true(name: str) -> ty.Any:
+def _import_plugin_true(name: str) -> PluginModule | None:
     """Try to import the plugin from the package,
     and then from our plugin directories in $DATADIR
     """
@@ -243,8 +252,6 @@ def _import_plugin_true(name: str) -> ty.Any:
         raise
     except Exception:
         # catch any other error for plugins and write traceback
-        import traceback
-
         traceback.print_exc()
         pretty.print_error(__name__, f"Could not import plugin '{name}'")
 
@@ -252,9 +259,11 @@ def _import_plugin_true(name: str) -> ty.Any:
 
 
 def _staged_import(
-    name: str, import_hook: ty.Callable[[ty.Tuple[str, ...]], ty.Any]
-) -> ty.Any:
+    name: str,
+    import_hook: ty.Callable[[ty.Tuple[str, ...]], PluginModule | None],
+) -> PluginModule | None | ty.Any:
     "Import plugin @name using @import_hook"
+    # FIXME: ty.Any because typeguard
     try:
         return import_hook(_plugin_path(name))
     except ImportError as exc:
@@ -264,7 +273,7 @@ def _staged_import(
     return None
 
 
-def import_plugin(name: str) -> ty.Any:
+def import_plugin(name: str) -> PluginModule | None:
     if is_plugin_loaded(name):
         return _IMPORTED_PLUGINS[name]
 
@@ -362,9 +371,10 @@ def load_plugin_objects(
 
 # Plugin Initialization & Error
 def is_plugin_loaded(plugin_name: str) -> bool:
-    return plugin_name in _IMPORTED_PLUGINS and not getattr(
-        _IMPORTED_PLUGINS[plugin_name], "is_fake_plugin", None
-    )
+    if plg := _IMPORTED_PLUGINS.get(plugin_name):
+        return not getattr(plg, "is_fake_plugin", None)
+
+    return False
 
 
 def _loader_hook(modpath: ty.Tuple[str, ...]) -> ty.Any:
@@ -373,13 +383,10 @@ def _loader_hook(modpath: ty.Tuple[str, ...]) -> ty.Any:
     if not loader:
         raise ImportError(f"No loader found for {modname}")
 
-    if not loader.is_package(modname):
+    if not loader.is_package(modname):  # type: ignore
         raise ImportError("Is not a package")
 
     return loader
-
-
-PLUGIN_ICON_FILE = "icon-list"
 
 
 def _load_icons(plugin_name: str) -> None:
@@ -387,21 +394,22 @@ def _load_icons(plugin_name: str) -> None:
 
     try:
         _loader = _staged_import(plugin_name, _loader_hook)
-    except ImportError as exc:
+    except ImportError:
         return
 
     modname = ".".join(_plugin_path(plugin_name))
 
     try:
-        icon_file = pkgutil.get_data(modname, PLUGIN_ICON_FILE)
-    except OSError as exc:
+        icon_file = pkgutil.get_data(modname, _PLUGIN_ICON_FILE)
+    except OSError:
         # icon-list file just missing, let is pass silently
         return
 
     def get_icon_data(basename):
         return pkgutil.get_data(modname, basename)
 
-    icons.parse_load_icon_list(icon_file, get_icon_data, plugin_name)
+    if icon_file:
+        icons.parse_load_icon_list(icon_file, get_icon_data, plugin_name)
 
 
 def initialize_plugin(plugin_name: str) -> None:
@@ -410,16 +418,16 @@ def initialize_plugin(plugin_name: str) -> None:
     """
     _load_icons(plugin_name)
     if settings_dict := get_plugin_attribute(plugin_name, PluginAttr.SETTINGS):
-        settings_dict.initialize(plugin_name)
+        settings_dict.initialize(plugin_name)  # type: ignore
 
     if initialize := get_plugin_attribute(plugin_name, PluginAttr.INITIALIZE):
-        initialize(plugin_name)
+        initialize(plugin_name)  # type: ignore
 
     if finalize := get_plugin_attribute(plugin_name, PluginAttr.FINALIZE):
-        register_plugin_unimport_hook(plugin_name, finalize, plugin_name)
+        register_plugin_unimport_hook(plugin_name, finalize, plugin_name)  # type: ignore
 
 
-def unimport_plugin(plugin_name: str):
+def unimport_plugin(plugin_name: str) -> None:
     """Remove @plugin_name from the plugin list and dereference its
     python modules.
     """
@@ -428,7 +436,7 @@ def unimport_plugin(plugin_name: str):
         try:
             for callback, args in reversed(_PLUGIN_HOOKS[plugin_name]):
                 callback(*args)
-        except:
+        except Exception:
             pretty.print_error(__name__, "Error finalizing", plugin_name)
             pretty.print_exc(__name__)
 
@@ -461,9 +469,9 @@ def get_plugin_error(plugin_name: str) -> ty.Any:
     return a tuple of exception information
     """
     try:
-        plugin = import_plugin(plugin_name)
-        if getattr(plugin, "is_fake_plugin", None):
-            return plugin.exc_info
+        if plugin := import_plugin(plugin_name):
+            if getattr(plugin, "is_fake_plugin", None):
+                return plugin.exc_info
 
     except ImportError:
         return sys.exc_info()

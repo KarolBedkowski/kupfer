@@ -11,10 +11,6 @@ from kupfer import scheduler, pretty
 
 
 TaskCallback = ty.Callable[[ty.Any], None]
-ExecInfo = ty.Union[
-    tuple[ty.Type[BaseException], BaseException, types.TracebackType],
-    tuple[None, None, None],
-]
 
 
 class Task:
@@ -57,14 +53,14 @@ class ThreadTask(Task):
         completion, and can be used to communicate with the GUI.
         """
 
-    def thread_finally(self, exc_info: ExecInfo | None) -> None:
+    def thread_finally(self, exc_info: pretty.ExecInfo | None) -> None:
         """Always run at thread finish"""
         if exc_info is not None:
             etype, value, tb = exc_info
             if etype:
                 raise etype(value).with_traceback(tb)
 
-    def _thread_finally(self, exc_info: ExecInfo | None) -> None:
+    def _thread_finally(self, exc_info: pretty.ExecInfo | None) -> None:
         try:
             self.thread_finally(exc_info)
         finally:

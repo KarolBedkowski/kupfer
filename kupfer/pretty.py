@@ -8,8 +8,11 @@ import types
 
 DEBUG = False
 
+# TODO: move somewhere
 ExecInfo = ty.Union[
-    tuple[ty.Type[BaseException], BaseException, types.TracebackType],
+    tuple[
+        ty.Type[BaseException], BaseException, ty.Optional[types.TracebackType]
+    ],
     tuple[None, None, None],
 ]
 
