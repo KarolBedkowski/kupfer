@@ -19,11 +19,12 @@ from gi.repository import GdkPixbuf
 from kupfer import icons, launch, utils
 from kupfer import pretty
 from kupfer.obj.base import Leaf, Action, Source
-from kupfer.obj.base import InvalidDataError, OperationError
 from kupfer.obj import fileactions
 from kupfer.interface import TextRepresentation
 from kupfer.kupferstring import tounicode
 from kupfer.version import DESKTOP_ID
+
+from .exceptions import InvalidDataError, OperationError
 
 
 def ConstructFileLeafTypes():

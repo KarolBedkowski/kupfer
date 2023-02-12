@@ -8,11 +8,8 @@ from gi.repository import Gio
 from kupfer import utils
 from kupfer import launch
 
-from kupfer.obj.base import Action, OperationError, Leaf
-
-
-class NoDefaultApplicationError(OperationError):
-    pass
+from .base import Action, Leaf
+from .exceptions import NoDefaultApplicationError
 
 
 def is_good_executable(fileleaf):

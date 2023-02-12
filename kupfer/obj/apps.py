@@ -2,9 +2,10 @@ from __future__ import annotations
 import typing as ty
 from contextlib import suppress
 
-from kupfer.obj.base import InvalidDataError, Source
-from kupfer.obj.helplib import PicklingHelperMixin, FilesystemWatchMixin
-from kupfer.obj.objects import AppLeaf, Leaf
+from .base import Leaf, Source
+from .objects import AppLeaf
+from .helplib import PicklingHelperMixin, FilesystemWatchMixin
+from .exceptions import InvalidDataError
 
 
 class AppLeafContentMixin:
@@ -24,7 +25,7 @@ class AppLeafContentMixin:
     """
 
     @classmethod
-    def get_leaf_repr(cls) -> AppLeaf|None:
+    def get_leaf_repr(cls) -> AppLeaf | None:
         if not hasattr(cls, "_cached_leaf_repr"):
             cls._cached_leaf_repr = cls.__get_leaf_repr()  # type: ignore
 

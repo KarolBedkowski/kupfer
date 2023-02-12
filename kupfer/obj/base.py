@@ -10,12 +10,7 @@ from kupfer import pretty
 from kupfer.utils import locale_sort
 from kupfer.kupferstring import tounicode, tofolded
 
-
 __all__ = [
-    "Error",
-    "InvalidDataError",
-    "OperationError",
-    "InvalidLeafError",
     "KupferObject",
     "Leaf",
     "Action",
@@ -36,22 +31,6 @@ def no_sort_func(x, _key=None):
 # so that testing code can still work
 if not hasattr(builtins, "_"):
     builtins._ = identity  # type: ignore
-
-
-class Error(Exception):
-    pass
-
-
-class InvalidDataError(Error):
-    "The data is wrong for the given Leaf"
-
-
-class OperationError(Error):
-    "Command execution experienced an error"
-
-
-class InvalidLeafError(OperationError):
-    "The Leaf passed to an Action is invalid"
 
 
 _builtin_modules = frozenset(
@@ -602,4 +581,4 @@ class ActionGenerator:
         return []
 
 
-AnySource = Source | TextSource
+AnySource = ty.Union[Source, TextSource]

@@ -12,13 +12,14 @@ __description__ = "Core actions and items"
 __version__ = ""
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
-from gi.repository import Gtk, Gdk
 from contextlib import suppress
 
+from gi.repository import Gtk, Gdk
+
 from kupfer.objects import Leaf, Action
+from kupfer.objects import InvalidLeafError
 from kupfer.obj.sources import MultiSource
 from kupfer import objects
-from kupfer.obj.base import InvalidLeafError
 from kupfer import interface
 from kupfer import pretty
 from kupfer import task

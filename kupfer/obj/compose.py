@@ -8,8 +8,10 @@ from kupfer import utils
 from kupfer import datatools
 from kupfer import puid
 
-from kupfer.obj.base import Leaf, Action, Source, InvalidDataError
+from kupfer.obj.base import Leaf, Action, Source
 from kupfer.obj.objects import Perform, RunnableLeaf, TextLeaf
+
+from .exceptions import InvalidDataError
 
 
 class TimedPerform(Perform):

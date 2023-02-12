@@ -1,5 +1,20 @@
 from kupfer import kupferstring
-from kupfer.obj.base import OperationError
+
+
+class Error(Exception):
+    pass
+
+
+class InvalidDataError(Error):
+    "The data is wrong for the given Leaf"
+
+
+class OperationError(Error):
+    "Command execution experienced an error"
+
+
+class InvalidLeafError(OperationError):
+    "The Leaf passed to an Action is invalid"
 
 
 class LocaleOperationError(OperationError):
@@ -29,3 +44,7 @@ class NoMultiError(OperationError):
         OperationError.__init__(
             self, _("Can not be used with multiple objects")
         )
+
+
+class NoDefaultApplicationError(OperationError):
+    pass
