@@ -75,7 +75,7 @@ class PluginSettings(GObject.GObject, pretty.OutputMixin):
 
     def initialize(self, plugin_name: str) -> None:
         """Init by reading from global settings and setting up callbacks"""
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         for key in self:
             value_type = self.setting_descriptions[key]["type"]
             value = setctl.get_plugin_config(plugin_name, key, value_type)
@@ -290,7 +290,7 @@ def register_alternative(
     pretty.print_debug(
         __name__, f"Registered alternative {category_key}: {full_id}"
     )
-    setctl = settings.GetSettingsController()
+    setctl = settings.get_settings_controller()
     setctl.update_alternatives(
         category_key, _ALTERNATIVES[category_key], alt["filter"]
     )
@@ -330,7 +330,7 @@ def _unregister_alternative(
     pretty.print_debug(
         __name__, f"Unregistered alternative {category_key}: {full_id}"
     )
-    setctl = settings.GetSettingsController()
+    setctl = settings.get_settings_controller()
     setctl.update_alternatives(
         category_key, _ALTERNATIVES[category_key], alt["filter"]
     )

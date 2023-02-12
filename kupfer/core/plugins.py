@@ -218,7 +218,7 @@ def _import_hook_true(pathcomps: tuple[str, ...]) -> PluginModule:
     path = ".".join(pathcomps)
     fromlist = pathcomps[-1:]
     try:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         if not setctl.get_plugin_enabled(pathcomps[-1]):
             raise NotEnabledError(f"{pathcomps[-1]} is not enabled")
 

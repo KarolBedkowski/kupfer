@@ -174,7 +174,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
         Load the data model from saved configuration and caches
         """
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         setctl.connect("plugin-enabled-changed", self._plugin_enabled)
         setctl.connect("plugin-toplevel-changed", self._plugin_catalog_changed)
 
@@ -201,7 +201,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         directory sources directly included and for
         catalog inclusion respectively
         """
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         source_config = setctl.get_config
 
         def file_source(opt, depth=1):
@@ -246,7 +246,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         """
         from kupfer.core import plugins
 
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         for item in sorted(plugins.get_plugin_ids()):
             if setctl.get_plugin_enabled(item):
                 sources_ = self._load_plugin(item)
@@ -311,7 +311,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             return
 
         sctl = GetSourceController()
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         for src in sources_:
             is_toplevel = setctl.get_source_is_toplevel(plugin_id, src)
             sctl.add(

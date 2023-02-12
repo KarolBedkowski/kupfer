@@ -670,7 +670,7 @@ class WindowController(pretty.OutputMixin):
 
         self.output_debug("in lazy_setup")
 
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         if setctl.get_show_status_icon():
             self._show_statusicon()
 

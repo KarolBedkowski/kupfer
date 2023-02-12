@@ -151,7 +151,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         button_reset_keys = builder.get_object("button_reset_keys")
         self.sources_list_ctrl = SourceListController(source_list_parent)
 
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         checkautostart.set_active(self._get_should_autostart())
         checkstatusicon_gtk.set_active(setctl.get_show_status_icon())
 
@@ -315,7 +315,7 @@ class PreferencesWindowController(pretty.OutputMixin):
             self.gkeybind_store.append((names[binding], label, binding))
 
     def _read_directory_settings(self) -> None:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         for directory in setctl.get_directories():
             self._add_directory_model(directory, store=False)
 
@@ -334,7 +334,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         self.dir_store.append((directory, gicon, dispname))
 
         if store:
-            setctl = settings.GetSettingsController()
+            setctl = settings.get_settings_controller()
             setctl.set_directories(have)
 
     def _remove_directory_model(
@@ -343,7 +343,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         self.dir_store.remove(rowiter)
         if store:
             have = list(os.path.normpath(row[0]) for row in self.dir_store)
-            setctl = settings.GetSettingsController()
+            setctl = settings.get_settings_controller()
             setctl.set_directories(have)
 
     def on_preferenceswindow_key_press_event(
@@ -356,11 +356,11 @@ class PreferencesWindowController(pretty.OutputMixin):
         return False
 
     def on_checkstatusicon_gtk_toggled(self, widget: Gtk.Widget) -> None:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         setctl.set_show_status_icon(widget.get_active())
 
     def on_checkstatusicon_ai_toggled(self, widget: Gtk.Widget) -> None:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         setctl.set_show_status_icon_ai(widget.get_active())
 
     def _get_should_autostart(self) -> bool:
@@ -434,7 +434,7 @@ class PreferencesWindowController(pretty.OutputMixin):
     def _refresh_plugin_list(self, us_filter: str | None = None) -> None:
         "List plugins that pass text filter @us_filter or list all if None"
         self.store.clear()
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
 
         if us_filter:
             self.plugin_list_timer.set_ms(300, self._show_focus_topmost_plugin)
@@ -478,7 +478,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         pathit = self.store.get_iter(path)
         plugin_is_enabled = not self.store.get_value(pathit, checkcol)
         self.store.set_value(pathit, checkcol, plugin_is_enabled)
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         setctl.set_plugin_enabled(plugin_id, plugin_is_enabled)
         self.plugin_sidebar_update(plugin_id)
 
@@ -622,7 +622,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         )
         vbox = Gtk.VBox()
         vbox.set_property("spacing", 5)
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         small_icon_size = setctl.get_config_int(
             "Appearance", "icon_small_size"
         )
@@ -710,7 +710,7 @@ class PreferencesWindowController(pretty.OutputMixin):
             if no_false_values and not value:
                 return
 
-            setctl = settings.GetSettingsController()
+            setctl = settings.get_settings_controller()
             setctl.set_plugin_config(plugin_id, key, value, value_type)
 
         return callback
@@ -720,7 +720,7 @@ class PreferencesWindowController(pretty.OutputMixin):
     ) -> ty.Callable[[Gtk.Widget], None]:
         # TODO: check, not used / not working probably
         def callback(widget):
-            setctl = settings.GetSettingsController()
+            setctl = settings.get_settings_controller()
             val_type = plugin_support.UserNamePassword
             # pylint: disable=no-member
             backend_name = plugin_support.UserNamePassword.get_backend_name()
@@ -909,7 +909,7 @@ class PreferencesWindowController(pretty.OutputMixin):
 
         pathit = self.keybind_store.get_iter(path)
         keybind_id = self.keybind_store.get_value(pathit, 2)
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         curr_key = setctl.get_global_keybinding(keybind_id)
         bind_func = bind_key_func(_KEYBINDING_TARGETS[keybind_id])
         keystr = getkey_dialog.ask_for_key(
@@ -945,7 +945,7 @@ class PreferencesWindowController(pretty.OutputMixin):
     ) -> None:
         pathit = self.gkeybind_store.get_iter(path)
         keybind_id = self.gkeybind_store.get_value(pathit, 2)
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         curr_key = setctl.get_accelerator(keybind_id)
         keystr = getkey_dialog.ask_for_key(
             self._is_good_keystr,
@@ -961,7 +961,7 @@ class PreferencesWindowController(pretty.OutputMixin):
 
     def on_button_reset_keys_clicked(self, button: Gtk.Button) -> None:
         if self.ask_user_for_reset_keybinding():
-            setctl = settings.GetSettingsController()
+            setctl = settings.get_settings_controller()
             setctl.reset_keybindings()
             self._show_keybindings(setctl)
             # Unbind all before re-binding
@@ -974,22 +974,22 @@ class PreferencesWindowController(pretty.OutputMixin):
 
     def on_button_reset_gkeys_clicked(self, button: Gtk.Button) -> None:
         if self.ask_user_for_reset_keybinding():
-            setctl = settings.GetSettingsController()
+            setctl = settings.get_settings_controller()
             setctl.reset_accelerators()
             self._show_gkeybindings(setctl)
 
     def on_checkusecommandkeys_toggled(self, widget: Gtk.Widget) -> None:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         setctl.set_use_command_keys(widget.get_active())
 
     def on_radio_action_accel_alt(self, widget: Gtk.RadioButton) -> None:
         if widget.get_active():
-            setctl = settings.GetSettingsController()
+            setctl = settings.get_settings_controller()
             setctl.set_action_accelerator_modifier("alt")
 
     def on_radio_action_accel_ctrl(self, widget: Gtk.RadioButton) -> None:
         if widget.get_active():
-            setctl = settings.GetSettingsController()
+            setctl = settings.get_settings_controller()
             setctl.set_action_accelerator_modifier("ctrl")
 
     def _dir_table_cursor_changed(self, table: Gtk.TreeView) -> None:
@@ -1001,13 +1001,13 @@ class PreferencesWindowController(pretty.OutputMixin):
         self.buttonremovedirectory.set_sensitive(True)
 
     def on_terminal_combobox_changed(self, widget: Gtk.ComboBox) -> None:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         if itr := widget.get_active_iter():
             term_id = widget.get_model().get_value(itr, 1)
             setctl.set_preferred_tool("terminal", term_id)
 
     def on_icons_combobox_changed(self, widget: Gtk.ComboBox) -> None:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         if itr := widget.get_active_iter():
             term_id = widget.get_model().get_value(itr, 1)
             setctl.set_preferred_tool("icon_renderer", term_id)
@@ -1015,13 +1015,13 @@ class PreferencesWindowController(pretty.OutputMixin):
     def on_icons_large_size_changed(self, widget: Gtk.ComboBoxText) -> None:
         if widget.get_active_iter():
             val = widget.get_active_text()
-            setctl = settings.GetSettingsController()
+            setctl = settings.get_settings_controller()
             setctl.set_large_icon_size(val)
 
     def on_icons_small_size_changed(self, widget: Gtk.ComboBoxText) -> None:
         if widget.get_active_iter():
             val = widget.get_active_text()
-            setctl = settings.GetSettingsController()
+            setctl = settings.get_settings_controller()
             setctl.set_small_icon_size(val)
 
     def _update_alternative_combobox(
@@ -1032,7 +1032,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         """
         combobox_store = combobox.get_model()
         combobox_store.clear()
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         term_id = setctl.get_preferred_tool(category_key)
         # fill in the available alternatives
         alternatives = utils.locale_sort(
@@ -1199,12 +1199,12 @@ class SourceListController:
         self.table.show()
         parent_widget.add(self.table)
 
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         setctl.connect("plugin-enabled-changed", self._refresh)
 
     def _refresh(self, *ignored: ty.Any) -> None:
         self.store.clear()
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         srcctl = sources.GetSourceController()
         srcs = sorted(srcctl.get_sources(), key=str)
 
@@ -1235,7 +1235,7 @@ class SourceListController:
         srcctl = sources.GetSourceController()
         srcctl.set_toplevel(src, is_toplevel)
 
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         setctl.set_source_is_toplevel(plugin_id, src, is_toplevel)
         self.store.set_value(pathit, checkcol, is_toplevel)
 

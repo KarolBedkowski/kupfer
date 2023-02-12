@@ -288,7 +288,7 @@ class MatchViewOwner(pretty.OutputMixin):
         )
 
     def _read_icon_size(self, *_args: ty.Any) -> None:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         setctl.connect(
             "value-changed::appearance.icon_large_size",
             self._icon_size_changed,
@@ -604,7 +604,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         self._model.icon_size = self._icon_size_small
 
     def _read_icon_size(self, *args: ty.Any) -> None:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         setctl.connect(
             "value-changed::appearance.icon_large_size",
             self._icon_size_changed,
@@ -679,7 +679,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
             self._list_window.hide()
 
     def _show_table(self) -> None:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         list_maxheight = setctl.get_config_int("Appearance", "list_height")
         if list_maxheight < self._icon_size_small * self.LIST_MIN_MULT:
             list_maxheight = self.LIST_MIN_MULT * self._icon_size_small
@@ -1029,7 +1029,7 @@ class ActionSearch(Search):
         self.accel_modifier: Gdk.ModifierType = Gdk.ModifierType.MOD1_MASK
 
     def lazy_setup(self) -> None:
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         setctl.connect(
             "value-changed::kupfer.action_accelerator_modifer",
             self._on_modifier_changed,

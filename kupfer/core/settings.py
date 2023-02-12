@@ -647,8 +647,8 @@ GObject.signal_new(
 )
 
 
-def GetSettingsController() -> SettingsController:
-    return SettingsController.instance()
+# Get SettingsController instance
+get_settings_controller = SettingsController.instance
 
 
 class ExtendedSetting:

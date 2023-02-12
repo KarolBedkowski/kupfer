@@ -396,7 +396,7 @@ _ICON_RENDERER = IconRenderer  # pylint: disable=invalid-name
 
 
 def _setup_icon_renderer(_sched: ty.Any) -> None:
-    setctl = settings.GetSettingsController()
+    setctl = settings.get_settings_controller()
     setctl.connect("alternatives-changed::icon_renderer", _icon_render_change)
     setctl.connect("value-changed::tools.icon_renderer", _icon_render_change)
     _icon_render_change(setctl)

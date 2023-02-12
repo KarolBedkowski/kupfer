@@ -86,7 +86,7 @@ class Plugin(Leaf):
         yield ShowSource()
 
     def get_description(self):
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         enabled = setctl.get_plugin_enabled(self.object["name"])
         enabled_str = _("enabled") if enabled else _("disabled")
         return f"{self.object['description']} ({enabled_str})"
@@ -100,7 +100,7 @@ class KupferPlugins(Source):
         Source.__init__(self, _("Kupfer Plugins"))
 
     def get_items(self):
-        setctl = settings.GetSettingsController()
+        setctl = settings.get_settings_controller()
         for info in plugins.get_plugin_info():
             plugin_id = info["name"]
             if setctl.get_plugin_is_hidden(plugin_id):
