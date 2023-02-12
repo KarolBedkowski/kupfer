@@ -10,7 +10,7 @@ __author__ = ""
 from gi.repository import Wnck
 
 from kupfer.objects import Leaf, Action, Source
-from kupfer.weaklib import gobject_connect_weakly
+from kupfer.support import weaklib
 
 
 def _get_window(xid):
@@ -422,8 +422,10 @@ class WorkspacesSource(Source):
         screen = Wnck.Screen.get_default()
         if screen is not None:
             screen.get_workspaces()
-            gobject_connect_weakly(screen, "workspace-created", self._changed)
-            gobject_connect_weakly(
+            weaklib.gobject_connect_weakly(
+                screen, "workspace-created", self._changed
+            )
+            weaklib.gobject_connect_weakly(
                 screen, "workspace-destroyed", self._changed
             )
 

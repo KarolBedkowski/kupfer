@@ -16,12 +16,11 @@ __version__ = "2017.1"
 import dbus
 
 from kupfer.objects import Action, TextLeaf, TextSource
-from kupfer.support import pretty, scheduler
+from kupfer.support import pretty, scheduler, weaklib
 from kupfer import icons
 from kupfer import plugin_support
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer.obj.grouping import ToplevelGroupingSource
-from kupfer.weaklib import dbus_signal_connect_weakly
 from kupfer.obj.contacts import (
     NAME_KEY,
     EMAIL_KEY,
@@ -356,28 +355,28 @@ class ContactsSource(AppLeafContentMixin, ToplevelGroupingSource):
         except dbus.DBusException:
             return
 
-        dbus_signal_connect_weakly(
+        weaklib.dbus_signal_connect_weakly(
             session_bus,
             "SigningOff",
             self._signing_off,
             dbus_interface=IFACE_NAME,
         )
 
-        dbus_signal_connect_weakly(
+        weaklib.dbus_signal_connect_weakly(
             session_bus,
             "BuddySignedOn",
             self._buddy_signed_on,
             dbus_interface=IFACE_NAME,
         )
 
-        dbus_signal_connect_weakly(
+        weaklib.dbus_signal_connect_weakly(
             session_bus,
             "BuddyStatusChanged",
             self._buddy_status_changed,
             dbus_interface=IFACE_NAME,
         )
 
-        dbus_signal_connect_weakly(
+        weaklib.dbus_signal_connect_weakly(
             session_bus,
             "BuddySignedOff",
             self._buddy_signed_off,

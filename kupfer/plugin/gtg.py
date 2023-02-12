@@ -15,12 +15,11 @@ __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>, US"
 import dbus
 
 from kupfer import plugin_support
-from kupfer.support import pretty
+from kupfer.support import pretty, weaklib
 from kupfer import textutils
 from kupfer.objects import Leaf, Action, Source
 from kupfer.objects import TextLeaf, NotAvailableError, AppLeaf
 from kupfer.obj.apps import AppLeafContentMixin
-from kupfer.weaklib import dbus_signal_connect_weakly
 
 plugin_support.check_dbus_connection()
 
@@ -255,25 +254,25 @@ class TasksSource(AppLeafContentMixin, Source):
 
     def initialize(self):
         bus = dbus.SessionBus()
-        dbus_signal_connect_weakly(
+        weaklib.dbus_signal_connect_weakly(
             bus,
             "TaskAdded",
             self._on_tasks_updated,
             dbus_interface=_IFACE_NAME2,
         )
-        dbus_signal_connect_weakly(
+        weaklib.dbus_signal_connect_weakly(
             bus,
             "TaskModified",
             self._on_tasks_updated,
             dbus_interface=_IFACE_NAME2,
         )
-        dbus_signal_connect_weakly(
+        weaklib.dbus_signal_connect_weakly(
             bus,
             "TaskDeleted",
             self._on_tasks_updated,
             dbus_interface=_IFACE_NAME2,
         )
-        dbus_signal_connect_weakly(
+        weaklib.dbus_signal_connect_weakly(
             bus,
             "NameOwnerChanged",
             self._name_owner_changed,

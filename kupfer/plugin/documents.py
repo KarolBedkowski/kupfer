@@ -25,7 +25,7 @@ from kupfer.objects import SourceLeaf, AppLeaf, FileLeaf, UrlLeaf
 from kupfer import icons
 from kupfer import launch
 from kupfer import plugin_support
-from kupfer.weaklib import gobject_connect_weakly
+from kupfer.support import weaklib
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {
@@ -147,7 +147,9 @@ class RecentsSource(Source):
     def initialize(self):
         """Set up change callback"""
         manager = Gtk.RecentManager.get_default()
-        gobject_connect_weakly(manager, "changed", self._recent_changed)
+        weaklib.gobject_connect_weakly(
+            manager, "changed", self._recent_changed
+        )
 
     def _recent_changed(self, *args):
         # FIXME: We don't get single item updates, might this be

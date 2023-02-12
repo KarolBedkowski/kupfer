@@ -14,7 +14,7 @@ from gi.repository import Gio
 from kupfer.objects import Action, Source, AppLeaf, FileLeaf
 from kupfer.obj.helplib import FilesystemWatchMixin
 from kupfer import config, plugin_support
-from kupfer.weaklib import gobject_connect_weakly
+from kupfer.support import weaklib
 
 _ALTERNATIVES = (
     "",
@@ -70,6 +70,7 @@ BLACKLIST_IDS = frozenset(
     ]
 )
 
+
 def _should_show(app_info, desktop_type, use_filter):
     if app_info.get_nodisplay():
         return False
@@ -98,7 +99,7 @@ class AppSource(Source, FilesystemWatchMixin):
     def initialize(self):
         application_dirs = config.get_data_dirs("", "applications")
         self.monitor_token = self.monitor_directories(*application_dirs)
-        gobject_connect_weakly(
+        weaklib.gobject_connect_weakly(
             __kupfer_settings__,
             "plugin-setting-changed",
             self._on_setting_change,

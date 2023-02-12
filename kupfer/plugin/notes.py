@@ -36,8 +36,7 @@ from kupfer.obj.apps import ApplicationSource
 from kupfer.objects import TextSource
 from kupfer import icons, plugin_support
 from kupfer import textutils
-from kupfer.support import pretty
-from kupfer.weaklib import dbus_signal_connect_weakly
+from kupfer.support import pretty, weaklib
 
 
 PROGRAM_IDS = ["gnote", "tomboy", "kzrnote"]
@@ -463,7 +462,7 @@ class NotesSource(ApplicationSource):
         if set_prog in PROGRAM_SERIVCES:
             bus_name = PROGRAM_SERIVCES[set_prog][0]
             bus = dbus.SessionBus()
-            dbus_signal_connect_weakly(
+            weaklib.dbus_signal_connect_weakly(
                 bus,
                 "NameOwnerChanged",
                 self._name_owner_changed,

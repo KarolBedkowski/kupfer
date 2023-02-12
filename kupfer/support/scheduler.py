@@ -4,8 +4,7 @@ import typing as ty
 
 from gi.repository import GLib, GObject
 
-from kupfer.support import pretty
-from kupfer.weaklib import gobject_connect_weakly
+from kupfer.support import pretty, weaklib
 
 
 def get_scheduler() -> Scheduler:
@@ -86,7 +85,9 @@ class Timer:
         self._current_timer = -1
         self._call_at_finish = call_at_finish
         self._current_callback: ty.Callable[[], None] | None = None
-        gobject_connect_weakly(get_scheduler(), "finish", self._on_finish)
+        weaklib.gobject_connect_weakly(
+            get_scheduler(), "finish", self._on_finish
+        )
 
     def set(
         self,

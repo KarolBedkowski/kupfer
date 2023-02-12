@@ -932,7 +932,7 @@ can reuse.
 
     ..
 
-.. topic:: ``kupfer.weaklib``
+.. topic:: ``kupfer.support.weaklib``
 
     ..
 

@@ -8,7 +8,7 @@ import dbus
 
 from kupfer.objects import Source, RunnableLeaf, OperationError
 from kupfer import plugin_support
-from kupfer.weaklib import dbus_signal_connect_weakly
+from kupfer.support import weaklib
 
 plugin_support.check_dbus_connection()
 
@@ -25,7 +25,7 @@ class Players(Source):
 
     def initialize(self):
         bus = dbus.SessionBus()
-        dbus_signal_connect_weakly(
+        weaklib.dbus_signal_connect_weakly(
             bus,
             "NameOwnerChanged",
             self._name_owner_changed,

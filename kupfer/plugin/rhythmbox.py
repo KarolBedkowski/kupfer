@@ -21,14 +21,13 @@ from gi.repository import Gio
 import dbus
 
 from kupfer.plugin import rhythmbox_support
-from kupfer.support import pretty
+from kupfer.support import pretty, weaklib
 from kupfer.objects import Leaf, Source, Action, RunnableLeaf, SourceLeaf
 from kupfer.objects import FileLeaf
 from kupfer import icons, utils, config
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer.obj.helplib import PicklingHelperMixin
 from kupfer.objects import OperationError, NotAvailableError
-from kupfer.weaklib import dbus_signal_connect_weakly
 from kupfer import plugin_support
 
 
@@ -547,7 +546,7 @@ class RhythmboxSource(AppLeafContentMixin, Source, PicklingHelperMixin):
 
     def initialize(self):
         bus = dbus.SessionBus()
-        dbus_signal_connect_weakly(
+        weaklib.dbus_signal_connect_weakly(
             bus,
             "NameOwnerChanged",
             self._name_owner_changed,
