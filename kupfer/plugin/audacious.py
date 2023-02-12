@@ -11,8 +11,7 @@ from kupfer.objects import RunnableLeaf, SourceLeaf
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer import icons, utils, uiutils
 from kupfer import plugin_support
-from kupfer import kupferstring
-from kupfer.support import weaklib
+from kupfer.support import weaklib, kupferstring
 
 plugin_support.check_dbus_connection()
 

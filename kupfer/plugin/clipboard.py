@@ -15,8 +15,7 @@ from kupfer.objects import Source, TextLeaf, Action, SourceLeaf
 from kupfer.objects import FileLeaf
 from kupfer.obj.compose import MultipleLeaf
 from kupfer import plugin_support
-from kupfer import kupferstring
-from kupfer.support import pretty
+from kupfer.support import pretty, kupferstring
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {

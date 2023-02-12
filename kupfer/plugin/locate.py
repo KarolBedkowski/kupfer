@@ -9,7 +9,7 @@ import subprocess
 from kupfer.objects import Action, Source
 from kupfer.objects import TextLeaf
 from kupfer import icons, plugin_support
-from kupfer import kupferstring
+from kupfer.support import kupferstring
 from kupfer.obj.objects import ConstructFileLeaf
 
 

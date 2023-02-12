@@ -15,8 +15,7 @@ import tempfile
 from gi.repository import GLib, Gtk, Gio, Gdk
 
 
-from kupfer.support import pretty
-from kupfer import kupferstring
+from kupfer.support import pretty, kupferstring
 from kupfer import desktop_launch
 from kupfer import launch
 from kupfer import desktop_parse

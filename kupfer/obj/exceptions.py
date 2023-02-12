@@ -1,4 +1,4 @@
-from kupfer import kupferstring
+from kupfer.support import kupferstring
 
 
 class Error(Exception):

@@ -280,7 +280,7 @@ This defines, in addition to KupferObject:
 ``__hash__`` and ``__eq__``
     Leaves are hashable, can be members in a set, and duplicates are
     recognized (and removed); this is essential so that equivalent
-    Leaves from different sources are recognized. 
+    Leaves from different sources are recognized.
 
     These methods need normally not be overridden.
 
@@ -606,7 +606,7 @@ Otherwise content-only sources are listed in ``__kupfer_contents__``.
     pool. The new source instance will not be used if the returned
     instance is equivalent (as defined by class and ``reepr_key``
     above).
-    
+
 
 Source Attributes
 .................
@@ -675,7 +675,7 @@ dynamically.
 The Plugin Runtime
 ::::::::::::::::::
 
-.. topic:: How a plugin is activated 
+.. topic:: How a plugin is activated
 
     1. The plugin module is imported into Kupfer.
 
@@ -752,7 +752,7 @@ which to use. Each category permits one choice.
 
 Each category has a specific format of required data that is defined in
 ``kupfer/plugin_support.py``. A plugin should use the function
-``kupfer.plugin_support.register_alternative(caller, category_key, id_, **kwargs)`` 
+``kupfer.plugin_support.register_alternative(caller, category_key, id_, **kwargs)``
 to register their implementations of new alternatives. The arguments are:
 
 .. topic:: ``register_alternative(caller, category_key, id_, ** kwargs)``
@@ -793,7 +793,7 @@ variables (like ``__kupfer_name__``) in ``__init__.py``.
 
     A package module may include custom icons as .svg files. The icon files
     must be declared in a file inside the python package called
-    ``icon-list``. 
+    ``icon-list``.
 
     * Each line is a tab-separated field list, with the icon name in
       the first column and the filename (relative to the plugin package)
@@ -852,7 +852,7 @@ can reuse.
             copy-to-clipboard), it should implement this method
             and return a unicode string.
 
-.. topic:: ``kupfer.kupferstring``
+.. topic:: ``kupfer.support.kupferstring``
 
     A **byte string** (Python ``str``) is just a stream of data. When
     you handle byte strings that is text, you must convert it to unicode

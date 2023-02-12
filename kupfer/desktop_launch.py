@@ -11,9 +11,8 @@ import xdg.DesktopEntry
 import xdg.Exceptions
 
 from kupfer import desktop_parse
-from kupfer import kupferstring
 from kupfer import terminal
-from kupfer.support import pretty
+from kupfer.support import pretty, kupferstring
 
 __all__ = ["launch_app_info", "spawn_app", "spawn_app_id"]
 

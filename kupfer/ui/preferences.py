@@ -15,8 +15,8 @@ from xdg import BaseDirectory as base
 from xdg import DesktopEntry as desktop
 from xdg import Exceptions as xdg_e
 
-from kupfer import config, kupferstring, utils, icons, version
-from kupfer.support import scheduler, pretty
+from kupfer import config, utils, icons, version
+from kupfer.support import scheduler, pretty, kupferstring
 from kupfer import kupferui
 from kupfer.core import settings, plugins, relevance, sources
 from kupfer.obj.base import KupferObject

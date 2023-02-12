@@ -15,7 +15,7 @@ from kupfer.objects import RunnableLeaf
 from kupfer.objects import OperationError
 from kupfer.obj.compose import ComposedLeaf
 from kupfer import puid
-from kupfer import kupferstring
+from kupfer.support import kupferstring
 from kupfer import task
 
 from kupfer.ui import keybindings

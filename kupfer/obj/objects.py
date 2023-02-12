@@ -17,11 +17,10 @@ from gi.repository import GLib, Gio, Gtk
 from gi.repository import GdkPixbuf
 
 from kupfer import icons, launch, utils
-from kupfer.support import pretty
+from kupfer.support import pretty, kupferstring
 from kupfer.obj.base import Leaf, Action, Source
 from kupfer.obj import fileactions
 from kupfer.interface import TextRepresentation
-from kupfer.kupferstring import tounicode
 from kupfer.version import DESKTOP_ID
 
 from .exceptions import InvalidDataError, OperationError
@@ -91,7 +90,7 @@ class FileLeaf(Leaf, TextRepresentation):
         # Use glib filename reading to make display name out of filenames
         # this function returns a `unicode` object
         if not name:
-            unicode_path = tounicode(obj)
+            unicode_path = kupferstring.tounicode(obj)
             name = GLib.filename_display_basename(unicode_path)
 
         assert name
@@ -390,8 +389,8 @@ class AppLeaf(Leaf):
     def get_description(self) -> ty.Optional[str]:
         # Use Application's description, else use executable
         # for "file-based" applications we show the path
-        app_desc = tounicode(self.object.get_description())
-        ret = tounicode(app_desc or self.object.get_executable())
+        app_desc = kupferstring.tounicode(self.object.get_description())
+        ret = kupferstring.tounicode(app_desc or self.object.get_executable())
         if self.init_path:
             app_path = utils.get_display_path_for_bytestring(self.init_path)
             return f"({app_path}) {ret}"
@@ -599,7 +598,7 @@ class TextLeaf(Leaf, TextRepresentation):
 
     def __init__(self, text: str, name: ty.Optional[str] = None) -> None:
         """@text *must* be unicode or UTF-8 str"""
-        text = tounicode(text)
+        text = kupferstring.tounicode(text)
         if not name:
             name = self.get_first_text_line(text)
 

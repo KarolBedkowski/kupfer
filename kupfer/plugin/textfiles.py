@@ -25,7 +25,7 @@ from gi.repository import Gio
 from kupfer.objects import Action
 from kupfer.objects import TextLeaf, FileLeaf
 from kupfer.obj import helplib
-from kupfer import kupferstring
+from kupfer.support import kupferstring
 from kupfer import utils
 
 # FIXME: Sometimes require that the type is *exactly* text/plain?

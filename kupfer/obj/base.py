@@ -6,9 +6,8 @@ from gi.repository import GdkPixbuf
 
 from kupfer import datatools
 from kupfer import icons
-from kupfer.support import pretty
+from kupfer.support import pretty, kupferstring
 from kupfer.utils import locale_sort
-from kupfer.kupferstring import tounicode, tofolded
 
 __all__ = [
     "KupferObject",
@@ -79,8 +78,8 @@ class KupferObject(metaclass=_BuiltinObject):
         if not name:
             name = self.__class__.__name__
 
-        self.name: str = tounicode(name)
-        folded_name = tofolded(self.name)
+        self.name: str = kupferstring.tounicode(name)
+        folded_name = kupferstring.tofolded(self.name)
         self.kupfer_add_alias(folded_name)
 
     def kupfer_add_alias(self, alias: str) -> None:

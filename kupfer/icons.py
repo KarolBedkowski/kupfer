@@ -11,9 +11,8 @@ from gi.repository.Gio import (
 )
 
 from kupfer import datatools
-from kupfer.support import scheduler, pretty
+from kupfer.support import scheduler, pretty, kupferstring
 from kupfer.core import settings
-from kupfer.kupferstring import tounicode
 
 ICON_CACHE: dict[int, datatools.LruCache[str, GdkPixbuf.Pixbuf]] = {}
 # number of elements in icon lru cache (per icon size)
@@ -97,7 +96,7 @@ def _load_icon_from_func(
     @get_data_func: function to retrieve the data if needed
     @override: override the icon theme
     """
-    icon_name = tounicode(icon_name)
+    icon_name = kupferstring.tounicode(icon_name)
     if not override and icon_name in kupfer_locally_installed_names:
         pretty.print_debug(__name__, "Skipping existing", icon_name)
         return
