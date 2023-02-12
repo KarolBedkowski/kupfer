@@ -6,19 +6,24 @@ __description__ = _("Search the web with Firefox keywords")
 __version__ = "2020.1"
 __author__ = ""
 
-from contextlib import closing
 import os
 import sqlite3
 import time
+from contextlib import closing
 from urllib.parse import quote, urlparse
 
-from kupfer import plugin_support
-from kupfer.objects import Source, Action, Leaf
-from kupfer.objects import TextLeaf, TextSource
-from kupfer.obj.helplib import FilesystemWatchMixin
+from kupfer import plugin_support, utils
+from kupfer.obj import (
+    Action,
+    Leaf,
+    OpenUrl,
+    RunnableLeaf,
+    Source,
+    TextLeaf,
+    TextSource,
+)
 from kupfer.obj.apps import AppLeafContentMixin
-from kupfer.obj.objects import OpenUrl, RunnableLeaf
-from kupfer import utils
+from kupfer.obj.helplib import FilesystemWatchMixin
 
 from ._firefox_support import get_firefox_home_file
 

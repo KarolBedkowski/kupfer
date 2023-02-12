@@ -15,18 +15,22 @@ __version__ = "2017.2"
 __author__ = "US"
 
 import os
-from xml.etree.ElementTree import ElementTree
 from contextlib import suppress
+from xml.etree.ElementTree import ElementTree
 
-from gi.repository import Gio
 import dbus
+from gi.repository import Gio
 
-from kupfer.objects import Action, Source
-from kupfer.objects import TextLeaf, FileLeaf, TextSource, OperationError
-from kupfer import utils
+from kupfer import plugin_support, utils
+from kupfer.obj import (
+    Action,
+    FileLeaf,
+    OperationError,
+    Source,
+    TextLeaf,
+    TextSource,
+)
 from kupfer.support import pretty
-from kupfer import plugin_support
-
 
 plugin_support.check_dbus_connection()
 

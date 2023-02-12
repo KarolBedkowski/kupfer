@@ -14,8 +14,8 @@ from enum import IntEnum
 
 from gi.repository import GLib, GObject
 
-from kupfer.obj import compose, sources
-from kupfer.obj.base import (
+from kupfer.obj import compose
+from kupfer.obj import (
     Action,
     ActionGenerator,
     AnySource,
@@ -23,6 +23,8 @@ from kupfer.obj.base import (
     Leaf,
     Source,
     TextSource,
+    DirectorySource,
+    FileSource,
 )
 from kupfer.support import pretty, scheduler
 from kupfer.ui.uievents import GUIEnvironmentContext
@@ -186,10 +188,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
     def _get_directory_sources(
         self,
-    ) -> tuple[
-        ty.Iterator[sources.DirectorySource],
-        ty.Iterator[sources.DirectorySource],
-    ]:
+    ) -> tuple[ty.Iterator[DirectorySource], ty.Iterator[DirectorySource],]:
         """
         Return a tuple of dir_sources, indir_sources for
         directory sources directly included and for
@@ -200,16 +199,16 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
         def file_source(opt, depth=1):
             abs_path = os.path.abspath(os.path.expanduser(opt))
-            return sources.FileSource([abs_path], depth)
+            return FileSource([abs_path], depth)
 
-        indir_sources: ty.Iterator[sources.DirectorySource] = (
-            sources.DirectorySource(item)
+        indir_sources: ty.Iterator[DirectorySource] = (
+            DirectorySource(item)
             for item in setctl.get_directories(False)
             if os.path.isdir(item)
         )
 
-        dir_sources: ty.Iterator[sources.DirectorySource] = (
-            sources.DirectorySource(item)
+        dir_sources: ty.Iterator[DirectorySource] = (
+            DirectorySource(item)
             for item in setctl.get_directories(True)
             if os.path.isdir(item)
         )

@@ -7,12 +7,12 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 import os
 from pathlib import Path
 
-from kupfer.objects import Action, Source, Leaf, FileLeaf, TextLeaf
 from kupfer import kupferui
 
 # Since this is a core plugin we break some rules
 # These modules are normally out of bounds for plugins
 from kupfer.core import plugins, settings
+from kupfer.obj import Action, FileLeaf, Leaf, Source, TextLeaf
 
 
 class ShowInfo(Action):

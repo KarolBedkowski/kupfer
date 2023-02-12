@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as ty
 
-from kupfer.obj.base import Action, KupferObject, Leaf, Source
+from kupfer.obj import Action, KupferObject, Leaf, Source
 
 from .sources import SourceController
 

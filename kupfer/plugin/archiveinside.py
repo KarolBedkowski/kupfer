@@ -19,8 +19,7 @@ import zipfile
 import typing as ty
 from pathlib import Path
 
-from kupfer.objects import Source, FileLeaf
-from kupfer.obj.sources import DirectorySource
+from kupfer.obj import Source, FileLeaf, DirectorySource
 from kupfer.support import pretty, scheduler
 
 # Limit this to archives of a couple of megabytes
@@ -66,9 +65,7 @@ class ArchiveContent(Source):
             self.output_debug(f"Extracting with {self.unarchiver}")
             self.unarchiver(self.path, pth)
             self.unarchived_files.append(pth)
-            self.end_timer.set(
-                VERY_LONG_TIME_S, self.clean_up_unarchived_files
-            )
+            self.end_timer.set(VERY_LONG_TIME_S, self.clean_up_unarchived_files)
 
         files = list(DirectorySource(pth, show_hidden=True).get_leaves())
         if len(files) == 1 and files[0].has_content():
@@ -108,9 +105,7 @@ class ArchiveContent(Source):
 
         pretty.print_info(__name__, "Removing extracted archives..")
         for filetree in set(cls.unarchived_files):
-            pretty.print_debug(
-                __name__, "Removing", os.path.basename(filetree)
-            )
+            pretty.print_debug(__name__, "Removing", os.path.basename(filetree))
             shutil.rmtree(filetree, onerror=cls._clean_up_error_handler)
 
         cls.unarchived_files = []

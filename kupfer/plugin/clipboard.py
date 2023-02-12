@@ -7,15 +7,17 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 from collections import deque
 
-from gi.repository import Gdk
-from gi.repository import Gio
-from gi.repository import Gtk
+from gi.repository import Gdk, Gio, Gtk
 
-from kupfer.objects import Source, TextLeaf, Action, SourceLeaf
-from kupfer.objects import FileLeaf
-from kupfer.obj.compose import MultipleLeaf
 from kupfer import plugin_support
-from kupfer.support import pretty, kupferstring
+from kupfer.obj import (
+    Action,
+    FileLeaf,
+    Source,
+    SourceLeaf,
+    TextLeaf,
+)
+from kupfer.obj.compose import MultipleLeaf
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {

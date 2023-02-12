@@ -18,7 +18,7 @@ from os import path as os_path
 import subprocess
 from contextlib import suppress
 
-from kupfer.objects import Action, FileLeaf, TextLeaf, OperationError
+from kupfer.obj import Action, FileLeaf, TextLeaf, OperationError
 from kupfer import utils
 from kupfer.support import pretty
 from kupfer import runtimehelper

@@ -5,26 +5,21 @@ UI Interface controller
 """
 from __future__ import annotations
 
-import typing as ty
 import textwrap
+import typing as ty
 
-from gi.repository import Gtk, Gdk, GObject
-from gi.repository import Gio, Pango
+from gi.repository import Gdk, Gio, GObject, Gtk, Pango
 
-from kupfer import kupferui
-from kupfer.support import scheduler, pretty
-from kupfer.ui import accelerators
-from kupfer.ui import uievents
-from kupfer.core import data
-from kupfer.core.datactrl import DataController, PaneSel, PaneMode
+from kupfer import interface, kupferui, uiutils
+from kupfer.core import actionaccel, settings
+from kupfer.core.datactrl import DataController, PaneMode, PaneSel
 from kupfer.core.search import Rankable
-from kupfer.core import settings, actionaccel
-from kupfer.obj.base import AnySource, KupferObject
-from kupfer.obj.objects import FileLeaf
-from kupfer import interface
-from kupfer import uiutils
+from kupfer.obj import AnySource, FileLeaf, KupferObject
+from kupfer.support import pretty, scheduler
+from kupfer.ui import accelerators, uievents
+
+from .search import ActionSearch, LeafSearch, Search, State
 from .support import escape_markup_str, text_direction_is_ltr
-from .search import Search, LeafSearch, ActionSearch, State
 
 _ELLIPSIZE_MIDDLE = Pango.EllipsizeMode.MIDDLE
 _SLOW_INPUT_INTERVAL = 2

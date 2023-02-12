@@ -13,23 +13,27 @@ __author__ = "US, Karol Będkowski"
 
 
 import itertools
-from hashlib import md5
 import os
-
-from gi.repository import Gio
+from hashlib import md5
 
 import dbus
+from gi.repository import Gio
 
-from kupfer.plugin import rhythmbox_support
-from kupfer.support import pretty, weaklib
-from kupfer.objects import Leaf, Source, Action, RunnableLeaf, SourceLeaf
-from kupfer.objects import FileLeaf
-from kupfer import icons, utils, config
+from kupfer import config, icons, plugin_support, utils
+from kupfer.obj import (
+    Action,
+    FileLeaf,
+    Leaf,
+    NotAvailableError,
+    OperationError,
+    RunnableLeaf,
+    Source,
+    SourceLeaf,
+)
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer.obj.helplib import PicklingHelperMixin
-from kupfer.objects import OperationError, NotAvailableError
-from kupfer import plugin_support
-
+from kupfer.plugin import rhythmbox_support
+from kupfer.support import pretty, weaklib
 
 plugin_support.check_dbus_connection()
 

@@ -2,8 +2,8 @@ import typing as ty
 
 from gi.repository import Gio
 
-from kupfer.obj.objects import FileLeaf
 from kupfer.core.commandexec import ExecutionToken
+from kupfer.obj import FileLeaf
 
 
 class AsyncFileResult:

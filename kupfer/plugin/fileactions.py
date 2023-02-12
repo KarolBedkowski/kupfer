@@ -18,8 +18,7 @@ from pathlib import Path
 
 from gi.repository import Gio, GLib
 
-from kupfer.objects import Action, FileLeaf, TextLeaf, TextSource
-from kupfer.objects import OperationError
+from kupfer.obj import Action, FileLeaf, TextLeaf, TextSource, OperationError
 from kupfer.support import pretty, task
 
 

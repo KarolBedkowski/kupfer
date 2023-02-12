@@ -12,11 +12,10 @@ from pathlib import Path
 
 from gi.repository import Gio, GLib
 
-from kupfer.objects import Leaf, Action, Source, FileLeaf
 from kupfer import icons, utils
-from kupfer.support import pretty
-from kupfer.obj import helplib
+from kupfer.obj import Action, FileLeaf, Leaf, Source, helplib
 from kupfer.obj.helplib import FilesystemWatchMixin
+from kupfer.support import pretty
 
 DEFAULT_TMPL_DIR = "~/Templates"
 
@@ -129,9 +128,7 @@ class CreateDocumentIn(helplib.reverse_action(CreateNewDocument)):
 
 
 def _get_tmpl_dir():
-    tmpl_dir = GLib.get_user_special_dir(
-        GLib.UserDirectory.DIRECTORY_TEMPLATES
-    )
+    tmpl_dir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_TEMPLATES)
     if tmpl_dir == os.path.expanduser("~"):
         tmpl_dir = None
 

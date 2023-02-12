@@ -18,7 +18,7 @@ import urllib.parse
 import urllib.error
 import typing as ty
 
-from kupfer.objects import Action, UrlLeaf, FileLeaf
+from kupfer.obj import Action, UrlLeaf, FileLeaf
 from kupfer import utils
 from kupfer.support import task
 
@@ -36,9 +36,7 @@ def header_name(headers):
 
 
 class DownloadTask(task.ThreadTask):
-    def __init__(
-        self, uri, destdir=None, tempfile=False, finish_callback=None
-    ):
+    def __init__(self, uri, destdir=None, tempfile=False, finish_callback=None):
         super().__init__()
         self.uri = uri
         self.download_finish_callback = finish_callback

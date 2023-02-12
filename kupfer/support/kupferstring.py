@@ -33,14 +33,16 @@ def _folditems():
 _FOLDING_TABLE = dict(_folditems())
 
 
-def tounicode(utf8str: ty.Union[str, bytes, None]) -> str:
+def tounicode(utf8str: ty.Union[str, bytes, None]) -> str | None:
     """Return `unicode` from UTF-8 encoded @utf8str
     This is to use the same error handling etc everywhere
     """
     # TODO: check is there other strings than str
-    if isinstance(utf8str, str):
+    if isinstance(utf8str, str) or utf8str is None:
         return utf8str
 
+    ic_stack()
+    ic(utf8str)
     return utf8str.decode("UTF-8", "replace") if utf8str is not None else ""
 
 

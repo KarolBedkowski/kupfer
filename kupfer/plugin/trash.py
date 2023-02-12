@@ -9,12 +9,17 @@ from contextlib import suppress
 
 from gi.repository import Gio, GLib
 
-from kupfer.objects import Leaf, Action, Source, SourceLeaf, FileLeaf
-from kupfer.objects import OperationError
-from kupfer.obj.objects import Open
-from kupfer import utils, icons
+from kupfer import icons, utils
+from kupfer.obj import (
+    Action,
+    FileLeaf,
+    Leaf,
+    Open,
+    OperationError,
+    Source,
+    SourceLeaf,
+)
 from kupfer.support import pretty
-
 
 TRASH_URI = "trash://"
 

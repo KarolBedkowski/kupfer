@@ -12,19 +12,16 @@ __description__ = _("Recently used documents and bookmarked folders")
 __version__ = "2017.3"
 __author__ = ""
 
-import operator
 import functools
+import operator
 from os import path
 from pathlib import Path
 
 import xdg.BaseDirectory as base
 from gi.repository import Gio, Gtk
 
-from kupfer.objects import Action, Source
-from kupfer.objects import SourceLeaf, AppLeaf, FileLeaf, UrlLeaf
-from kupfer import icons
-from kupfer import launch
-from kupfer import plugin_support
+from kupfer import icons, launch, plugin_support
+from kupfer.obj import Action, AppLeaf, FileLeaf, Source, SourceLeaf, UrlLeaf
 from kupfer.support import weaklib
 
 __kupfer_settings__ = plugin_support.PluginSettings(
@@ -147,9 +144,7 @@ class RecentsSource(Source):
     def initialize(self):
         """Set up change callback"""
         manager = Gtk.RecentManager.get_default()
-        weaklib.gobject_connect_weakly(
-            manager, "changed", self._recent_changed
-        )
+        weaklib.gobject_connect_weakly(manager, "changed", self._recent_changed)
 
     def _recent_changed(self, *args):
         # FIXME: We don't get single item updates, might this be

@@ -15,7 +15,7 @@ import os
 import json
 from pathlib import Path
 
-from kupfer.objects import Action, TextLeaf, Leaf, Source
+from kupfer.obj import Action, TextLeaf, Leaf, Source
 from kupfer.obj.helplib import FilesystemWatchMixin
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer import utils, icons
@@ -42,7 +42,6 @@ class ZealSearch(Action):
 
 
 class ZealDocsetsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
-
     appleaf_content_id = ("zeal", "org.zealdocs.zeal")
 
     def __init__(self):

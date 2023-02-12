@@ -9,8 +9,7 @@ __description__ = _("Thunderbird/Icedove Contacts and Actions")
 __version__ = "2017.2"
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>, US"
 
-from kupfer.objects import Action
-from kupfer.objects import TextLeaf, UrlLeaf, RunnableLeaf, FileLeaf
+from kupfer.obj import Action, TextLeaf, UrlLeaf, RunnableLeaf, FileLeaf
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer.obj.helplib import FilesystemWatchMixin
 from kupfer import utils, icons

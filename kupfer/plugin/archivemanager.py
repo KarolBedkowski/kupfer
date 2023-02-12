@@ -13,14 +13,12 @@ __author__ = "Ulrik"
 import os
 import re
 import typing as ty
+
 # since "path" is a very generic name, you often forget..
 from os import path as os_path
 
-from kupfer.objects import Action, FileLeaf
-from kupfer import utils
-from kupfer import plugin_support
-from kupfer import runtimehelper
-
+from kupfer import plugin_support, runtimehelper, utils
+from kupfer.obj import Action, FileLeaf
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {

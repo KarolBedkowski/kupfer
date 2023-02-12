@@ -5,17 +5,16 @@ __description__ = _("Claws Mail Contacts and Actions")
 __version__ = "2018-10-07"
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
 
-from xml.dom import minidom
 import xml
 from pathlib import Path
+from xml.dom import minidom
 
-from kupfer.objects import Action
-from kupfer.objects import TextLeaf, UrlLeaf, RunnableLeaf, FileLeaf
 from kupfer import utils
+from kupfer.obj import Action, FileLeaf, RunnableLeaf, TextLeaf, UrlLeaf
 from kupfer.obj.apps import AppLeafContentMixin
-from kupfer.obj.helplib import FilesystemWatchMixin
-from kupfer.obj.grouping import ToplevelGroupingSource
 from kupfer.obj.contacts import ContactLeaf, EmailContact, email_from_leaf
+from kupfer.obj.grouping import ToplevelGroupingSource
+from kupfer.obj.helplib import FilesystemWatchMixin
 
 
 class ComposeMail(RunnableLeaf):

@@ -11,7 +11,7 @@ __author__ = ""
 
 from gi.repository import Gio
 
-from kupfer.objects import Action, Source, AppLeaf, FileLeaf
+from kupfer.obj import Action, Source, AppLeaf, FileLeaf
 from kupfer.obj.helplib import FilesystemWatchMixin
 from kupfer import config, plugin_support
 from kupfer.support import weaklib

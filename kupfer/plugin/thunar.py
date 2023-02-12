@@ -19,12 +19,18 @@ from pathlib import Path
 import dbus
 from gi.repository import Gio
 
-from kupfer.objects import Action, Source
-from kupfer.objects import InvalidDataError, NotAvailableError, NoMultiError
-from kupfer.objects import FileLeaf, RunnableLeaf, AppLeaf
+from kupfer import config, plugin_support
+from kupfer.obj import (
+    Action,
+    AppLeaf,
+    FileLeaf,
+    InvalidDataError,
+    NoMultiError,
+    NotAvailableError,
+    RunnableLeaf,
+    Source,
+)
 from kupfer.obj.apps import AppLeafContentMixin
-from kupfer import config
-from kupfer import plugin_support
 from kupfer.support import pretty
 
 plugin_support.check_dbus_connection()

@@ -22,11 +22,9 @@ __author__ = ""
 
 from gi.repository import Gio
 
-from kupfer.objects import Action
-from kupfer.objects import TextLeaf, FileLeaf
-from kupfer.obj import helplib
-from kupfer.support import kupferstring
 from kupfer import utils
+from kupfer.obj import Action, FileLeaf, TextLeaf, helplib
+from kupfer.support import kupferstring
 
 # FIXME: Sometimes require that the type is *exactly* text/plain?
 

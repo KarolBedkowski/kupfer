@@ -6,7 +6,7 @@ from contextlib import suppress
 from .base import Leaf, Source
 from .exceptions import InvalidDataError
 from .helplib import FilesystemWatchMixin, PicklingHelperMixin
-from .objects import AppLeaf
+from .files import AppLeaf
 
 
 class AppLeafContentMixin:

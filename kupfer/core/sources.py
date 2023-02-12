@@ -13,8 +13,8 @@ import weakref
 from pathlib import Path
 
 from kupfer import config
-from kupfer.obj import sources
-from kupfer.obj.base import (
+from kupfer.obj.sources import SourcesSource, MultiSource
+from kupfer.obj import (
     Action,
     ActionGenerator,
     AnySource,
@@ -480,7 +480,7 @@ class SourceController(pretty.OutputMixin):
             (root_catalog,) = self._sources
         elif len(self._sources) > 1:
             firstlevel = self.firstlevel
-            root_catalog = sources.MultiSource(firstlevel)
+            root_catalog = MultiSource(firstlevel)
         else:
             root_catalog = None
 
@@ -496,12 +496,12 @@ class SourceController(pretty.OutputMixin):
             return self._pre_root
 
         sourceindex = set(self._sources)
-        kupfer_sources = sources.SourcesSource(self._sources)
+        kupfer_sources = SourcesSource(self._sources)
         sourceindex.add(kupfer_sources)
         # Make sure firstlevel is ordered
         # So that it keeps the ordering.. SourcesSource first
         firstlevel: ty.List[Source] = []
-        firstlevel.append(sources.SourcesSource(sourceindex))
+        firstlevel.append(SourcesSource(sourceindex))
         firstlevel.extend(self._toplevel_sources)
         self._pre_root = firstlevel
         return firstlevel
@@ -520,7 +520,7 @@ class SourceController(pretty.OutputMixin):
         self,
         types: ty.Iterable[ty.Any],
         extra_sources: ty.Optional[ty.Iterable[Source]] = None,
-    ) -> sources.MultiSource:
+    ) -> MultiSource:
         """
         Get root for a flat catalog of all catalogs
         providing at least Leaves of @types
@@ -536,14 +536,14 @@ class SourceController(pretty.OutputMixin):
         firstlevel = set(extra_sources or [])
         # include the Catalog index since we want to include
         # the top of the catalogs (like $HOME)
-        catalog_index = (sources.SourcesSource(self._sources),)
+        catalog_index = (SourcesSource(self._sources),)
         firstlevel.update(
             s
             for s in itertools.chain(self._sources, catalog_index)
             if self.good_source_for_types(s, ttypes)
         )
 
-        return sources.MultiSource(firstlevel)
+        return MultiSource(firstlevel)
 
     def get_canonical_source(self, source: AnySource) -> AnySource:
         "Return the canonical instance for @source"
@@ -591,7 +591,7 @@ class SourceController(pretty.OutputMixin):
             contents = list(self.get_contents_for_leaf(obj, types))
             content = contents[0] if contents else None
             if len(contents) > 1:
-                content = sources.SourcesSource(
+                content = SourcesSource(
                     contents, name=str(obj), use_reprs=False
                 )
 

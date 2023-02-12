@@ -6,13 +6,10 @@ __author__ = ""
 
 import shutil
 
-from gi.repository import Gio, Gdk, GLib
-from gi.repository import Gtk
-from gi.repository import GdkPixbuf
+from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk
 
-from kupfer.objects import Action, FileLeaf
-from kupfer.objects import OperationError
 from kupfer import utils
+from kupfer.obj import Action, FileLeaf, OperationError
 
 
 def _set_size(loader, width, height, max_w, max_h):

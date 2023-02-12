@@ -4,8 +4,7 @@ import os
 import urllib.parse
 import urllib.request, urllib.parse, urllib.error
 
-from kupfer.objects import TextSource, TextLeaf, FileLeaf, UrlLeaf
-from kupfer.obj.objects import OpenUrl
+from kupfer.obj import TextSource, TextLeaf, FileLeaf, UrlLeaf, OpenUrl
 from kupfer import utils
 
 __kupfer_name__ = "Free-text Queries"
@@ -90,7 +89,7 @@ class PathTextSource(TextSource):
         yield FileLeaf
 
 
-def is_url(text) -> str|None:
+def is_url(text) -> str | None:
     """If @text is an URL, return a cleaned-up URL, else return None"""
     text = text.strip()
     components = list(urllib.parse.urlparse(text))

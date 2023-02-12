@@ -6,12 +6,10 @@ __author__ = "Horia V. Corcalciuc <h.v.corcalciuc@gmail.com>, US"
 
 import subprocess
 
-from kupfer.objects import Leaf, Source, Action
-from kupfer.objects import RunnableLeaf, SourceLeaf
+from kupfer import icons, plugin_support, uiutils, utils
+from kupfer.obj import Action, Leaf, RunnableLeaf, Source, SourceLeaf
 from kupfer.obj.apps import AppLeafContentMixin
-from kupfer import icons, utils, uiutils
-from kupfer import plugin_support
-from kupfer.support import weaklib, kupferstring
+from kupfer.support import kupferstring, weaklib
 
 plugin_support.check_dbus_connection()
 

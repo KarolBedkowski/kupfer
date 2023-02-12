@@ -187,7 +187,7 @@ class ApplicationsMatcherService(pretty.OutputMixin):
         except (pickle.PickleError, Exception) as exc:
             self.output_info(f"Error loading {pickle_file}: {exc}")
 
-        return source
+        return None
 
     def _pickle_register(self, reg: ty.Any, pickle_file: str) -> bool:
         self.output_debug(f"Saving to {pickle_file}")

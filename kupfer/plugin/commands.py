@@ -18,11 +18,16 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 import os
 
-from kupfer.objects import TextSource, TextLeaf, Action, FileLeaf
-from kupfer.objects import OperationError
-from kupfer.obj.objects import Execute
-from kupfer import utils, icons
-from kupfer.support import pretty, kupferstring
+from kupfer import icons, utils
+from kupfer.obj import (
+    Action,
+    Execute,
+    FileLeaf,
+    OperationError,
+    TextLeaf,
+    TextSource,
+)
+from kupfer.support import kupferstring, pretty
 
 
 def finish_command(ctx, acommand, stdout, stderr, post_result=True):
@@ -161,8 +166,7 @@ class WriteToCommand(Action):
 
     def get_description(self):
         return (
-            _("Run program and supply text on the standard input")
-            + " \N{GEAR}"
+            _("Run program and supply text on the standard input") + " \N{GEAR}"
         )
 
 
@@ -176,8 +180,7 @@ class FilterThroughCommand(WriteToCommand):
 
     def get_description(self):
         return (
-            _("Run program and supply text on the standard input")
-            + " \N{GEAR}"
+            _("Run program and supply text on the standard input") + " \N{GEAR}"
         )
 
 
