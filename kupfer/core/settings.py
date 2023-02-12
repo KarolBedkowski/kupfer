@@ -11,6 +11,7 @@ from gi.repository import GLib, GObject
 from kupfer import config, pretty, scheduler
 
 AltValidator = ty.Callable[[dict[str, ty.Any]], bool]
+Config = dict[str, dict[str, ty.Any]]
 
 
 def strbool(value: ty.Any, default: bool = False) -> bool:
@@ -46,6 +47,98 @@ def _override_encoding(name: str) -> ty.Optional[str]:
         return "UTF-8"
 
     return None
+
+
+def _fill_parser_read(
+    parser: configparser.RawConfigParser,
+    defaults: Config,
+) -> None:
+    for secname, section in defaults.items():
+        if not parser.has_section(secname):
+            parser.add_section(secname)
+
+        for key, default in section.items():
+            if isinstance(default, (tuple, list)):
+                default = SettingsController.sep.join(default)
+            elif isinstance(default, int):
+                default = str(default)
+
+            parser.set(secname, key, default)
+
+
+def _parse_value(defval: ty.Any, value: str) -> ty.Any:
+    if isinstance(defval, (tuple, list)):
+        if not value:
+            return ()
+
+        return [p.strip() for p in value.split(SettingsController.sep) if p]
+
+    if isinstance(defval, bool):
+        return strbool(value)
+
+    if isinstance(defval, int):
+        return type(defval)(value)
+
+    return str(value)
+
+
+def _fill_confmap_fom_parser(
+    parser: configparser.RawConfigParser,
+    confmap: Config,
+    defaults: Config,
+) -> None:
+    for secname in parser.sections():
+        if secname not in confmap:
+            confmap[secname] = {}
+
+        for key in parser.options(secname):
+            value = parser.get(secname, key)
+            retval = value
+            if (sec := defaults.get(secname)) is not None:
+                if (defval := sec.get(key)) is not None:
+                    retval = _parse_value(defval, value)
+
+            confmap[secname][key] = retval
+
+
+def _confmap_difference(conf: Config, defaults: Config) -> Config:
+    """Extract the non-default keys to write out"""
+    difference = {}
+    for secname, section in conf.items():
+        if secname not in defaults:
+            difference[secname] = dict(section)
+            continue
+
+        difference[secname] = {}
+        for key, config_val in section.items():
+            if secname in defaults and key in defaults[secname]:
+                if defaults[secname][key] == config_val:
+                    continue
+
+            difference[secname][key] = config_val
+
+        if not difference[secname]:
+            difference.pop(secname)
+
+    return difference
+
+
+def _fill_parser_from_config(
+    parser: configparser.RawConfigParser, defaults: Config
+) -> None:
+    for secname in sorted(defaults):
+        section = defaults[secname]
+        if not parser.has_section(secname):
+            parser.add_section(secname)
+
+        for key in sorted(section):
+            value = section[key]
+            if isinstance(value, (tuple, list)):
+                value = SettingsController.sep.join(value)
+            elif isinstance(value, int):
+                value = str(value)
+
+            parser.set(secname, key, value)
 
 
 class SettingsController(GObject.GObject, pretty.OutputMixin):
@@ -99,7 +192,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
 
     def __init__(self) -> None:
         GObject.GObject.__init__(self)
-        self._defaults_path = None
+        self._defaults_path: str | None = None
         self.encoding = _override_encoding(locale.getpreferredencoding())
         self.output_debug("Using", self.encoding)
         self._config = self._read_config()
@@ -110,7 +203,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
     def _update_config_save_timer(self) -> None:
         self._save_timer.set(60, self._save_config)
 
-    def _read_config(self, read_config: bool = True) -> ty.Dict[str, ty.Any]:
+    def _read_config(self, read_config: bool = True) -> Config:
         """
         Read cascading config files
         default -> then config
@@ -118,25 +211,9 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
         """
         parser = configparser.RawConfigParser()
 
-        def fill_parser(
-            parser: configparser.RawConfigParser,
-            defaults: ty.Dict[str, ty.Any],
-        ) -> None:
-            for secname, section in defaults.items():
-                if not parser.has_section(secname):
-                    parser.add_section(secname)
-
-                for key, default in section.items():
-                    if isinstance(default, (tuple, list)):
-                        default = self.sep.join(default)
-                    elif isinstance(default, int):
-                        default = str(default)
-
-                    parser.set(secname, key, default)
-
         # Set up defaults
         confmap = copy.deepcopy(self.defaults)
-        fill_parser(parser, confmap)
+        _fill_parser_read(parser, confmap)
 
         # Read all config files
         config_files: ty.List[str] = []
@@ -169,32 +246,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
                 )
 
         # Read parsed file into the dictionary again
-        for secname in parser.sections():
-            if secname not in confmap:
-                confmap[secname] = {}
-
-            for key in parser.options(secname):
-                value = parser.get(secname, key)
-                retval = value
-                if secname in self.defaults and key in self.defaults[secname]:
-                    defval = self.defaults[secname][key]
-                    if isinstance(defval, (tuple, list)):
-                        if not value:
-                            retval = ()
-                        else:
-                            retval = [
-                                p.strip() for p in value.split(self.sep) if p
-                            ]
-
-                    elif isinstance(defval, bool):
-                        retval = strbool(value)
-                    elif isinstance(defval, int):
-                        retval = type(defval)(value)
-                    else:
-                        retval = str(value)
-
-                confmap[secname][key] = retval
-
+        _fill_confmap_fom_parser(parser, confmap, self.defaults)
         return confmap
 
     def _save_config(self, _scheduler: ty.Any = None) -> None:
@@ -203,49 +255,12 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
         if not config_path:
             self.output_info("Unable to save settings, can't find config dir")
             return
+
         # read in just the default values
         default_confmap = self._read_config(read_config=False)
-
-        def confmap_difference(conf, defaults):
-            """Extract the non-default keys to write out"""
-            difference = {}
-            for secname, section in conf.items():
-                if secname not in defaults:
-                    difference[secname] = dict(section)
-                    continue
-
-                difference[secname] = {}
-                for key, config_val in section.items():
-                    if secname in defaults and key in defaults[secname]:
-                        if defaults[secname][key] == config_val:
-                            continue
-
-                    difference[secname][key] = config_val
-
-                if not difference[secname]:
-                    difference.pop(secname)
-
-            return difference
-
         parser = configparser.RawConfigParser()
-
-        def fill_parser(parser, defaults):
-            for secname in sorted(defaults):
-                section = defaults[secname]
-                if not parser.has_section(secname):
-                    parser.add_section(secname)
-
-                for key in sorted(section):
-                    value = section[key]
-                    if isinstance(value, (tuple, list)):
-                        value = self.sep.join(value)
-                    elif isinstance(value, int):
-                        value = str(value)
-
-                    parser.set(secname, key, value)
-
-        confmap = confmap_difference(self._config, default_confmap)
-        fill_parser(parser, confmap)
+        confmap = _confmap_difference(self._config, default_confmap)
+        _fill_parser_from_config(parser, confmap)
         ## Write to tmp then rename over for it to be atomic
         temp_config_path = f"{config_path}.{os.getpid()}"
         with open(temp_config_path, "w", encoding="UTF_8") as out:
@@ -255,9 +270,9 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
 
     def get_config(self, section: str, key: str) -> ty.Any:
         """General interface, but section must exist"""
-        key = key.lower()
-        value = self._config[section].get(key)
         if section in self.defaults:
+            key = key.lower()
+            value = self._config[section].get(key)
             return value
 
         raise KeyError(f"Invalid settings section: {section}")
@@ -386,6 +401,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
     def get_global_keybinding(self, key: str) -> str:
         if key == "keybinding":
             return self.get_keybinding()
+
         if key == "magickeybinding":
             return self.get_magic_keybinding()
 
@@ -394,6 +410,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
     def set_global_keybinding(self, key: str, val: str) -> bool:
         if key == "keybinding":
             return self.set_keybinding(val)
+
         if key == "magickeybinding":
             return self.set_magic_keybinding(val)
 
@@ -478,7 +495,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
         Else return @default if does not exist, or can't be coerced
         """
         plug_section = f"plugin_{plugin}"
-        if not plug_section in self._config:
+        if plug_section not in self._config:
             return default
 
         val = self._get_raw_config(plug_section, key)
@@ -517,14 +534,14 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
 
         return self._set_raw_config(plug_section, key, value_repr)
 
-    def get_accelerator(self, name: str|None) -> str|None:
+    def get_accelerator(self, name: str | None) -> str | None:
         return self.get_config("Keybindings", name)  # type: ignore
 
     def set_accelerator(self, name: str, key: str) -> bool:
         return self._set_config("Keybindings", name, key)
 
     def get_accelerators(self) -> ty.Dict[str, ty.Any]:
-        return self._config["Keybindings"]  # type: ignore
+        return self._config["Keybindings"]
 
     def reset_keybindings(self) -> None:
         self.set_keybinding(self.get_from_defaults("Kupfer", "keybinding"))  # type: ignore
@@ -560,9 +577,9 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
             return
 
         validator = self._alternative_validators[category_key]
-        for (id_, alternative) in self._alternatives[category_key].items():
-            name = alternative["name"]
+        for id_, alternative in self._alternatives[category_key].items():
             if not validator or validator(alternative):
+                name = alternative["name"]
                 yield (id_, name)
 
     def get_all_alternatives(self, category_key: str) -> ty.Any:
