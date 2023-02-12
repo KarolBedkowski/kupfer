@@ -37,12 +37,12 @@ FormatCleanCB = ty.Callable[[str], str]
 FormatMatchCB = ty.Callable[[str], str]
 
 
-def defaultFormat(x:str) -> str:
+def _default_formatter(x: str) -> str:
     return x
 
 
-def formatCommonSubstrings(
-    s: str,
+def format_common_substrings(
+    string: str,
     query: str,
     format_clean: ty.Optional[FormatCleanCB] = None,
     format_match: ty.Optional[FormatMatchCB] = None,
@@ -52,47 +52,47 @@ def formatCommonSubstrings(
 
     Returns: a formatted string
 
-    >>> formatCommonSubstrings('hi there dude', 'hidude',
+    >>> format_common_substrings('hi there dude', 'hidude',
     ...                        format_match=lambda m: "<b>%s</b>" % m)
     '<b>hi</b> there <b>dude</b>'
 
-    >>> formatCommonSubstrings('parallelism', 'lsm', format_match=str.upper)
+    >>> format_common_substrings('parallelism', 'lsm', format_match=str.upper)
     'paralleLiSM'
     """
-    format_clean = format_clean or defaultFormat
+    format_clean = format_clean or _default_formatter
 
     def _format(x: str) -> str:
-        return x and format_clean(x)
+        return x and format_clean(x)  # type: ignore
 
     if not query:
-        return _format(s)
+        return _format(string)
 
-    ls = s.lower()
+    lowerstr = string.lower()
 
     # find overall range of match
-    first, last = _findBestMatch(ls, query)
+    first, last = _find_best_match(lowerstr, query)
 
     if first == -1:
-        return _format(s)
+        return _format(string)
 
     # find longest perfect match, put in slc
     for slc in range(len(query), 0, -1):
-        if query[:slc] == ls[first : first + slc]:
+        if query[:slc] == lowerstr[first : first + slc]:
             break
 
     nextkey = query[slc:]
-    head = s[:first]
-    match = s[first : first + slc]
-    matchtail = s[first + slc : last]
-    tail = s[last:]
+    head = string[:first]
+    match = string[first : first + slc]
+    matchtail = string[first + slc : last]
+    tail = string[last:]
 
-    format_match = format_match or defaultFormat
+    format_match = format_match or _default_formatter
 
     return "".join(
         (
             _format(head),
             format_match(match),
-            formatCommonSubstrings(
+            format_common_substrings(
                 matchtail, nextkey, format_clean, format_match
             ),
             _format(tail),
@@ -100,7 +100,7 @@ def formatCommonSubstrings(
     )
 
 
-def score_single(s: str, query: str)->float:
+def score_single(string: str, query: str) -> float:
     """
     s: text body to score
     query: A single character
@@ -117,23 +117,23 @@ def score_single(s: str, query: str)->float:
     0.995
     """
 
-    ls = s.lower()
+    string = string.lower()
 
     # Find the shortest possible substring that matches the query
     # and get the ration of their lengths for a base score
-    first = ls.find(query)
+    first = string.find(query)
     if first == -1:
         return 0.0
 
-    score = 0.9 + 0.025 / len(s)
+    strscore = 0.9 + 0.025 / len(string)
 
     if first == 0:
-        score += 0.07
+        strscore += 0.07
 
-    return score
+    return strscore
 
 
-def score(s: str, query: str) -> float:
+def score(string: str, query: str) -> float:
     """
     A relevancy score for the string ranging from 0 to 1
 
@@ -161,60 +161,60 @@ def score(s: str, query: str) -> float:
     if not query:
         return 1.0
 
-    ls = s.lower()
+    string = string.lower()
 
     # Find the shortest possible substring that matches the query
     # and get the ration of their lengths for a base score
-    first, last = _findBestMatch(ls, query)
+    first, last = _find_best_match(string, query)
     if first == -1:
         return 0.0
 
-    score : float= len(query) / (last - first)
+    query_len = len(query)
+    strscore: float = query_len / (last - first)
 
     # Now we weight by string length so shorter strings are better
-    score *= 0.7 + len(query) / len(s) * 0.3
+    strscore *= 0.7 + query_len / len(string) * 0.3
 
     # Bonus points if the characters start words
-    good = 0
     bad = 1
-    firstCount = 0
+    first_count = 0
     for i in range(first, last - 1):
-        if ls[i] in " -.([_":
-            if ls[i + 1] in query:
-                firstCount += 1
+        if string[i] in " -.([_":
+            if string[i + 1] in query:
+                first_count += 1
             else:
                 bad += 1
 
     # A first character match counts extra
-    if query[0] == ls[0]:
-        firstCount += 2
+    if query[0] == string[0]:
+        first_count += 2
 
     # The longer the acronym, the better it scores
-    good += firstCount * firstCount * 4
+    good = first_count * first_count * 4
 
     # Better yet if the match itself started there
     if first == 0:
         good += 2
 
     # Super duper bonus if it is a perfect match
-    if query == ls:
+    if query == string:
         good += last * 2 + 4
 
-    score = (score + 3 * good / (good + bad)) / 4
+    strscore = (strscore + 3 * good / (good + bad)) / 4
 
     # This fix makes sure that perfect matches always rank higher
     # than split matches.  Perfect matches get the .9 - 1.0 range
     # everything else lower
 
-    if last - first == len(query):
-        score = 0.9 + 0.1 * score
+    if last - first == query_len:
+        strscore = 0.9 + 0.1 * strscore
     else:
-        score = 0.9 * score
+        strscore = 0.9 * strscore
 
-    return score
+    return strscore
 
 
-def _findBestMatch(s: str, query: str) -> ty.Tuple[int, int]:
+def _find_best_match(string: str, query: str) -> ty.Tuple[int, int]:
     """
     Finds the shortest substring of @s that contains all characters of query
     in order.
@@ -225,53 +225,55 @@ def _findBestMatch(s: str, query: str) -> ty.Tuple[int, int]:
     Returns: a two-item tuple containing the start and end indicies of
              the match.  No match returns (-1,-1).
 
-    >>> _findBestMatch('terminal', 'trml')
+    >>> _find_best_match('terminal', 'trml')
     (0, 8)
-    >>> _findBestMatch('total told', 'tl')
+    >>> _find_best_match('total told', 'tl')
     (2, 5)
-    >>> _findBestMatch('terminal', 'yl')
+    >>> _find_best_match('terminal', 'yl')
     (-1, -1)
     """
-    bestMatch = -1, -1
-
     # Find the last instance of the last character of the query
     # since we never need to search beyond that
-    lastChar = s.rfind(query[-1])
+    last_char = string.rfind(query[-1])
 
     # No instance of the character?
-    if lastChar == -1:
-        return bestMatch
+    if last_char == -1:
+        return -1, -1
 
     # Loop through each instance of the first character in query
-    index = s.find(query[0])
-
-    queryLength = len(query)
-    lastIndex = lastChar - len(query) + 1
-    while 0 <= index <= lastIndex:
+    index = string.find(query[0])
+    best_match_start = -1
+    best_match_end = -1
+    query_len = len(query)
+    last_index = last_char - query_len + 1
+    while 0 <= index <= last_index:
         # See if we can fit the whole query in the tail
         # We know the first char matches, so we dont check it.
         cur = index + 1
         qcur = 1
-        while qcur < queryLength:
+        while qcur < query_len:
             # find where in the string the next query character is
             # if not found, we are done
-            cur = s.find(query[qcur], cur, lastChar + 1)
+            cur = string.find(query[qcur], cur, last_char + 1)
             if cur == -1:
-                return bestMatch
+                return best_match_start, best_match_end
 
             cur += 1
             qcur += 1
 
         # take match if it is shorter
         # if perfect match, we are done
-        if bestMatch[0] == -1 or (cur - index) < (bestMatch[1] - bestMatch[0]):
-            bestMatch = (index, cur)
-            if cur - index == queryLength:
+        if best_match_start == -1 or (cur - index) < (
+            best_match_end - best_match_start
+        ):
+            best_match_start = index
+            best_match_end = cur
+            if cur - index == query_len:
                 break
 
-        index = s.find(query[0], index + 1)
+        index = string.find(query[0], index + 1)
 
-    return bestMatch
+    return best_match_start, best_match_end
 
 
 if __name__ == "__main__":

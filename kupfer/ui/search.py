@@ -429,7 +429,7 @@ class MatchViewOwner(pretty.OutputMixin):
             return
 
         # update the text label
-        markup = relevance.formatCommonSubstrings(
+        markup = relevance.format_common_substrings(
             str(self._cur_text),  # text
             str(self._cur_match).lower(),  # key,
             format_clean=escape_markup_str,
