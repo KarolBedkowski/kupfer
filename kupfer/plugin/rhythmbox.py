@@ -21,7 +21,7 @@ from gi.repository import Gio
 import dbus
 
 from kupfer.plugin import rhythmbox_support
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.objects import Leaf, Source, Action, RunnableLeaf, SourceLeaf
 from kupfer.objects import FileLeaf
 from kupfer import icons, utils, config

@@ -6,7 +6,7 @@ import typing as ty
 
 from gi.repository import Gtk, Gdk
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.ui import keybindings
 
 

@@ -15,7 +15,7 @@ import tempfile
 from gi.repository import GLib, Gtk, Gio, Gdk
 
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer import kupferstring
 from kupfer import desktop_launch
 from kupfer import launch
@@ -146,7 +146,7 @@ class AsyncCommand(pretty.OutputMixin):
         self,
         argv: list[str],
         finish_callback: ty.Callable[[AsyncCommand, bytes, bytes], None],
-        timeout_s: int|None,
+        timeout_s: int | None,
         stdin: ty.Optional[bytes] = None,
         env: ty.Any = None,
     ) -> None:
@@ -555,7 +555,9 @@ def get_destfile_in_directory(
     for _retry in range(3):
         destpath = get_destpath_in_directory(directory, filename, extension)
         try:
-            fileno = os.open(destpath, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666)
+            fileno = os.open(
+                destpath, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666
+            )
         except OSError as exc:
             pretty.print_error(__name__, exc)
         else:
@@ -577,7 +579,7 @@ def get_display_path_for_bytestring(filepath: ty.AnyStr) -> str:
     Will use glib's filename decoding functions, and will
     format nicely (denote home by ~/ etc)
     """
-    desc : str = GLib.filename_display_name(filepath)
+    desc: str = GLib.filename_display_name(filepath)
     homedir = os.path.expanduser("~/")
     if desc.startswith(homedir) and homedir != desc:
         desc = desc.replace(homedir, "~/", 1)

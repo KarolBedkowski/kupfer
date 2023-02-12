@@ -3,7 +3,7 @@ import typing as ty
 from gi.repository import GdkPixbuf
 
 from kupfer import icons
-from kupfer import pretty
+from kupfer.support import pretty, scheduler
 from kupfer import utils
 from kupfer import datatools
 from kupfer import puid
@@ -25,8 +25,6 @@ class TimedPerform(Perform):
     def activate(
         self, leaf: ty.Any, iobj: ty.Any = None, ctx: ty.Any = None
     ) -> None:
-        from kupfer import scheduler
-
         # make a timer that will fire when Kupfer exits
         interval = utils.parse_time_interval(iobj.object)
         pretty.print_debug(__name__, f"Run {leaf} in {interval} seconds")

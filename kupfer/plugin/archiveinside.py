@@ -21,8 +21,7 @@ from pathlib import Path
 
 from kupfer.objects import Source, FileLeaf
 from kupfer.obj.sources import DirectorySource
-from kupfer import pretty
-from kupfer import scheduler
+from kupfer.support import pretty, scheduler
 
 # Limit this to archives of a couple of megabytes
 MAX_ARCHIVE_BYTE_SIZE = 15 * 1024**2
@@ -43,9 +42,8 @@ def _is_safe_to_unarchive(path: str) -> bool:
     return not os.path.isabs(npth) and not npth.startswith(os.path.pardir)
 
 
-
 class ArchiveContent(Source):
-    extractors  = []
+    extractors = []
     unarchived_files = []
     end_timer = scheduler.Timer(True)
 

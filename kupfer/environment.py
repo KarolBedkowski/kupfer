@@ -6,7 +6,8 @@ try:
 except ImportError:
     Wnck = None
 
-from kupfer import pretty, config
+from kupfer import config
+from kupfer.support import pretty
 
 
 @functools.lru_cache(maxsize=1)

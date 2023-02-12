@@ -12,7 +12,8 @@ from gi.repository import Gio, GLib
 from kupfer.objects import Leaf, Action, Source, SourceLeaf, FileLeaf
 from kupfer.objects import OperationError
 from kupfer.obj.fileactions import Open
-from kupfer import utils, icons, pretty
+from kupfer import utils, icons
+from kupfer.support import pretty
 
 
 TRASH_URI = "trash://"

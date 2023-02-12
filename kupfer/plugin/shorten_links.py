@@ -7,7 +7,7 @@ __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>, US"
 import urllib.request, urllib.parse
 
 from kupfer.objects import Leaf, Action, Source, UrlLeaf, OperationError
-from kupfer import pretty
+from kupfer.support import pretty
 
 
 class _ShortLinksService(Leaf):

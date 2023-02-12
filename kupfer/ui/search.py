@@ -14,7 +14,7 @@ from kupfer.core.search import Rankable
 from kupfer.core import settings, actionaccel
 from kupfer.obj.base import Leaf, Action, KupferObject, AnySource
 from kupfer import icons
-from kupfer import pretty
+from kupfer.support import pretty
 import kupfer.config
 import kupfer.environment
 

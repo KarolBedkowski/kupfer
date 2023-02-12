@@ -16,7 +16,7 @@ import typing as ty
 from gi.repository import Gtk, Gdk
 from gi.repository import Pango
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer import config, version
 from kupfer.ui import uievents
 
@@ -27,7 +27,6 @@ if ty.TYPE_CHECKING:
 try:
     from typeguard import typeguard_ignore
 except ImportError:
-
     _F = ty.TypeVar("_F")
 
     def typeguard_ignore(f: _F) -> _F:  # pylint: disable=invalid-name

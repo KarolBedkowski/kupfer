@@ -7,7 +7,7 @@ import types
 
 from gi.repository import GLib
 
-from kupfer import scheduler, pretty
+from kupfer.support import scheduler, pretty
 
 
 TaskCallback = ty.Callable[[ty.Any], None]

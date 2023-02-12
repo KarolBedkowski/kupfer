@@ -9,7 +9,7 @@ __version__ = "2018-09-07"
 
 from contextlib import suppress
 
-from kupfer import pretty
+from kupfer.support import pretty
 
 import vboxapi
 

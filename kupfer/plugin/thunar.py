@@ -25,7 +25,7 @@ from kupfer.objects import FileLeaf, RunnableLeaf, AppLeaf
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer import config
 from kupfer import plugin_support
-from kupfer import pretty
+from kupfer.support import pretty
 
 plugin_support.check_dbus_connection()
 

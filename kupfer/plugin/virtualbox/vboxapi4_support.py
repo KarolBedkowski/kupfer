@@ -9,7 +9,7 @@ __version__ = "2018-10-21"
 
 import vboxapi
 
-from kupfer import pretty
+from kupfer.support import pretty
 
 
 # check api

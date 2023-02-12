@@ -4,7 +4,7 @@ from urllib.parse import urlunparse as _urlunparse
 from contextlib import suppress
 import typing as ty
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.obj.base import Leaf, Source
 
 QFURL_SCHEME = "qpfer"

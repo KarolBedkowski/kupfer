@@ -18,7 +18,7 @@ import time
 from contextlib import closing
 import typing as ty
 
-from kupfer import pretty
+from kupfer.support import pretty
 
 __version__ = "2021-01-01"
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
@@ -74,7 +74,7 @@ class _Table:
     def __repr__(self):
         return f"Table {self.tableid!r}: {self.rows!r}"
 
-    def add_cell(self, rowid: str, col: str, atom: str) ->None:
+    def add_cell(self, rowid: str, col: str, atom: str) -> None:
         if ":" in rowid:
             rowid = rowid.split(":")[0]
 
@@ -143,7 +143,7 @@ def _read_mork(filename: str) -> dict[str, _Table]:
     # decode data
     cells = {}
     atoms = {}
-    tables : dict[str, _Table] = {}
+    tables: dict[str, _Table] = {}
     pos = 0
     active_trans = False
     while data:

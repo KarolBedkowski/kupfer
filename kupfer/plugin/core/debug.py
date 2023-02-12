@@ -7,7 +7,7 @@ they can be tested here before they migrate to a fitting plugin.
 
 from kupfer.obj.base import Action, Leaf, Source
 from kupfer.obj.compose import ComposedLeaf
-from kupfer import pretty
+from kupfer.support import pretty
 
 __kupfer_sources__ = ()
 __kupfer_contents__ = ("ComposedSource",)

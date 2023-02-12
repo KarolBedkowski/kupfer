@@ -7,7 +7,7 @@ import typing as ty
 from gi.repository import Gio, GLib
 from gi.repository import GdkPixbuf
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer import puid
 from kupfer import conspickle
 from kupfer.obj.base import KupferObject

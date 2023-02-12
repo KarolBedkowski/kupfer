@@ -3,7 +3,7 @@ import traceback
 
 # import typing as ty
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.obj.base import Source, ActionGenerator, Action, AnySource
 from kupfer.core import plugins
 from kupfer.core.plugins import (

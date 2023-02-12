@@ -193,10 +193,9 @@ def main() -> None:
     cli_opts = get_options()
     print_banner()
 
-    from kupfer import (  # pylint: disable=import-outside-toplevel
-        pretty,
-        version,
-    )
+    # pylint: disable=import-outside-toplevel
+    from kupfer import version
+    from kupfer.support import pretty
 
     if "--debug" in cli_opts:
         pretty.DEBUG = True

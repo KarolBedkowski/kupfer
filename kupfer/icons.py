@@ -11,8 +11,7 @@ from gi.repository.Gio import (
 )
 
 from kupfer import datatools
-from kupfer import pretty
-from kupfer import scheduler
+from kupfer.support import scheduler, pretty
 from kupfer.core import settings
 from kupfer.kupferstring import tounicode
 

@@ -11,7 +11,8 @@ __version__ = "2018-10-21"
 import os
 from xml.dom import minidom
 
-from kupfer import pretty, utils
+from kupfer import utils
+from kupfer.support import pretty
 from kupfer.plugin.virtualbox import constants as vbox_const
 
 _VBOX_CONFIG_DIRS = (

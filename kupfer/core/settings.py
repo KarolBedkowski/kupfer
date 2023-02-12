@@ -8,7 +8,8 @@ import typing as ty
 
 from gi.repository import GLib, GObject
 
-from kupfer import config, pretty, scheduler
+from kupfer import config
+from kupfer.support import pretty, scheduler
 
 AltValidator = ty.Callable[[dict[str, ty.Any]], bool]
 Config = dict[str, dict[str, ty.Any]]

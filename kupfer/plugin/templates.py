@@ -13,7 +13,8 @@ from pathlib import Path
 from gi.repository import Gio, GLib
 
 from kupfer.objects import Leaf, Action, Source, FileLeaf
-from kupfer import icons, utils, pretty
+from kupfer import icons, utils
+from kupfer.support import pretty
 from kupfer.obj import helplib
 from kupfer.obj.helplib import FilesystemWatchMixin
 

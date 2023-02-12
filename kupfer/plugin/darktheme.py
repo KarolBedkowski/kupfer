@@ -5,7 +5,8 @@ __author__ = ""
 
 from gi.repository import Gtk
 
-from kupfer import plugin_support, pretty
+from kupfer import plugin_support
+from kupfer.support import pretty
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {

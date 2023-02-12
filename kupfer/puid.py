@@ -18,7 +18,7 @@ import contextlib
 import pickle
 import typing as ty
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.core import actioncompat
 from kupfer.core import qfurl
 from kupfer.obj.base import Leaf, Action, AnySource

@@ -23,7 +23,7 @@ from kupfer.objects import OperationError
 from kupfer.obj.fileactions import Execute
 from kupfer import utils, icons
 from kupfer import kupferstring
-from kupfer import pretty
+from kupfer.support import pretty
 
 
 def finish_command(ctx, acommand, stdout, stderr, post_result=True):

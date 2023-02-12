@@ -7,7 +7,7 @@ import gi
 from gi.repository import GObject, Gdk
 
 from kupfer import environment
-from kupfer import pretty
+from kupfer.support import pretty
 
 Keybinder = None  # pylint: disable=invalid-name
 if environment.allows_keybinder():

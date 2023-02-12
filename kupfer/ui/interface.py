@@ -12,7 +12,7 @@ from gi.repository import Gtk, Gdk, GObject
 from gi.repository import Gio, Pango
 
 from kupfer import kupferui
-from kupfer import scheduler
+from kupfer.support import scheduler, pretty
 from kupfer.ui import accelerators
 from kupfer.ui import uievents
 from kupfer.core import data
@@ -22,7 +22,6 @@ from kupfer.core import settings, actionaccel
 from kupfer.obj.base import AnySource, KupferObject
 from kupfer.obj.objects import FileLeaf
 from kupfer import interface
-from kupfer import pretty
 from kupfer import uiutils
 from .support import escape_markup_str, text_direction_is_ltr
 from .search import Search, LeafSearch, ActionSearch, State

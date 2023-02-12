@@ -10,7 +10,7 @@ __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
 from contextlib import suppress
 
 from kupfer.objects import Leaf, Action, Source
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer import plugin_support
 from kupfer.obj.apps import ApplicationSource
 

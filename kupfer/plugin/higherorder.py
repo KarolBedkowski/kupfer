@@ -11,7 +11,7 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 from kupfer.objects import Action, Leaf
 from kupfer.obj.compose import ComposedLeaf, MultipleLeaf
 from kupfer.core import commandexec
-from kupfer import pretty
+from kupfer.support import pretty
 
 
 class Select(Action):

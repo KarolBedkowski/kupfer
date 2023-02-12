@@ -2,7 +2,7 @@ def _extend_path():
     # Inside a function to not leak variables to module namespace
     import os
     from kupfer import config
-    from kupfer import pretty
+    from kupfer.support import pretty
 
     if not config.has_capability("CUSTOM_PLUGINS"):
         return
@@ -21,5 +21,6 @@ def _extend_path():
         if zipnames:
             pretty.print_debug(__name__, "Adding", directory, zipnames)
         __path__.extend(os.path.join(directory, z) for z in zipnames)
+
 
 _extend_path()

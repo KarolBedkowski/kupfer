@@ -4,7 +4,7 @@ import typing as ty
 
 from gi.repository import GLib, GObject
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.weaklib import gobject_connect_weakly
 
 

@@ -16,7 +16,7 @@ __version__ = "2017.1"
 import dbus
 
 from kupfer.objects import Action, TextLeaf, TextSource
-from kupfer import pretty, scheduler
+from kupfer.support import pretty, scheduler
 from kupfer import icons
 from kupfer import plugin_support
 from kupfer.obj.apps import AppLeafContentMixin

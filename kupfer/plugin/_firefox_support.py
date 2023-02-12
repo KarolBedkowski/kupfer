@@ -4,7 +4,7 @@ import typing as ty
 from pathlib import Path
 from configparser import RawConfigParser
 
-from kupfer import pretty
+from kupfer.support import pretty
 
 
 def make_absolute_and_check(firefox_dir: Path, path: str) -> ty.Optional[Path]:

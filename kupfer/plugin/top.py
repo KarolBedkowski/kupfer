@@ -9,7 +9,7 @@ import signal
 import operator
 
 from kupfer.objects import Action, Source, Leaf
-from kupfer import scheduler
+from kupfer.support import scheduler
 from kupfer import plugin_support
 from kupfer import utils
 

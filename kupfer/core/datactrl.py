@@ -23,7 +23,7 @@ from kupfer.obj.base import (
     KupferObject,
     ActionGenerator,
 )
-from kupfer import pretty, scheduler
+from kupfer.support import pretty, scheduler
 from kupfer.core import commandexec
 from kupfer.core import execfile
 from kupfer.core import pluginload

@@ -9,8 +9,8 @@ from pathlib import Path
 import gi
 from gi.repository import GLib, Gio, Gdk
 
-from kupfer import pretty, config
-from kupfer import scheduler
+from kupfer import config
+from kupfer.support import scheduler, pretty
 from kupfer import desktop_launch
 from kupfer.ui import uievents
 from kupfer import terminal

@@ -17,7 +17,7 @@ from gi.repository import GLib, Gio, Gtk
 from gi.repository import GdkPixbuf
 
 from kupfer import icons, launch, utils
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.obj.base import Leaf, Action, Source
 from kupfer.obj import fileactions
 from kupfer.interface import TextRepresentation

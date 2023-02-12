@@ -14,7 +14,8 @@ import time
 from gi.repository import GObject
 import dbus
 
-from kupfer import pretty, version
+from kupfer import version
+from kupfer.support import pretty
 
 
 class SessionClient(GObject.GObject, pretty.OutputMixin):

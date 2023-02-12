@@ -17,7 +17,7 @@ from kupfer.objects import Action, Source
 from kupfer.objects import FileLeaf, RunnableLeaf, OperationError
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer import plugin_support
-from kupfer import pretty
+from kupfer.support import pretty
 
 plugin_support.check_dbus_connection()
 

@@ -17,13 +17,12 @@ except (ValueError, ImportError):
 
 from kupfer import kupferui
 from kupfer import version
-from kupfer import scheduler
+from kupfer.support import scheduler, pretty
 from kupfer.ui import keybindings
 from kupfer.ui import listen
 from kupfer.ui import uievents
 from kupfer.core import settings
 from kupfer.core.datactrl import DataController
-from kupfer import pretty
 import kupfer.config
 import kupfer.environment
 

@@ -2,7 +2,7 @@ from gi.repository import Gtk
 
 from kupfer.objects import Source, RunnableLeaf
 from kupfer.obj.apps import AppLeafContentMixin
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer import kupferui
 from kupfer.version import DESKTOP_ID
 

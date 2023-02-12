@@ -10,7 +10,7 @@ import typing as ty
 from gi.repository import Gio, GLib
 
 from kupfer.obj.base import Action, Leaf, Source
-from kupfer import pretty
+from kupfer.support import pretty
 
 
 class PicklingHelperMixin:

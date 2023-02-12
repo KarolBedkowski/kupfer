@@ -4,7 +4,7 @@ import typing as ty
 
 from gi.repository import GObject
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.core import settings
 from kupfer.core import plugins
 from kupfer import utils

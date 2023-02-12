@@ -19,7 +19,8 @@ import subprocess
 from contextlib import suppress
 
 from kupfer.objects import Action, FileLeaf, TextLeaf, OperationError
-from kupfer import utils, pretty
+from kupfer import utils
+from kupfer.support import pretty
 from kupfer import runtimehelper
 from kupfer.utils import SpawnError
 

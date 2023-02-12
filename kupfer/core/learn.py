@@ -8,7 +8,7 @@ import typing as ty
 
 from kupfer import config
 from kupfer import conspickle
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.obj.base import Leaf, KupferObject
 
 _MNEMONICS_FILENAME = "mnemonics.pickle"

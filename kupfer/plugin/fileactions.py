@@ -20,7 +20,7 @@ from gi.repository import Gio, GLib
 
 from kupfer.objects import Action, FileLeaf, TextLeaf, TextSource
 from kupfer.objects import OperationError
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer import task
 
 

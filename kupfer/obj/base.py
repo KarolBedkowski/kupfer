@@ -6,7 +6,7 @@ from gi.repository import GdkPixbuf
 
 from kupfer import datatools
 from kupfer import icons
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.utils import locale_sort
 from kupfer.kupferstring import tounicode, tofolded
 

@@ -36,10 +36,10 @@ from enum import IntEnum
 
 from gi.repository import GObject
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer import task
 from kupfer import uiutils
-from kupfer.objects import OperationError
+from kupfer.obj.exceptions import OperationError
 from kupfer.obj.base import Leaf, Source, Action, KupferObject
 from kupfer.obj.objects import SourceLeaf
 from kupfer.obj.sources import MultiSource

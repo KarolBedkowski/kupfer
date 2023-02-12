@@ -5,7 +5,7 @@ import typing as ty
 
 # Action Accelerator configuration
 from kupfer import config
-from kupfer import pretty
+from kupfer.support import pretty
 
 _repr_key = repr
 

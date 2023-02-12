@@ -12,8 +12,8 @@ import xdg.Exceptions
 
 from kupfer import desktop_parse
 from kupfer import kupferstring
-from kupfer import pretty
 from kupfer import terminal
+from kupfer.support import pretty
 
 __all__ = ["launch_app_info", "spawn_app", "spawn_app_id"]
 
@@ -514,7 +514,6 @@ def _get_info_for_id(app_id: str) -> Gio.DesktopAppInfo:
 
 
 if __name__ == "__main__":
-
     while True:
         id_ = input("Give me an App ID > ")
         launch_app_info(_get_info_for_id(id_ + ".desktop"), [])

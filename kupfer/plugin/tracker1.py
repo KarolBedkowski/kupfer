@@ -23,7 +23,8 @@ import dbus
 
 from kupfer.objects import Action, Source
 from kupfer.objects import TextLeaf, FileLeaf, TextSource, OperationError
-from kupfer import utils, pretty
+from kupfer import utils
+from kupfer.support import pretty
 from kupfer import plugin_support
 
 
@@ -80,7 +81,9 @@ class TrackerSearchHere(Action):
             ret = []
             new_file = Gio.File.new_for_uri
             for result in results:
-                with suppress(Exception):# This very vague exception is from getpath
+                with suppress(
+                    Exception
+                ):  # This very vague exception is from getpath
                     ret.append(FileLeaf(new_file(result[0]).get_path()))
 
             ctx.register_late_result(
@@ -161,7 +164,7 @@ def get_file_results_sparql(
 
     new_file = Gio.File.new_for_uri
     for result in results:
-        with suppress(Exception):# This very vague exception is from getpath
+        with suppress(Exception):  # This very vague exception is from getpath
             yield FileLeaf(new_file(result[0]).get_path())
 
 

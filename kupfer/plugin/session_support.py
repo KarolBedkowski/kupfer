@@ -4,7 +4,8 @@ Common objects for session_* plugins.
 
 from kupfer.objects import Source
 from kupfer.obj.objects import RunnableLeaf
-from kupfer import utils, pretty
+from kupfer import utils
+from kupfer.support import pretty
 
 __version__ = "2009-12-05"
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"

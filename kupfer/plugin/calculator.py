@@ -10,7 +10,7 @@ from contextlib import suppress
 import collections
 
 from kupfer.objects import Action, TextLeaf
-from kupfer import pretty
+from kupfer.support import pretty
 
 
 class IgnoreResultException(Exception):

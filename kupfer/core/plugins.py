@@ -8,7 +8,7 @@ import types
 import traceback
 from enum import Enum
 
-from kupfer import pretty
+from kupfer.support import pretty
 from kupfer.core import settings
 
 # import kupfer.icons on demand later
