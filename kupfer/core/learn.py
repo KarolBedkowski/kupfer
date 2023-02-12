@@ -221,14 +221,11 @@ def load() -> None:
     """
     Load learning database
     """
-    global _REGISTER
+    _REGISTER.clear()
 
-    filepath = config.get_config_file(_MNEMONICS_FILENAME)
-    if filepath:
-        _REGISTER = Learning.unpickle_register(filepath)  # type: ignore
-
-    if not _REGISTER:
-        _REGISTER = {}
+    if filepath := config.get_config_file(_MNEMONICS_FILENAME):
+        if reg := Learning.unpickle_register(filepath):
+            _REGISTER.update(reg)
 
     if _CORRELATION_KEY not in _REGISTER:
         _REGISTER[_CORRELATION_KEY] = _DEFAULT_ACTIONS
