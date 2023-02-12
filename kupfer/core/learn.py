@@ -7,8 +7,7 @@ import random
 import typing as ty
 
 from kupfer import config
-from kupfer import conspickle
-from kupfer.support import pretty
+from kupfer.support import pretty, conspickle
 from kupfer.obj.base import Leaf, KupferObject
 
 _MNEMONICS_FILENAME = "mnemonics.pickle"

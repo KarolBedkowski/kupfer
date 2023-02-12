@@ -7,9 +7,8 @@ import typing as ty
 from gi.repository import Gio, GLib
 from gi.repository import GdkPixbuf
 
-from kupfer.support import pretty
+from kupfer.support import pretty, conspickle
 from kupfer import puid
-from kupfer import conspickle
 from kupfer.obj.base import KupferObject
 
 KUPFER_COMMAND_SHEBANG = b"#!/usr/bin/env kupfer-exec\n"

@@ -18,12 +18,11 @@ import contextlib
 import pickle
 import typing as ty
 
-from kupfer.support import pretty
+from kupfer.support import pretty, conspickle
 from kupfer.core import actioncompat
 from kupfer.core import qfurl
 from kupfer.obj.base import Leaf, Action, AnySource
 from kupfer.core.sources import GetSourceController
-from kupfer.conspickle import ConservativeUnpickler
 
 __all__ = [
     "SerializedObject",
@@ -55,7 +54,7 @@ class SerializedObject:
         )
 
     def reconstruct(self) -> Leaf:
-        obj = ConservativeUnpickler.loads(self.data)
+        obj = conspickle.ConservativeUnpickler.loads(self.data)
         if self.version != getattr(obj, SERIALIZABLE_ATTRIBUTE):
             raise ValueError(f"Version mismatch for reconstructed {obj}")
 

@@ -12,8 +12,7 @@ from pathlib import Path
 import typing as ty
 
 from kupfer import config
-from kupfer.support import pretty, scheduler
-from kupfer import conspickle
+from kupfer.support import pretty, scheduler, conspickle
 from kupfer.obj import base, sources
 from kupfer.obj.base import (
     Source,
