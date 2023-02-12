@@ -1,16 +1,19 @@
+from __future__ import annotations
+
 import typing as ty
 
 from gi.repository import GdkPixbuf
 
-from kupfer import icons
-from kupfer.support import pretty, scheduler, datatools
-from kupfer import utils
-from kupfer import puid
+from kupfer import icons, puid, utils
+from kupfer.support import datatools, pretty, scheduler
 
-from kupfer.obj.base import Leaf, Action, Source
-from kupfer.obj.objects import Perform, RunnableLeaf, TextLeaf
-
+from .base import Action, Leaf, Source
 from .exceptions import InvalidDataError
+from .objects import Perform, RunnableLeaf, TextLeaf
+
+if ty.TYPE_CHECKING:
+    _ = str
+    ngettext = lambda *x: str(x)
 
 
 class TimedPerform(Perform):
@@ -55,9 +58,7 @@ class ComposedLeaf(RunnableLeaf):
     ) -> None:
         object_ = (obj, action, iobj)
         # A slight hack: We remove trailing ellipsis and whitespace
-        name = " → ".join(
-            str(o).strip(".… ") for o in object_ if o is not None
-        )
+        name = " → ".join(str(o).strip(".… ") for o in object_ if o is not None)
         RunnableLeaf.__init__(self, object_, name)
 
     def __getstate__(self) -> ty.Dict[str, ty.Any]:

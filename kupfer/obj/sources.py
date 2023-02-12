@@ -1,20 +1,22 @@
 from __future__ import annotations
+
 import os
-from os import path
 import typing as ty
+from os import path
 
-from gi.repository import GLib
-from gi.repository import Gio
-from gi.repository import GdkPixbuf
+from gi.repository import GdkPixbuf, Gio, GLib
 
+from kupfer import icons, utils
 from kupfer.support import datatools
-from kupfer import icons
-from kupfer import utils
 
-from kupfer.obj.base import Source, Leaf
-from kupfer.obj.helplib import PicklingHelperMixin, FilesystemWatchMixin
-from kupfer.obj.objects import FileLeaf, SourceLeaf
-from kupfer.obj.objects import ConstructFileLeaf, ConstructFileLeafTypes
+from .base import Leaf, Source
+from .helplib import FilesystemWatchMixin, PicklingHelperMixin
+from .objects import (
+    ConstructFileLeaf,
+    ConstructFileLeafTypes,
+    FileLeaf,
+    SourceLeaf,
+)
 
 if ty.TYPE_CHECKING:
     _ = str

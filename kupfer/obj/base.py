@@ -17,18 +17,10 @@ __all__ = [
 ]
 
 
-def identity(x):
-    return x
-
-
-def no_sort_func(x, _key=None):
-    return x
-
-
 # If no gettext function is loaded at this point, we load a substitute,
 # so that testing code can still work
 if not hasattr(builtins, "_"):
-    builtins._ = identity  # type: ignore
+    builtins._ = _ = str  # type: ignore
 
 
 _builtin_modules = frozenset(
@@ -36,9 +28,12 @@ _builtin_modules = frozenset(
         "kupfer.obj.objects",
         "kupfer.obj.base",
         "kupfer.obj.sources",
-        "kupfer.obj.fileactions",
     ]
 )
+
+
+def no_sort_func(x, _key=None):
+    return x
 
 
 class _BuiltinObject(type):
@@ -114,9 +109,7 @@ class KupferObject(metaclass=_BuiltinObject):
         """
         return None
 
-    def get_thumbnail(
-        self, width: int, height: int
-    ) -> GdkPixbuf.Pixbuf | None:
+    def get_thumbnail(self, width: int, height: int) -> GdkPixbuf.Pixbuf | None:
         """Return pixbuf of size @width x @height if available
         Most objects will not implement this
         """
@@ -206,9 +199,7 @@ class Leaf(KupferObject):
         """Represented object @obj and its @name"""
         super().__init__(name)
         self.object = obj
-        self._content_source: ty.Union[
-            _NonpersistentToken, Source, None
-        ] = None
+        self._content_source: ty.Union[_NonpersistentToken, Source, None] = None
 
     def __hash__(self) -> int:
         return hash(str(self))

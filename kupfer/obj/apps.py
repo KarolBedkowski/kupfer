@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 import typing as ty
 from contextlib import suppress
 
 from .base import Leaf, Source
-from .objects import AppLeaf
-from .helplib import PicklingHelperMixin, FilesystemWatchMixin
 from .exceptions import InvalidDataError
+from .helplib import FilesystemWatchMixin, PicklingHelperMixin
+from .objects import AppLeaf
 
 
 class AppLeafContentMixin:
