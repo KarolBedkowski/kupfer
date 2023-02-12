@@ -10,9 +10,8 @@ from gi.repository import Gtk, Gdk, Gio, GLib
 import xdg.DesktopEntry
 import xdg.Exceptions
 
-from kupfer import desktop_parse
 from kupfer import terminal
-from kupfer.support import pretty, kupferstring
+from kupfer.support import pretty, kupferstring, desktop_parse
 
 __all__ = ["launch_app_info", "spawn_app", "spawn_app_id"]
 
