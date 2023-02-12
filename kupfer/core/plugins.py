@@ -337,27 +337,27 @@ def get_plugin_attribute(
     return None
 
 
-def load_plugin_sources(
+def load_plugin_objects(
     plugin_name: str,
     attr: PluginAttr = PluginAttr.SOURCES,
     instantiate: bool = True,
 ) -> ty.Iterable[ty.Any]:
-    """Load plugin sources or actions or other type (selected by @attr).
-    Name is misleading.
-    """
-    sources = get_plugin_attribute(plugin_name, attr)
-    if not sources:
+    """Load plugin sources or actions or other type objects (selected by @attr)."""
+    objects = get_plugin_attribute(plugin_name, attr)
+    if not objects:
         return
 
-    for source in get_plugin_attributes(plugin_name, sources, warn=True):
-        if source:
+    for obj in get_plugin_attributes(plugin_name, objects, warn=True):
+        if obj:
             if instantiate:
-                yield source()
+                yield obj()
             else:
-                yield source
+                yield obj
 
         else:
-            pretty.print_info(__name__, f"Source not found for {plugin_name}")
+            pretty.print_info(
+                __name__, f"Object not found for {plugin_name} in {attr}"
+            )
 
 
 # Plugin Initialization & Error

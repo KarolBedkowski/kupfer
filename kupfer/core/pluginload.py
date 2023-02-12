@@ -6,7 +6,7 @@ from kupfer.obj.base import Source, ActionGenerator, Action, AnySource
 from kupfer.core import plugins
 from kupfer.core.plugins import (
     PluginAttr,
-    load_plugin_sources,
+    load_plugin_objects,
     initialize_plugin,
 )
 
@@ -36,24 +36,24 @@ def load_plugin(plugin_id: str) -> PluginDescription:
     if not plugins.is_plugin_loaded(item):
         return PluginDescription()
 
-    text_sources.extend(load_plugin_sources(item, PluginAttr.TEXT_SOURCES))
+    text_sources.extend(load_plugin_objects(item, PluginAttr.TEXT_SOURCES))
     action_decorators.extend(
-        load_plugin_sources(item, PluginAttr.ACTION_DECORATORS)  # type: ignore
+        load_plugin_objects(item, PluginAttr.ACTION_DECORATORS)  # type: ignore
     )
     action_generators.extend(
-        load_plugin_sources(item, PluginAttr.ACTION_GENERATORS)  # type: ignore
+        load_plugin_objects(item, PluginAttr.ACTION_GENERATORS)  # type: ignore
     )
 
     # Register all Sources as (potential) content decorators
     content_decorators.extend(
-        load_plugin_sources(item, PluginAttr.SOURCES, instantiate=False)  # type: ignore
+        load_plugin_objects(item, PluginAttr.SOURCES, instantiate=False)  # type: ignore
     )
     content_decorators.extend(
-        load_plugin_sources(  # type: ignore
+        load_plugin_objects(  # type: ignore
             item, PluginAttr.CONTENT_DECORATORS, instantiate=False
         )
     )
-    sources.extend(load_plugin_sources(item))  # type: ignore
+    sources.extend(load_plugin_objects(item))  # type: ignore
 
     desc = PluginDescription()
 
