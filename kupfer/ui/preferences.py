@@ -1185,7 +1185,7 @@ class SourceListController:
     def _refresh(self, *ignored: ty.Any) -> None:
         self.store.clear()
         setctl = settings.get_settings_controller()
-        srcctl = sources.GetSourceController()
+        srcctl = sources.get_source_controller()
         srcs = sorted(srcctl.get_sources(), key=str)
 
         for src in srcs:
@@ -1212,7 +1212,7 @@ class SourceListController:
         plugin_id = self.store.get_value(pathit, idcol)
         src = self.store.get_value(pathit, srccol)
 
-        srcctl = sources.GetSourceController()
+        srcctl = sources.get_source_controller()
         srcctl.set_toplevel(src, is_toplevel)
 
         setctl = settings.get_settings_controller()

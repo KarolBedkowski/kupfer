@@ -19,7 +19,7 @@ from kupfer.support import datatools, pretty
 
 from . import actioncompat, search
 from .search import Rankable
-from .sources import GetSourceController
+from .sources import get_source_controller
 
 ItemCheckFunc = ty.Callable[
     [ty.Iterable[KupferObject]], ty.Iterable[KupferObject]
@@ -35,7 +35,7 @@ def _dress_leaves(
     seq: ty.Iterable[Rankable], action: ty.Optional[Action]
 ) -> ty.Iterable[Rankable]:
     """yield items of @seq "dressed" by the source controller"""
-    sctr = GetSourceController()
+    sctr = get_source_controller()
     for itm in seq:
         sctr.decorate_object(itm.object, action=action)
         yield itm
@@ -272,7 +272,7 @@ class LeafPane(Pane, pretty.OutputMixin):
         """Try to get a source from the SourceController,
         if it is already loaded we get it from there, else
         returns @src"""
-        sctr = GetSourceController()
+        sctr = get_source_controller()
         return sctr.get_canonical_source(src)
 
     def get_source(self) -> AnySource | None:
@@ -371,7 +371,7 @@ class LeafPane(Pane, pretty.OutputMixin):
         )
         if key and self.is_at_source_root():
             # Only use text sources when we are at root catalog
-            sctr = GetSourceController()
+            sctr = get_source_controller()
             textsrcs = sctr.get_text_sources()
             sources_ = itertools.chain(sources_, textsrcs)
 
@@ -430,7 +430,7 @@ class PrimaryActionPane(Pane):
             return
 
         self.latest_key = key
-        actions = actioncompat.actions_for_item(leaf, GetSourceController())
+        actions = actioncompat.actions_for_item(leaf, get_source_controller())
         cache = self._action_valid_cache
 
         def is_valid_cached(action: Action) -> bool:
@@ -477,7 +477,7 @@ class SecondaryObjectPane(LeafPane):
                 self.source_rebase(ownsrc)
             else:
                 extra_sources = [ownsrc] if ownsrc else None
-                sctr = GetSourceController()
+                sctr = get_source_controller()
                 self.source_rebase(
                     sctr.root_for_types(act.object_types(), extra_sources)
                 )
@@ -489,7 +489,7 @@ class SecondaryObjectPane(LeafPane):
         assert self.current_action
         atroot = self.is_at_source_root()
         types = tuple(self.current_action.object_types())
-        sctr = GetSourceController()
+        sctr = get_source_controller()
         textsrcs = sctr.get_text_sources()
         return atroot and any(
             sctr.good_source_for_types(s, types) for s in textsrcs
@@ -521,7 +521,7 @@ class SecondaryObjectPane(LeafPane):
 
         if key and self.is_at_source_root():
             # Only use text sources when we are at root catalog
-            sctr = GetSourceController()
+            sctr = get_source_controller()
             if textsrcs := sctr.get_text_sources():
                 sources_ = itertools.chain(sources_, textsrcs)
 

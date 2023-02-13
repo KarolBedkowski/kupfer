@@ -702,5 +702,4 @@ class SourceController(pretty.OutputMixin):
                 self._rescanner.rescan_now(src, force_update=False)
 
 
-def GetSourceController() -> SourceController:
-    return SourceController.instance()
+get_source_controller = SourceController.instance

@@ -38,7 +38,7 @@ from .data import (
     WrapContext,
 )
 from .search import Rankable
-from .sources import GetSourceController
+from .sources import get_source_controller
 
 DATA_SAVE_INTERVAL_S = 3660
 
@@ -117,7 +117,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         """Pass in text sources as @srcs
 
         we register text sources"""
-        sctr = GetSourceController()
+        sctr = get_source_controller()
         sctr.add_text_sources(plugin_id, srcs)
 
     def _register_action_decorators(
@@ -132,7 +132,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if not decorate_types:
             return
 
-        sctr = GetSourceController()
+        sctr = get_source_controller()
         sctr.add_action_decorators(plugin_id, decorate_types)
 
     def _register_content_decorators(
@@ -155,13 +155,13 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if not decorate_item_types:
             return
 
-        sctr = GetSourceController()
+        sctr = get_source_controller()
         sctr.add_content_decorators(plugin_id, decorate_item_types)
 
     def _register_action_generators(
         self, plugin_id: str, generators: ty.Iterable[ActionGenerator]
     ) -> None:
-        sctr = GetSourceController()
+        sctr = get_source_controller()
         for generator in generators:
             sctr.add_action_generator(plugin_id, generator)
 
@@ -176,7 +176,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
         self._load_all_plugins()
         dir_src, indir_src = self._get_directory_sources()
-        sctr = GetSourceController()
+        sctr = get_source_controller()
         sctr.add(None, dir_src, toplevel=True)
         sctr.add(None, indir_src, toplevel=False)
         sctr.initialize()
@@ -278,7 +278,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
             self._remove_plugin(plugin_id)
 
     def _remove_plugin(self, plugin_id: str) -> None:
-        sctl = GetSourceController()
+        sctl = get_source_controller()
         if sctl.remove_objects_for_plugin_id(plugin_id):
             self._reload_source_root()
 
@@ -286,7 +286,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
     def _reload_source_root(self) -> None:
         self.output_debug("Reloading source root")
-        sctl = GetSourceController()
+        sctl = get_source_controller()
         self._source_pane.source_rebase(sctl.root)
 
     def _plugin_catalog_changed(
@@ -303,7 +303,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         if not sources_:
             return
 
-        sctl = GetSourceController()
+        sctl = get_source_controller()
         setctl = settings.get_settings_controller()
         for src in sources_:
             is_toplevel = setctl.get_source_is_toplevel(plugin_id, src)
@@ -316,10 +316,10 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
     def _finish(self, _sched: ty.Any) -> None:
         "Close down the data model, save user data, and write caches to disk"
-        GetSourceController().finalize()
+        get_source_controller().finalize()
         self._save_data(final_invocation=True)
         self.output_info("Saving cache...")
-        GetSourceController().save_cache()
+        get_source_controller().save_cache()
 
     def _save_data(self, final_invocation: bool = False) -> None:
         """Save Learning data and User's configuration data in sources
@@ -327,7 +327,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         """
         self.output_info("Saving data...")
         learn.save()
-        GetSourceController().save_data()
+        get_source_controller().save_data()
         if not final_invocation:
             self._save_data_timer.set(DATA_SAVE_INTERVAL_S, self._save_data)
 
@@ -564,7 +564,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
         self.emit("pane-reset", pane, search.wrap_rankable(obj))
 
     def _decorate_object(self, *objects: KupferObject) -> None:
-        sctl = GetSourceController()
+        sctl = get_source_controller()
         for obj in objects:
             sctl.decorate_object(obj)
 
@@ -611,7 +611,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):
 
     def find_object(self, url: str) -> None:
         """Find object with URI @url and select it in the first pane"""
-        sctrl = GetSourceController()
+        sctrl = get_source_controller()
         qfu = qfurl.Qfurl(url=url)
         found = qfu.resolve_in_catalog(sctrl.get_sources())
         if found and not found == self._source_pane.get_selection():

@@ -22,7 +22,7 @@ from kupfer.support import pretty, conspickle
 from kupfer.core import actioncompat
 from kupfer.core import qfurl
 from kupfer.obj.base import Leaf, Action, AnySource
-from kupfer.core.sources import GetSourceController
+from kupfer.core.sources import get_source_controller
 
 __all__ = [
     "SerializedObject",
@@ -149,7 +149,7 @@ def resolve_unique_id(
             pretty.print_debug(__name__, type(exc).__name__, exc)
             return None
 
-    sctl = GetSourceController()
+    sctl = get_source_controller()
     if (obj := _find_obj_in_catalog(puid, sctl.firstlevel)) is not None:
         return obj
 
@@ -166,7 +166,7 @@ def resolve_action_id(
     if isinstance(puid, SerializedObject):
         return resolve_unique_id(puid)  # type: ignore
 
-    sctr = GetSourceController()
+    sctr = get_source_controller()
     if for_item is not None:
         for action in actioncompat.actions_for_item(for_item, sctr):
             if get_unique_id(action) == puid:
