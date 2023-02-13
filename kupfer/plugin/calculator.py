@@ -7,8 +7,11 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 import cmath
 import math
 from contextlib import suppress
-import collections
+import textwrap
+import inspect
 
+from kupfer import utils, version
+from kupfer.ui import uiutils
 from kupfer.objects import Action, TextLeaf
 from kupfer.support import pretty
 
@@ -24,8 +27,6 @@ class KupferSurprise(float):
     """
 
     def __call__(self, *args):
-        from kupfer import utils, version
-
         utils.show_url(version.WEBSITE)
         raise IgnoreResultException
 
@@ -42,11 +43,6 @@ class Help:
     """
 
     def __call__(self):
-        import textwrap
-        import inspect
-
-        from kupfer import uiutils
-
         environment = make_environment(last_result=DummyResult())
         docstrings = []
         for attr in sorted(environment):

@@ -31,18 +31,17 @@ import contextlib
 import itertools
 import sys
 import typing as ty
-import types
 from enum import IntEnum
 
 from gi.repository import GObject
 
-from kupfer.support import pretty, task
-from kupfer import uiutils
+from kupfer.obj.base import Action, KupferObject, Leaf, Source
+from kupfer.obj.compose import MultipleLeaf
 from kupfer.obj.exceptions import OperationError
-from kupfer.obj.base import Leaf, Source, Action, KupferObject
 from kupfer.obj.objects import SourceLeaf
 from kupfer.obj.sources import MultiSource
-from kupfer.obj.compose import MultipleLeaf
+from kupfer.support import pretty, task
+from kupfer.ui import uiutils
 from kupfer.ui.uievents import GUIEnvironmentContext
 
 
@@ -430,9 +429,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
             )
             objects = resmap[ExecResult.OBJECT]
             objects.append(SourceLeaf(source))
-            return ExecResult.OBJECT, _make_retvalue(
-                ExecResult.OBJECT, objects
-            )
+            return ExecResult.OBJECT, _make_retvalue(ExecResult.OBJECT, objects)
 
         return ExecResult.NONE
 

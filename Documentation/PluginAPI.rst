@@ -900,7 +900,7 @@ can reuse.
 
     ..
 
-.. topic:: ``kupfer.uiutils``
+.. topic:: ``kupfer.ui.uiutils``
 
     ``show_notification(title, text='', icon_name='', nid=0)``
         Show a notification. If a previous return value is passed as

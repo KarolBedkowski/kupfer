@@ -18,7 +18,7 @@ from gi.repository import Pango
 
 from kupfer.support import pretty
 from kupfer import config, version
-from kupfer.ui import uievents
+from . import uievents
 
 if ty.TYPE_CHECKING:
     # commandexec import uiutils TODO: fix imports

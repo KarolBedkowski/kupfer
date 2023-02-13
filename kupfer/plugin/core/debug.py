@@ -8,6 +8,11 @@ they can be tested here before they migrate to a fitting plugin.
 from kupfer.obj.base import Action, Leaf, Source
 from kupfer.obj.compose import ComposedLeaf
 from kupfer.support import pretty
+from kupfer.ui import uiutils
+
+# NOTE: Core imports
+from kupfer.core import qfurl
+from kupfer import puid
 
 __kupfer_sources__ = ()
 __kupfer_contents__ = ("ComposedSource",)
@@ -29,11 +34,6 @@ class DebugInfo(Action):
 
     def activate(self, leaf):
         import io
-
-        # NOTE: Core imports
-        from kupfer.core import qfurl
-        from kupfer import uiutils
-        from kupfer import puid
 
         output = io.StringIO()
 

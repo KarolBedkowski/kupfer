@@ -14,11 +14,10 @@ __author__ = "Martin Koelewijn <martinkoelewijn@gmail.com>, Ulrik Sverdrup <ulri
 
 import subprocess
 
-from kupfer.objects import Action, Source, Leaf
-from kupfer.objects import TextLeaf
-from kupfer import icons, uiutils, utils
-from kupfer import plugin_support
+from kupfer import icons, plugin_support, utils
+from kupfer.objects import Action, Leaf, Source, TextLeaf
 from kupfer.support import kupferstring, task
+from kupfer.ui import uiutils
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {
@@ -67,9 +66,9 @@ class InfoTask(task.Task):
             return
 
         assert self._finish_callback
-        text = kupferstring.fromlocale(
-            self.aptitude
-        ) + kupferstring.fromlocale(self.apt_cache)
+        text = kupferstring.fromlocale(self.aptitude) + kupferstring.fromlocale(
+            self.apt_cache
+        )
         uiutils.show_text_result(text, title=_("Show Package Information"))
         self._finish_callback(self)
 

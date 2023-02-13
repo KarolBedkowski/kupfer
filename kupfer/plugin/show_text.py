@@ -9,7 +9,8 @@ __version__ = ""
 __author__ = "US"
 
 from kupfer.objects import Action, Leaf, TextLeaf
-from kupfer import icons, uiutils
+from kupfer import icons
+from kupfer.ui import uiutils
 from kupfer.support import textutils
 
 

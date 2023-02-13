@@ -10,13 +10,13 @@ import typing as ty
 
 from gi.repository import Gdk, Gio, GObject, Gtk, Pango
 
-from kupfer import interface, uiutils
+from kupfer import interface
 from kupfer.core import actionaccel, settings
 from kupfer.core.datactrl import DataController, PaneMode, PaneSel
 from kupfer.core.search import Rankable
 from kupfer.obj import AnySource, FileLeaf, KupferObject
 from kupfer.support import pretty, scheduler
-from kupfer.ui import accelerators, uievents, kupferhelp
+from kupfer.ui import accelerators, uievents, kupferhelp, uiutils
 
 from .search import ActionSearch, LeafSearch, Search, State
 from .support import escape_markup_str, text_direction_is_ltr
