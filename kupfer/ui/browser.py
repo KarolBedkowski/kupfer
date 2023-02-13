@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import signal
 import sys
-from contextlib import suppress
 import typing as ty
+from contextlib import suppress
 
 import gi
-from gi.repository import Gtk, Gdk
-from gi.repository import GLib
+from gi.repository import Gdk, GLib, Gtk
 
 try:
     gi.require_version("AppIndicator3", "0.1")
@@ -15,19 +14,17 @@ try:
 except (ValueError, ImportError):
     AppIndicator3 = None
 
-from kupfer import kupferui
-from kupfer import version
-from kupfer.support import scheduler, pretty
-from kupfer.ui import keybindings
-from kupfer.ui import listen
-from kupfer.ui import uievents
-from kupfer.core import settings
-from kupfer.core.datactrl import DataController
 import kupfer.config
 import kupfer.environment
+from kupfer import version
+from kupfer.core import settings
+from kupfer.core.datactrl import DataController
+from kupfer.support import pretty, scheduler
+from kupfer.ui import about, keybindings, listen, uievents, kupferhelp
 
-from .support import text_direction_is_ltr
+from . import preferences
 from .interface import Interface
+from .support import text_direction_is_ltr
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -243,9 +240,9 @@ class WindowController(pretty.OutputMixin):
 
             menu.append(Gtk.SeparatorMenuItem())
 
-        add_menu_item(Gtk.STOCK_PREFERENCES, kupferui.show_preferences)
-        add_menu_item(Gtk.STOCK_HELP, kupferui.show_help)
-        add_menu_item(Gtk.STOCK_ABOUT, kupferui.show_about_dialog)
+        add_menu_item(Gtk.STOCK_PREFERENCES, preferences.show_preferences)
+        add_menu_item(Gtk.STOCK_HELP, kupferhelp.show_help)
+        add_menu_item(Gtk.STOCK_ABOUT, about.show_about_dialog)
         menu.append(Gtk.SeparatorMenuItem())
         add_menu_item(Gtk.STOCK_QUIT, self._quit, with_ctx=False)
         menu.show_all()

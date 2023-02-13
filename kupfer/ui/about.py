@@ -1,5 +1,7 @@
+#! /usr/bin/env python3
+
 """
-Access functions of Kupfer's Interface
+About dialog.
 """
 from __future__ import annotations
 
@@ -7,21 +9,9 @@ import typing as ty
 
 from gi.repository import Gtk
 
-from kupfer import utils, version
-from kupfer.ui.uievents import GUIEnvironmentContext
-from kupfer.ui import preferences
+from kupfer import version
 
-
-def _get_time(ctxenv: GUIEnvironmentContext | None) -> int:
-    return ctxenv.get_timestamp() if ctxenv else Gtk.get_current_event_time()  # type: ignore
-
-
-def show_help(ctxenv: GUIEnvironmentContext | None = None) -> None:
-    """
-    Show Kupfer help pages, if possible
-    """
-    if not utils.show_help_url(f"help:{version.PACKAGE_NAME}"):
-        utils.show_url(version.HELP_WEBSITE)
+from .uievents import GUIEnvironmentContext
 
 
 class _AboutDialog:
@@ -81,20 +71,3 @@ def show_about_dialog(
         ctxenv.present_window(dlg)
     else:
         dlg.present()
-
-
-def show_preferences(ctxenv: GUIEnvironmentContext) -> None:
-    from kupfer.ui import preferences
-
-    win = preferences.get_preferences_window_controller()
-    if ctxenv:
-        win.show_on_screen(ctxenv.get_timestamp(), ctxenv.get_screen())
-    else:
-        win.show(_get_time(ctxenv))
-
-
-def show_plugin_info(
-    plugin_id: str, ctxenv: ty.Optional[GUIEnvironmentContext] = None
-) -> None:
-    prefs = preferences.get_preferences_window_controller()
-    prefs.show_focus_plugin(plugin_id, _get_time(ctxenv))

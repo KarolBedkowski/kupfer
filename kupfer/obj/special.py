@@ -2,7 +2,7 @@ __version__ = "2010-01-21"
 
 import typing as ty
 
-from kupfer import kupferui
+from kupfer.ui import preferences
 
 from .objects import RunnableLeaf
 
@@ -23,7 +23,7 @@ class PleaseConfigureLeaf(RunnableLeaf):
 
     def run(self, ctx: ty.Any = None) -> None:
         assert ctx
-        kupferui.show_plugin_info(self.object, ctx.environment)
+        preferences.show_plugin_info(self.object, ctx.environment)
 
     def get_icon_name(self) -> str:
         return "preferences-desktop"

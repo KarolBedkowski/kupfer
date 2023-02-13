@@ -1,9 +1,9 @@
 from gi.repository import Gtk
 
-from kupfer.objects import Source, RunnableLeaf
 from kupfer.obj.apps import AppLeafContentMixin
+from kupfer.objects import RunnableLeaf, Source
 from kupfer.support import pretty
-from kupfer import kupferui
+from kupfer.ui import about, preferences, kupferhelp
 from kupfer.version import DESKTOP_ID
 
 __kupfer_sources__ = ("KupferSource",)
@@ -69,7 +69,7 @@ class About(RunnableLeaf):
 
     def run(self, ctx=None):
         assert ctx
-        kupferui.show_about_dialog(ctx.environment)
+        about.show_about_dialog(ctx.environment)
 
     def get_description(self):
         return _("Show information about Kupfer authors and license")
@@ -87,7 +87,7 @@ class Help(RunnableLeaf):
 
     def run(self, ctx=None):
         assert ctx
-        kupferui.show_help(ctx.environment)
+        kupferhelp.show_help(ctx.environment)
 
     def get_description(self):
         return _("Get help with Kupfer")
@@ -105,7 +105,7 @@ class Preferences(RunnableLeaf):
 
     def run(self, ctx=None):
         assert ctx
-        kupferui.show_preferences(ctx.environment)
+        preferences.show_preferences(ctx.environment)
 
     def get_description(self):
         return _("Show preferences window for Kupfer")

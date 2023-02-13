@@ -2,29 +2,25 @@ from __future__ import annotations
 
 import os
 import re
-from pathlib import Path
-from contextlib import suppress
-import typing as ty
 import traceback
+import typing as ty
+from contextlib import suppress
+from pathlib import Path
 
 import gi
-
-from gi.repository import GLib, GObject, Gtk, Gio, Gdk
-from gi.repository import Pango
+from gi.repository import Gdk, Gio, GLib, GObject, Gtk, Pango
 from xdg import BaseDirectory as base
 from xdg import DesktopEntry as desktop
 from xdg import Exceptions as xdg_e
 
-from kupfer import config, utils, icons, version
-from kupfer.support import scheduler, pretty, kupferstring
-from kupfer import kupferui
-from kupfer.core import settings, plugins, relevance, sources
+from kupfer import config, icons, plugin_support, utils, version
+from kupfer.core import plugins, relevance, settings, sources
 from kupfer.obj.base import KupferObject
-from kupfer.ui import keybindings
-from kupfer.ui.credentials_dialog import ask_user_credentials
-from kupfer.ui import getkey_dialog
-from kupfer.ui import accelerators
-from kupfer import plugin_support
+from kupfer.support import kupferstring, pretty, scheduler
+
+from . import accelerators, getkey_dialog, keybindings, kupferhelp
+from .credentials_dialog import ask_user_credentials
+from .uievents import GUIEnvironmentContext
 
 # index in GtkNotebook
 _PLUGIN_LIST_PAGE: ty.Final = 2
@@ -129,9 +125,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         self.plugin_about_parent = builder.get_object("plugin_about_parent")
         self.preferences_notebook = builder.get_object("preferences_notebook")
 
-        self.buttonremovedirectory = builder.get_object(
-            "buttonremovedirectory"
-        )
+        self.buttonremovedirectory = builder.get_object("buttonremovedirectory")
         checkautostart = builder.get_object("checkautostart")
         checkstatusicon_gtk = builder.get_object("checkstatusicon_gtk")
         checkstatusicon_ai = builder.get_object("checkstatusicon_ai")
@@ -155,12 +149,8 @@ class PreferencesWindowController(pretty.OutputMixin):
         checkautostart.set_active(self._get_should_autostart())
         checkstatusicon_gtk.set_active(setctl.get_show_status_icon())
 
-        large_icon_size = setctl.get_config_int(
-            "Appearance", "icon_large_size"
-        )
-        small_icon_size = setctl.get_config_int(
-            "Appearance", "icon_small_size"
-        )
+        large_icon_size = setctl.get_config_int("Appearance", "icon_large_size")
+        small_icon_size = setctl.get_config_int("Appearance", "icon_small_size")
 
         set_combobox(large_icon_size, combo_icons_large_size)
         set_combobox(small_icon_size, combo_icons_small_size)
@@ -253,9 +243,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         self.dir_table = Gtk.TreeView.new_with_model(self.dir_store)
         self.dir_table.set_headers_visible(False)
         self.dir_table.set_property("enable-search", False)
-        self.dir_table.connect(
-            "cursor-changed", self._dir_table_cursor_changed
-        )
+        self.dir_table.connect("cursor-changed", self._dir_table_cursor_changed)
         self.dir_table.get_selection().set_mode(Gtk.SelectionMode.BROWSE)
 
         icon_cell = Gtk.CellRendererPixbuf()
@@ -319,9 +307,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         for directory in setctl.get_directories():
             self._add_directory_model(directory, store=False)
 
-    def _add_directory_model(
-        self, directory: str, store: bool = False
-    ) -> None:
+    def _add_directory_model(self, directory: str, store: bool = False) -> None:
         have = [os.path.normpath(row[0]) for row in self.dir_store]
         if directory in have:
             self.output_debug("Ignoring duplicate directory: ", directory)
@@ -426,7 +412,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         dfile.write(filename=autostart_file)
 
     def on_helpbutton_clicked(self, widget: Gtk.Widget) -> None:
-        kupferui.show_help()
+        kupferhelp.show_help()
 
     def on_closebutton_clicked(self, widget: Gtk.Widget) -> None:
         self.hide()
@@ -623,9 +609,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         vbox = Gtk.VBox()
         vbox.set_property("spacing", 5)
         setctl = settings.get_settings_controller()
-        small_icon_size = setctl.get_config_int(
-            "Appearance", "icon_small_size"
-        )
+        small_icon_size = setctl.get_config_int("Appearance", "icon_small_size")
 
         def make_objects_frame(objs, title):
             frame_label = Gtk.Label()
@@ -748,9 +732,7 @@ class PreferencesWindowController(pretty.OutputMixin):
 
         return callback
 
-    def _make_plugin_settings_widget(
-        self, plugin_id: str
-    ) -> Gtk.Widget | None:
+    def _make_plugin_settings_widget(self, plugin_id: str) -> Gtk.Widget | None:
         plugin_settings = plugins.get_plugin_attribute(
             plugin_id, plugins.PluginAttr.SETTINGS
         )
@@ -1059,9 +1041,7 @@ class PreferencesWindowController(pretty.OutputMixin):
             )
 
         elif category_key == "icon_renderer":
-            self._update_alternative_combobox(
-                category_key, self.icons_combobox
-            )
+            self._update_alternative_combobox(category_key, self.icons_combobox)
 
     def on_preferences_notebook_switch_page(
         self, notebook: Gtk.Notebook, page: Gtk.Widget, page_num: int
@@ -1247,3 +1227,22 @@ def supports_app_indicator() -> bool:
         return False
     else:
         return True
+
+
+def _get_time(ctxenv: GUIEnvironmentContext | None) -> int:
+    return ctxenv.get_timestamp() if ctxenv else Gtk.get_current_event_time()  # type: ignore
+
+
+def show_preferences(ctxenv: GUIEnvironmentContext) -> None:
+    win = get_preferences_window_controller()
+    if ctxenv:
+        win.show_on_screen(ctxenv.get_timestamp(), ctxenv.get_screen())
+    else:
+        win.show(_get_time(ctxenv))
+
+
+def show_plugin_info(
+    plugin_id: str, ctxenv: ty.Optional[GUIEnvironmentContext] = None
+) -> None:
+    prefs = preferences.get_preferences_window_controller()
+    prefs.show_focus_plugin(plugin_id, _get_time(ctxenv))

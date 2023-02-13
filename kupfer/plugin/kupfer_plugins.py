@@ -7,12 +7,12 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 import os
 from pathlib import Path
 
-from kupfer import kupferui
 
 # Since this is a core plugin we break some rules
 # These modules are normally out of bounds for plugins
 from kupfer.core import plugins, settings
 from kupfer.obj import Action, FileLeaf, Leaf, Source, TextLeaf
+from kupfer.ui import preferences
 
 
 class ShowInfo(Action):
@@ -25,7 +25,7 @@ class ShowInfo(Action):
     def activate(self, leaf, iobj=None, ctx=None):
         assert ctx
         plugin_id = leaf.object["name"]
-        kupferui.show_plugin_info(plugin_id, ctx.environment)
+        preferences.show_plugin_info(plugin_id, ctx.environment)
 
     def get_description(self):
         pass
