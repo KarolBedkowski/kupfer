@@ -17,6 +17,10 @@ from kupfer.support import kupferstring
 
 from .base import Action, Leaf, Source
 from .representation import TextRepresentation
+from .files import OpenUrl
+
+if ty.TYPE_CHECKING:
+    _ = str
 
 
 class SourceLeaf(Leaf):
