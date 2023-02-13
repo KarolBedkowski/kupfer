@@ -13,7 +13,6 @@ import weakref
 from pathlib import Path
 
 from kupfer import config
-from kupfer.obj.sources import SourcesSource, MultiSource
 from kupfer.obj import (
     Action,
     ActionGenerator,
@@ -23,6 +22,7 @@ from kupfer.obj import (
     Source,
     TextSource,
 )
+from kupfer.obj.sources import MultiSource, SourcesSource
 from kupfer.support import conspickle, pretty, scheduler
 
 from . import pluginload
@@ -287,6 +287,7 @@ class SourceDataPickler(pretty.OutputMixin):
         return True
 
 
+# pylint: disable=too-many-instance-attributes,too-many-public-methods
 class SourceController(pretty.OutputMixin):
     """Control sources; loading, pickling, rescanning
 
@@ -461,15 +462,12 @@ class SourceController(pretty.OutputMixin):
         return src in self._sources
 
     def __getitem__(self, src: AnySource) -> AnySource:
-        # TODO: ???
-        if not src in self:
-            raise KeyError
-
-        self.output_debug(f"__getitem__ {src!r}")
-
-        for s in self._sources:
-            if s == src:
-                return s
+        # TODO: check is necessary, rather no ???
+        # if not src in self:
+        #     raise KeyError
+        for source in self._sources:
+            if source == src:
+                return source
 
         raise KeyError
 
@@ -548,15 +546,15 @@ class SourceController(pretty.OutputMixin):
     def get_canonical_source(self, source: AnySource) -> AnySource:
         "Return the canonical instance for @source"
         # check if we already have source, then return that
-        if source in self:
+        try:
             return self[source]
-
-        source.initialize()
-        return source
+        except KeyError:
+            source.initialize()
+            return source
 
     def get_contents_for_leaf(
         self, leaf: Leaf, types: ty.Optional[ty.Tuple[ty.Any, ...]] = None
-    ) -> ty.Iterator[Source]:
+    ) -> ty.Iterator[AnySource]:
         """Iterator of content sources for @leaf,
         providing @types (or None for all)"""
         for typ, val in self._content_decorators.items():
@@ -584,18 +582,17 @@ class SourceController(pretty.OutputMixin):
             yield from agenerator.get_actions_for_leaf(leaf)
 
     def decorate_object(
-        self, obj: KupferObject, action: ty.Optional[Action] = None
+        self, obj: Leaf, action: ty.Optional[Action] = None
     ) -> None:
         if hasattr(obj, "has_content") and not obj.has_content():
             types = tuple(action.object_types()) if action else ()
             contents = list(self.get_contents_for_leaf(obj, types))
-            content = contents[0] if contents else None
             if len(contents) > 1:
-                content = SourcesSource(
-                    contents, name=str(obj), use_reprs=False
+                obj.add_content(
+                    SourcesSource(contents, name=str(obj), use_reprs=False)  # type: ignore
                 )
-
-            obj.add_content(content)
+            else:
+                obj.add_content(contents[0] if contents else None)
 
     def finalize(self) -> None:
         "Finalize all sources, equivalent to deactivating all sources"

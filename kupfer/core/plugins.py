@@ -8,11 +8,16 @@ import types
 import typing as ty
 from enum import Enum
 
+from kupfer import icons
+from kupfer import plugin as kplugin
 from kupfer.support import pretty
 
 from . import settings
 
 # import kupfer.icons on demand later
+
+if ty.TYPE_CHECKING:
+    _ = str
 
 
 class PluginAttr(Enum):
@@ -44,12 +49,11 @@ class NotEnabledError(Exception):
 def get_plugin_ids() -> ty.Iterator[str]:
     """Enumerate possible plugin ids;
     return a sequence of possible plugin ids, not guaranteed to be plugins"""
-    from kupfer import plugin
 
     def is_plugname(plug):
         return plug != "__init__" and not plug.endswith("_support")
 
-    for _importer, modname, _ispkg in pkgutil.iter_modules(plugin.__path__):
+    for _importer, modname, _ispkg in pkgutil.iter_modules(kplugin.__path__):
         if is_plugname(modname):
             yield modname
 
@@ -83,7 +87,7 @@ def get_plugin_info() -> ty.Iterator[ty.Dict[str, ty.Any]]:
     """
     for plugin_name in sorted(get_plugin_ids()):
         try:
-            plugin = import_plugin_any(plugin_name)
+            plugin = _import_plugin_any(plugin_name)
             if not plugin:
                 continue
 
@@ -272,7 +276,7 @@ def _staged_import(
     return None
 
 
-def import_plugin(name: str) -> PluginModule | None:
+def _import_plugin(name: str) -> PluginModule | None:
     if is_plugin_loaded(name):
         return _IMPORTED_PLUGINS[name]
 
@@ -288,7 +292,7 @@ def import_plugin(name: str) -> PluginModule | None:
     return plugin
 
 
-def import_plugin_any(name: str) -> ty.Any:
+def _import_plugin_any(name: str) -> ty.Any:
     if name in _IMPORTED_PLUGINS:
         return _IMPORTED_PLUGINS[name]
 
@@ -314,7 +318,7 @@ def get_plugin_attributes(
     a requested attribute
     """
     try:
-        plugin = import_plugin(plugin_name)
+        plugin = _import_plugin(plugin_name)
     except ImportError as exc:
         pretty.print_info(__name__, f"Skipping plugin {plugin_name}: {exc}")
         return
@@ -389,8 +393,6 @@ def _loader_hook(modpath: ty.Tuple[str, ...]) -> ty.Any:
 
 
 def _load_icons(plugin_name: str) -> None:
-    from kupfer import icons
-
     try:
         _loader = _staged_import(plugin_name, _loader_hook)
     except ImportError:
@@ -468,7 +470,7 @@ def get_plugin_error(plugin_name: str) -> ty.Any:
     return a tuple of exception information
     """
     try:
-        if plugin := import_plugin(plugin_name):
+        if plugin := _import_plugin(plugin_name):
             if getattr(plugin, "is_fake_plugin", None):
                 return plugin.exc_info
 

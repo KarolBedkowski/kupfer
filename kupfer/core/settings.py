@@ -142,7 +142,8 @@ def _fill_parser_from_config(
             parser.set(secname, key, value)
 
 
-class SettingsController(GObject.GObject, pretty.OutputMixin):
+# pylint: disable=too-many-public-methods
+class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
     __gtype_name__ = "SettingsController"
     config_filename = "kupfer.cfg"
     defaults_filename = "defaults.cfg"
@@ -153,7 +154,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
     )
     # Minimal "defaults" to define all fields
     # Read defaults defined in a defaults.cfg file
-    defaults: ty.Dict[str, ty.Any] = {
+    _defaults: ty.Dict[str, ty.Any] = {
         "Kupfer": {
             "keybinding": "",
             "magickeybinding": "",
@@ -213,7 +214,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
         parser = configparser.RawConfigParser()
 
         # Set up defaults
-        confmap = copy.deepcopy(self.defaults)
+        confmap = copy.deepcopy(self._defaults)
         _fill_parser_read(parser, confmap)
 
         # Read all config files
@@ -247,7 +248,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
                 )
 
         # Read parsed file into the dictionary again
-        _fill_confmap_fom_parser(parser, confmap, self.defaults)
+        _fill_confmap_fom_parser(parser, confmap, self._defaults)
         return confmap
 
     def _save_config(self, _scheduler: ty.Any = None) -> None:
@@ -271,7 +272,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
 
     def get_config(self, section: str, key: str) -> ty.Any:
         """General interface, but section must exist"""
-        if section in self.defaults:
+        if section in self._defaults:
             key = key.lower()
             value = self._config[section].get(key)
             return value
@@ -283,7 +284,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
         self.output_debug("Set", section, key, "to", value)
         key = key.lower()
         oldvalue = self._config[section].get(key)
-        if section in self.defaults:
+        if section in self._defaults:
             if oldvalue is None:
                 self._config[section][key] = str(value)
             else:
@@ -337,7 +338,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
         """section must exist"""
         key = key.lower()
         value = self._config[section].get(key)
-        if section in self.defaults:
+        if section in self._defaults:
             return strint(value)
 
         raise KeyError(f"Invalid settings section: {section}")
@@ -379,9 +380,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):
     ) -> bool:
         key = "kupfer_toplevel_" + self._source_config_repr(src)
         self.emit("plugin-toplevel-changed", plugin_id, value)
-        return self.set_plugin_config(
-            plugin_id, key, value, value_type=strbool
-        )
+        return self.set_plugin_config(plugin_id, key, value, value_type=strbool)
 
     def get_keybinding(self) -> str:
         """Convenience: Kupfer keybinding as string"""

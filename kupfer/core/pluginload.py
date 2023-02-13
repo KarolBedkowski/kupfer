@@ -1,8 +1,6 @@
 import contextlib
 import traceback
 
-# import typing as ty
-
 from kupfer.obj.base import Action, ActionGenerator, AnySource, Source
 from kupfer.support import pretty
 

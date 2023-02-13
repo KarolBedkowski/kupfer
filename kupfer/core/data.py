@@ -31,10 +31,6 @@ def _identity(x: ty.Any) -> ty.Any:
     return x
 
 
-def _is_iterable(obj: ty.Any) -> bool:
-    return hasattr(obj, "__iter__")
-
-
 def _dress_leaves(
     seq: ty.Iterable[Rankable], action: ty.Optional[Action]
 ) -> ty.Iterable[Rankable]:
@@ -514,7 +510,8 @@ class SecondaryObjectPane(LeafPane):
         filter for action @item
         """
         assert self.current_action
-        assert self.current_item
+        if not self.current_item:
+            return
 
         self.latest_key = key
         sources_: ty.Iterable[AnySource] = []

@@ -47,21 +47,15 @@ class Mnemonics:
         """Decrement total count and the least mnemonic"""
         if self.mnemonics:
             key = min(self.mnemonics, key=lambda k: self.mnemonics[k])
-            if self.mnemonics[key] <= 1:
-                del self.mnemonics[key]
+            if (mcount := self.mnemonics[key]) > 1:
+                self.mnemonics[key] = mcount - 1
             else:
-                self.mnemonics[key] -= 1
+                del self.mnemonics[key]
 
         self.count = max(self.count - 1, 0)
 
     def __bool__(self) -> bool:
         return self.count > 0
-
-    def get_count(self) -> int:
-        return self.count
-
-    def get_mnemonics(self) -> ty.Dict[str, int]:
-        return self.mnemonics
 
 
 class Learning:
@@ -127,10 +121,9 @@ def get_record_score(obj: ty.Any, key: str = "") -> float:
     mns = _REGISTER[name]
     assert isinstance(mns, Mnemonics)
     if not key:
-        cnt = mns.get_count()
-        return fav + 50 * (1 - 1.0 / (cnt + 1))
+        return fav + 50 * (1 - 1.0 / (mns.count + 1))
 
-    stats = mns.get_mnemonics()
+    stats = mns.mnemonics
     closescr = sum(stats[m] for m in stats if m.startswith(key))
     mnscore = 30 * (1 - 1.0 / (closescr + 1))
     exact = stats.get(key, 0)
@@ -204,12 +197,10 @@ def _prune_register() -> None:
 
     chance = min(0.1, len(_REGISTER) * alpha)
     for leaf, mne in _get_mnemonic_items(_REGISTER):
-        if rand() > chance:
-            continue
-
-        mne.decrement()
-        if not mne:
-            _REGISTER.pop(leaf)
+        if rand() <= chance:
+            mne.decrement()
+            if not mne:
+                _REGISTER.pop(leaf)
 
     pretty.print_debug(
         __name__, f"Pruned register ({len(_REGISTER)} mnemonics)"

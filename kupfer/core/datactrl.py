@@ -14,17 +14,17 @@ from enum import IntEnum
 
 from gi.repository import GLib, GObject
 
-from kupfer.obj import compose
 from kupfer.obj import (
     Action,
     ActionGenerator,
     AnySource,
+    DirectorySource,
+    FileSource,
     KupferObject,
     Leaf,
     Source,
     TextSource,
-    DirectorySource,
-    FileSource,
+    compose,
 )
 from kupfer.support import pretty, scheduler
 from kupfer.ui.uievents import GUIEnvironmentContext
