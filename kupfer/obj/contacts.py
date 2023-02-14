@@ -41,6 +41,9 @@ QQ_KEY = "QQ"
 SKYPE_KEY = "SKYPE"
 YAHOO_KEY = "YAHOO"
 
+if ty.TYPE_CHECKING:
+    _ = str
+
 
 class ContactLeaf(GroupingLeaf):
     grouping_slots: ty.Tuple[str, ...] = ()

@@ -1,4 +1,9 @@
+import typing as ty
+
 from kupfer.support import kupferstring
+
+if ty.TYPE_CHECKING:
+    _ = str
 
 
 class Error(Exception):

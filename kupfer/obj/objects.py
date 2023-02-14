@@ -16,8 +16,8 @@ from kupfer import icons
 from kupfer.support import kupferstring
 
 from .base import Action, Leaf, Source
-from .representation import TextRepresentation
 from .files import OpenUrl
+from .representation import TextRepresentation
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -139,7 +139,7 @@ class TextLeaf(Leaf, TextRepresentation):
 
     def __init__(self, text: str, name: ty.Optional[str] = None) -> None:
         """@text *must* be unicode or UTF-8 str"""
-        text = kupferstring.tounicode(text)
+        text = kupferstring.tounicode(text)  # type: ignore
         if not name:
             name = self.get_first_text_line(text)
 
@@ -174,7 +174,7 @@ class TextLeaf(Leaf, TextRepresentation):
 
         # TRANS: This is description for a TextLeaf, a free-text search
         # TRANS: The plural parameter is the number of lines %(num)d
-        return ngettext(
+        return ngettext(  # type: ignore
             '"%(text)s"', '(%(num)d lines) "%(text)s"', numlines
         ) % {"num": numlines, "text": desc}
 

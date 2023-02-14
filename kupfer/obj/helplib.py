@@ -142,7 +142,7 @@ def reverse_action(action: ty.Type[Action], rank: int = 0) -> ty.Type[Action]:
 
         def activate(
             self, leaf: ty.Any, iobj: ty.Any = None, ctx: ty.Any = None
-        ) -> None:
+        ) -> ty.Any:
             return action.activate(self, iobj, leaf, ctx)
 
         def item_types(self) -> ty.Iterable[ty.Type[Leaf]]:

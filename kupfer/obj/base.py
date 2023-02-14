@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 import builtins
 import typing as ty
 
 from gi.repository import GdkPixbuf
 
 from kupfer import icons
-from kupfer.support import pretty, kupferstring, datatools
+from kupfer.support import datatools, kupferstring, pretty
 from kupfer.utils import locale_sort
 
 __all__ = [
@@ -64,7 +65,7 @@ class KupferObject(metaclass=_BuiltinObject):
     fallback_icon_name: str = "kupfer-object"
     _is_builtin: bool = False
 
-    def __init__(self, name: ty.Optional[str] = None) -> None:
+    def __init__(self, name: str | None = None) -> None:
         """Init kupfer object with, where
         @name *should* be a unicode object but *may* be
         a UTF-8 encoded `str`
@@ -72,7 +73,7 @@ class KupferObject(metaclass=_BuiltinObject):
         if not name:
             name = self.__class__.__name__
 
-        self.name: str = kupferstring.tounicode(name)
+        self.name: str = kupferstring.tounicode(name)  # type: ignore
         folded_name = kupferstring.tofolded(self.name)
         self.kupfer_add_alias(folded_name)
 
@@ -103,7 +104,7 @@ class KupferObject(metaclass=_BuiltinObject):
         """
         return self
 
-    def get_description(self) -> ty.Optional[str]:
+    def get_description(self) -> str | None:
         """Return a description of the specific item
         which *should* be a unicode object
         """
@@ -214,7 +215,7 @@ class Leaf(KupferObject):
     def has_content(self) -> bool:
         return bool(self._content_source)
 
-    def content_source(self, alternate: bool = False) -> ty.Optional[Source]:
+    def content_source(self, alternate: bool = False) -> Source | None:
         """Content of leaf. it MAY alter behavior with @alternate,
         as easter egg/extra mode"""
         return self._content_source and self._content_source.object  # type: ignore
@@ -246,7 +247,7 @@ class Action(KupferObject):
     '''
 
     fallback_icon_name: str = "kupfer-execute"
-    action_accelerator: ty.Optional[str] = None
+    action_accelerator: str | None = None
 
     def __hash__(self) -> int:
         return hash(repr(self))
@@ -319,9 +320,7 @@ class Action(KupferObject):
         """
         return False
 
-    def object_source(
-        self, for_item: ty.Optional[Leaf] = None
-    ) -> ty.Optional[Source]:
+    def object_source(self, for_item: Leaf | None = None) -> Source | None:
         """Source to use for object or None,
         to use the catalog (flat and filtered for @object_types)
         """
@@ -360,7 +359,7 @@ class Source(KupferObject, pretty.OutputMixin):
 
     def __init__(self, name):
         KupferObject.__init__(self, name)
-        self.cached_items: ty.Optional[ty.Iterable[Leaf]] = None
+        self.cached_items: ty.Iterable[Leaf] | None = None
         self._version: int = 1
 
     @property
@@ -439,7 +438,7 @@ class Source(KupferObject, pretty.OutputMixin):
 
     def get_leaves(
         self, force_update: bool = False
-    ) -> ty.Optional[ty.Iterable[Leaf]]:
+    ) -> ty.Iterable[Leaf] | None:
         """
         Return a list of all leaves.
 
@@ -469,15 +468,15 @@ class Source(KupferObject, pretty.OutputMixin):
                 )
                 self.output_debug("Loaded items")
 
-        return self.cached_items
+        return self.cached_items  # type: ignore
 
     def has_parent(self) -> bool:
         return False
 
-    def get_parent(self) -> ty.Optional[KupferObject]:
+    def get_parent(self) -> KupferObject | None:
         return None
 
-    def get_leaf_repr(self) -> ty.Optional[Leaf]:
+    def get_leaf_repr(self) -> Leaf | None:
         """Return, if appicable, another object
         to take the source's place as Leaf"""
         return None
@@ -503,8 +502,8 @@ class TextSource(KupferObject):
 
     def __init__(
         self,
-        name: ty.Optional[str] = None,
-        placeholder: ty.Optional[str] = None,
+        name: str | None = None,
+        placeholder: str | None = None,
     ) -> None:
         """
         name: Localized name

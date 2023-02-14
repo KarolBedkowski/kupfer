@@ -13,17 +13,18 @@ from os import path
 from gi.repository import GdkPixbuf, Gio, GLib
 
 from kupfer import icons, launch, utils
+from kupfer.desktop_launch import SpawnError
 from kupfer.support import kupferstring, pretty
 from kupfer.version import DESKTOP_ID
 
-from .helplib import FilesystemWatchMixin, PicklingHelperMixin
 from .base import Action, Leaf, Source
-from .representation import TextRepresentation
 from .exceptions import (
     InvalidDataError,
     NoDefaultApplicationError,
     OperationError,
 )
+from .helplib import FilesystemWatchMixin, PicklingHelperMixin
+from .representation import TextRepresentation
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -95,7 +96,7 @@ class FileLeaf(Leaf, TextRepresentation):
     def __hash__(self) -> int:
         return hash(str(self))
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: ty.Any) -> bool:
         try:
             return (
                 type(self) is type(other)
@@ -568,8 +569,8 @@ class OpenTerminal(Action):
         assert ctx
         try:
             utils.spawn_terminal(leaf.object, ctx.environment.get_screen())
-        except utils.SpawnError as exc:
-            raise OperationError(exc)
+        except SpawnError as exc:
+            raise OperationError(exc) from exc
 
     def get_description(self) -> ty.Optional[str]:
         return _("Open this location in a terminal")

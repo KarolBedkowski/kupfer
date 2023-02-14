@@ -6,6 +6,9 @@ from kupfer.ui import preferences
 
 from .objects import RunnableLeaf
 
+if ty.TYPE_CHECKING:
+    _ = str
+
 
 class PleaseConfigureLeaf(RunnableLeaf):
     """Show information and allow to open preferences for given plugin"""

@@ -6,6 +6,7 @@ Interfaces that may implements objects.
 import typing as ty
 
 
+# pylint: disable=too-few-public-methods
 class TextRepresentation:
     """
     Kupfer Objects that implement this interface have a plain text
@@ -14,9 +15,11 @@ class TextRepresentation:
 
     def get_text_representation(self) -> str:
         """The default implementation returns the represented object"""
-        return str(self.object)  # pylint: disable=no-member
+        # pylint: disable=no-member
+        return str(self.object)  # type: ignore
 
 
+# pylint: disable=too-few-public-methods
 class UriListRepresentation:
     """
     Kupfer Objects that implement this interface have a uri-list

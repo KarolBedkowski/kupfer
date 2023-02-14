@@ -8,8 +8,8 @@ import typing as ty
 import weakref
 from collections import defaultdict
 
-from kupfer.objects import Leaf, Source
 from kupfer import utils
+from kupfer.objects import Leaf, Source
 
 __author__ = (
     "Karol Będkowski <karol.bedkowsk+gh@gmail.com>, "
@@ -18,6 +18,7 @@ __author__ = (
 
 
 Slots = ty.Optional[ty.Dict[str, ty.Any]]
+
 
 class GroupingLeaf(Leaf):
     """
@@ -31,7 +32,7 @@ class GroupingLeaf(Leaf):
     None will not be grouped with others.
     """
 
-    grouping_slots : ty.Tuple[str, ...] = ()
+    grouping_slots: ty.Tuple[str, ...] = ()
 
     def __init__(self, obj: ty.Any, name: str) -> None:
         Leaf.__init__(self, obj, name)
@@ -57,8 +58,8 @@ class GroupingLeaf(Leaf):
         "Get first (canonical) value for key"
         try:
             return next(self.all(key))
-        except StopIteration:
-            raise KeyError(f"{self} has no slot {key}")
+        except StopIteration as exc:
+            raise KeyError(f"{self} has no slot {key}") from exc
 
     def all(self, key: ty.Any) -> ty.Iterator[ty.Any]:
         "Return iterator of all values for @key"
@@ -69,19 +70,19 @@ class GroupingLeaf(Leaf):
         return any(bool(leaf.object.get(key)) for leaf in self.links)
 
 
+_Groups = ty.Dict[ty.Tuple[str, ty.Any], ty.Set[GroupingLeaf]]
+_NonGroupLeaves = ty.List[Leaf]
+
+
 class GroupingSource(Source):
     def __init__(self, name: str, sources: ty.List[Source]) -> None:
         Source.__init__(self, name)
         self.sources = sources
 
-    def get_leaves(
-        self, force_update: bool = False
-    ) -> ty.Optional[ty.Iterable[Leaf]]:
-        starttime = time.time()
-        # map (slot, value) -> group
-        groups: ty.Dict[
-            ty.Tuple[str, ty.Any], ty.Set[GroupingLeaf]
-        ] = defaultdict(set)
+    def _get_groups(
+        self, force_update: bool
+    ) -> tuple[_Groups, _NonGroupLeaves]:
+        groups: _Groups = defaultdict(set)
         non_group_leaves: ty.List[Leaf] = []
 
         for src in self.sources:
@@ -102,8 +103,9 @@ class GroupingSource(Source):
                     for slot in leaf.grouping_slots:  # type: ignore
                         if value := slots.get(slot):
                             groups[(slot, value)].add(leaf)  # type: ignore
+        return groups, non_group_leaves
 
-        # Keep track of keys that are only duplicate references
+    def _merge_groups(self, groups: _Groups) -> set[tuple[str, ty.Any]]:
         redundant_keys = set()
 
         def merge_groups(key1, key2):
@@ -114,20 +116,34 @@ class GroupingSource(Source):
 
         # Find all (slot, value) combinations that have more than one leaf
         # and merge those groups
-        for (slot, value), leaves in groups.items():
-            if len(leaves) <= 1:
+        for (slot, value), gleaves in groups.items():
+            if len(gleaves) <= 1:
                 continue
 
-            for leaf in leaves:
+            for leaf in gleaves:
                 for slot2 in leaf.grouping_slots:
                     for value2 in leaf.all(slot2):
                         if value2:
                             merge_groups((slot, value), (slot2, value2))
 
+        return redundant_keys
+
+    def get_leaves(
+        self, force_update: bool = False
+    ) -> ty.Optional[ty.Iterable[Leaf]]:
+        starttime = time.time()
+        # map (slot, value) -> group
+        groups, non_group_leaves = self._get_groups(force_update)
+
+        # Keep track of keys that are only duplicate references
+        redundant_keys = self._merge_groups(groups)
+
         keys = set(groups)
         keys.difference_update(redundant_keys)
 
-        leaves = (self._make_group_leader(groups[K]) for K in keys)
+        leaves: ty.Iterable[Leaf] = (
+            self._make_group_leader(groups[K]) for K in keys
+        )
         if self.should_sort_lexically():
             leaves = utils.locale_sort(leaves)
 

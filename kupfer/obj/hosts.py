@@ -33,6 +33,7 @@ class HostLeaf(GroupingLeaf):
 class HostServiceLeaf(HostLeaf):
     """Leaf dedicated for well known services like ftp, ssh, vnc"""
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         name: str,
