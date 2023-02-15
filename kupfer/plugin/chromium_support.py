@@ -13,7 +13,7 @@ def _is_container(item: dict[str, ty.Any]) -> bool:
 
 def _is_good_bookmark(item: dict[str, ty.Any]) -> bool:
     if url := item.get("url"):
-        return not url.split(":", 1)[0] in _UNWANTED_SCHEME
+        return url.split(":", 1)[0] not in _UNWANTED_SCHEME
 
     return False
 
@@ -27,7 +27,7 @@ def get_bookmarks(bookmarks_file: str) -> ty.Iterable[dict[str, ty.Any]]:
         content = fin.read()
         root = json.loads(content)
 
-    folders  = []
+    folders = []
 
     # add some folders
     folders.extend(root["roots"]["bookmark_bar"]["children"])

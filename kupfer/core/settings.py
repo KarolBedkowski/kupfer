@@ -573,7 +573,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
         """
         Get a list of (id_, name) tuples for the given @category_key
         """
-        if not category_key in self._alternative_validators:
+        if category_key not in self._alternative_validators:
             return
 
         validator = self._alternative_validators[category_key]

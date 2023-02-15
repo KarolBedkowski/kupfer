@@ -170,7 +170,7 @@ class Autorotate(Action):
 
     def valid_for_item(self, leaf):
         _root, ext = os_path.splitext(leaf.object)
-        if not ext.lower() in (".jpeg", ".jpg"):
+        if ext.lower() not in (".jpeg", ".jpg"):
             return False
         # Launch jhead to see if 1) it is installed, 2) Orientation nondefault
         try:

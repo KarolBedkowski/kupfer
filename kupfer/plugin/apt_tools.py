@@ -154,7 +154,7 @@ class PackageSearchSource(Source):
             if not line.strip():
                 continue
 
-            if not " - " in line:
+            if " - " not in line:
                 self.output_error("apt-cache: ", line)
                 continue
 

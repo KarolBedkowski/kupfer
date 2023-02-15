@@ -1244,5 +1244,5 @@ def show_preferences(ctxenv: GUIEnvironmentContext) -> None:
 def show_plugin_info(
     plugin_id: str, ctxenv: ty.Optional[GUIEnvironmentContext] = None
 ) -> None:
-    prefs = preferences.get_preferences_window_controller()
+    prefs = get_preferences_window_controller()
     prefs.show_focus_plugin(plugin_id, _get_time(ctxenv))

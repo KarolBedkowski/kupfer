@@ -197,7 +197,7 @@ class ToplevelGroupingSource(GroupingSource):
         return GroupingSource(self.category, sources)
 
     def initialize(self) -> None:
-        if not self.category in self._sources:
+        if self.category not in self._sources:
             self._sources[self.category] = weakref.WeakKeyDictionary()
 
         self._sources[self.category][self] = 1

@@ -17,7 +17,6 @@ from kupfer.obj import (
     Action,
     ActionGenerator,
     AnySource,
-    KupferObject,
     Leaf,
     Source,
     TextSource,
