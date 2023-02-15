@@ -5,13 +5,11 @@ import sys
 import typing as ty
 from contextlib import suppress
 
-import gi
 from gi.repository import Gdk, GLib, Gtk
 
 try:
-    gi.require_version("AppIndicator3", "0.1")
     from gi.repository import AppIndicator3
-except (ValueError, ImportError):
+except ImportError:
     AppIndicator3 = None
 
 import kupfer.config

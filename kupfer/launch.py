@@ -6,8 +6,18 @@ import pickle
 import typing as ty
 from pathlib import Path
 
-import gi
 from gi.repository import GLib, Gio, Gdk
+
+try:
+    from gi.repository import Wnck
+
+    Wnck.set_client_type(Wnck.ClientType.PAGER)
+    if "WAYLAND_DISPLAY" in os.environ:
+        Wnck.Screen.get_default = lambda *x: None
+
+except ImportError as e:
+    pretty.print_info(__name__, "Disabling window tracking:", e)
+    Wnck = None
 
 from kupfer import config
 from kupfer.support import scheduler, pretty
@@ -19,19 +29,6 @@ from kupfer.desktop_launch import SpawnError  # pylint: disable=unused-import
 
 
 ## NOTE: SpawnError  *should* be imported from this module
-
-try:
-    gi.require_version("Wnck", "3.0")
-
-    from gi.repository import Wnck
-
-    Wnck.set_client_type(Wnck.ClientType.PAGER)
-    if "WAYLAND_DISPLAY" in os.environ:
-        Wnck.Screen.get_default = lambda *x: None
-
-except ValueError as e:
-    pretty.print_info(__name__, "Disabling window tracking:", e)
-    Wnck = None
 
 
 _DEFAULT_ASSOCIATIONS = {
