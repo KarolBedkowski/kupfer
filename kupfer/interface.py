@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import typing as ty
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk, Gtk
+
 from kupfer.obj.base import KupferObject
 
 # NOTE: TextRepresentation moved into obj.representation

@@ -16,6 +16,8 @@ try:
         Wnck.Screen.get_default = lambda *x: None
 
 except ImportError as e:
+    from kupfer.support import pretty
+
     pretty.print_info(__name__, "Disabling window tracking:", e)
     Wnck = None
 

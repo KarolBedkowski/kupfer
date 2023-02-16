@@ -1,10 +1,10 @@
-import typing as ty
+import getopt
 import gettext
 import locale
-import sys
-from contextlib import suppress
-import getopt
 import runpy
+import sys
+import typing as ty
+from contextlib import suppress
 
 try:
     from kupfer import version_subst
@@ -98,7 +98,7 @@ def get_options() -> list[str]:
     except getopt.GetoptError as exc:
         _print(str(exc))
         _print(_make_help_text(program_options, misc_options))
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
 
     for key, val in opts:
         if key == "--list-plugins":

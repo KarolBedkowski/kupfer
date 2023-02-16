@@ -4,8 +4,8 @@ Module for confiugration and misc things
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import typing as ty
+from pathlib import Path
 
 import xdg.BaseDirectory as base
 

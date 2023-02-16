@@ -12,10 +12,8 @@ from dbus.mainloop.glib import DBusGMainLoop
 gi.require_version("Gtk", "3.0")
 gi.require_version("Keybinder", "3.0")
 
-from gi.repository import (  # pylint: disable=wrong-import-position
-    Gtk,
-    Keybinder as keybinder,
-)
+# pylint: disable=wrong-import-position
+from gi.repository import Gtk, Keybinder
 
 SERV = "se.kaizer.kupfer"
 OBJ = "/interface"
@@ -40,15 +38,15 @@ def _get_all_keys() -> list[str]:
 def _rebind_key(keystring: str, is_bound: bool) -> None:
     if is_bound:
         print("binding", keystring)
-        keybinder.bind(keystring, _relay_key, keystring)
+        Keybinder.bind(keystring, _relay_key, keystring)
     else:
         print("unbinding", keystring)
-        keybinder.unbind(keystring)
+        Keybinder.unbind(keystring)
 
 
 def _relay_key(key: str) -> None:
     print("Relaying", key)
-    time = keybinder.get_current_event_time()
+    time = Keybinder.get_current_event_time()
     s_id = f"kupfer-{os.getpid()}_TIME{time}"
     bus = dbus.Bus()
     obj = bus.get_object(SERV, OBJ, introspect=False)
@@ -74,8 +72,8 @@ def main() -> None:
     sicon.set_visible(True)
     try:
         Gtk.main()
-    except KeyboardInterrupt:
-        raise SystemExit(0)
+    except KeyboardInterrupt as exc:
+        raise SystemExit(0) from exc
 
 
 if __name__ == "__main__":

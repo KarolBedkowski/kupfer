@@ -1,17 +1,21 @@
 from __future__ import annotations
-from contextlib import suppress
-import typing as ty
 
-from gi.repository import Gio, GdkPixbuf, Gtk
-from gi.repository.GLib import GError
-from gi.repository.Gio import Icon, ThemedIcon, FileIcon, File
+import typing as ty
+from contextlib import suppress
+
+from gi.repository import GdkPixbuf, Gio, Gtk
 from gi.repository.Gio import (
     FILE_ATTRIBUTE_STANDARD_ICON,
     FILE_ATTRIBUTE_THUMBNAIL_PATH,
+    File,
+    FileIcon,
+    Icon,
+    ThemedIcon,
 )
+from gi.repository.GLib import GError
 
-from kupfer.support import scheduler, pretty, kupferstring, datatools
 from kupfer.core import settings
+from kupfer.support import datatools, kupferstring, pretty, scheduler
 
 ICON_CACHE: dict[int, datatools.LruCache[str, GdkPixbuf.Pixbuf]] = {}
 # number of elements in icon lru cache (per icon size)
@@ -95,7 +99,7 @@ def _load_icon_from_func(
     @get_data_func: function to retrieve the data if needed
     @override: override the icon theme
     """
-    icon_name = kupferstring.tounicode(icon_name)
+    icon_name = kupferstring.tounicode(icon_name)  # type: ignore
     if not override and icon_name in kupfer_locally_installed_names:
         pretty.print_debug(__name__, "Skipping existing", icon_name)
         return
@@ -273,9 +277,7 @@ def get_pixbuf_from_file(
     if not thumb_path:
         return None
     try:
-        icon = GdkPixbuf.Pixbuf.new_from_file_at_size(
-            thumb_path, width, height
-        )
+        icon = GdkPixbuf.Pixbuf.new_from_file_at_size(thumb_path, width, height)
         return icon
     except GError as exc:
         # this error is not important, the program continues on fine,
@@ -308,9 +310,7 @@ def get_gicon_for_file(uri: str) -> GIcon | None:
     return gicon
 
 
-def get_icon_for_gicon(
-    gicon: GIcon, icon_size: int
-) -> GdkPixbuf.Pixbuf | None:
+def get_icon_for_gicon(gicon: GIcon, icon_size: int) -> GdkPixbuf.Pixbuf | None:
     """
     Return a pixbuf of @icon_size for the @gicon
 

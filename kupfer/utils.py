@@ -1,26 +1,22 @@
 from __future__ import annotations
 
-import typing as ty
+import functools
 import itertools
-import os
-from os import path as os_path
 import locale
+import os
 import signal
 import sys
-from contextlib import suppress
-from pathlib import Path
-import functools
 import tempfile
+import typing as ty
+from contextlib import suppress
+from os import path as os_path
+from pathlib import Path
 
-from gi.repository import GLib, Gtk, Gio, Gdk
+from gi.repository import Gdk, Gio, GLib, Gtk
 
-
-from kupfer.support import pretty, kupferstring, desktop_parse
-from kupfer import desktop_launch
-from kupfer import launch
-from kupfer import terminal
-
+from kupfer import desktop_launch, launch, terminal
 from kupfer.desktop_launch import SpawnError
+from kupfer.support import desktop_parse, kupferstring, pretty
 
 FilterFunc = ty.Callable[[str], bool]
 
@@ -59,9 +55,7 @@ def get_dirlist(
                 excl_dir.append(directory)
 
         yield from (
-            os_path.join(dirname, file)
-            for file in fnames
-            if include_file(file)
+            os_path.join(dirname, file) for file in fnames if include_file(file)
         )
 
         for directory in reversed(excl_dir):
@@ -98,9 +92,7 @@ def locale_sort(
 
 def _argv_to_locale(argv: list[str]) -> list[bytes]:
     "encode unicode strings in @argv according to the locale encoding"
-    return [
-        kupferstring.tolocale(A) if isinstance(A, str) else A for A in argv
-    ]
+    return [kupferstring.tolocale(A) if isinstance(A, str) else A for A in argv]
 
 
 def _split_string(inp: bytes, length: int) -> ty.Iterator[bytes]:
@@ -176,9 +168,7 @@ class AsyncCommand(pretty.OutputMixin):
 
         if stdin:
             self.stdin = list(_split_string(stdin, self.max_input_buf))
-            in_io_flags = (
-                GLib.IO_OUT | GLib.IO_ERR | GLib.IO_HUP | GLib.IO_NVAL
-            )
+            in_io_flags = GLib.IO_OUT | GLib.IO_ERR | GLib.IO_HUP | GLib.IO_NVAL
             GLib.io_add_watch(
                 stdin_fd, in_io_flags, self._in_io_callback, self.stdin
             )
@@ -224,9 +214,7 @@ class AsyncCommand(pretty.OutputMixin):
         # @condition is the &status field of waitpid(2) (C library)
         self.exit_status = os.WEXITSTATUS(condition)
         self.finished = True
-        self.finish_callback(
-            self, b"".join(self.stdout), b"".join(self.stderr)
-        )
+        self.finish_callback(self, b"".join(self.stdout), b"".join(self.stderr))
 
     def _timeout_callback(self) -> None:
         "send term signal on timeout"
@@ -307,7 +295,7 @@ def spawn_async_raise(argv: ty.Collection[str], workdir: str = ".") -> bool:
         )
         return bool(res)
     except GLib.GError as exc:
-        raise SpawnError(exc.message)
+        raise SpawnError(exc.message) from exc
 
     return False
 
@@ -393,22 +381,23 @@ def _on_child_exit(
 
 def _try_register_pr_pdeathsig() -> None:
     """
-    Register PR_SET_PDEATHSIG (linux-only) for the calling process
+    Register pr_set_pdeathsig (linux-only) for the calling process
     which is a signal delivered when its parent dies.
 
     This should ensure child processes die with the parent.
     """
-    PR_SET_PDEATHSIG = 1
-    SIGHUP = 1
+    pr_set_pdeathsig = 1
+    sighup = 1
     if sys.platform != "linux2":
         return
 
     with suppress(ImportError):
+        # pylint: disable=import-outside-toplevel
         import ctypes
 
     with suppress(AttributeError, OSError):
         libc = ctypes.CDLL("libc.so.6")
-        libc.prctl(PR_SET_PDEATHSIG, SIGHUP)
+        libc.prctl(pr_set_pdeathsig, sighup)
 
 
 def spawn_child(
@@ -439,7 +428,7 @@ def spawn_child(
             child_setup=_try_register_pr_pdeathsig,
         )
     except GLib.GError as exc:
-        raise SpawnError(str(exc))
+        raise SpawnError(str(exc)) from exc
 
     if pid:
         GLib.child_watch_add(pid, _on_child_exit, (argv, respawn))

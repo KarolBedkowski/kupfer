@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import typing as ty
 from contextlib import suppress
-
-from gi.repository import Gtk, Gdk, Gio, GLib
+from pathlib import Path
+from dataclasses import dataclass
 
 import xdg.DesktopEntry
 import xdg.Exceptions
+from gi.repository import Gdk, Gio, GLib, Gtk
 
 from kupfer import terminal
-from kupfer.support import pretty, kupferstring, desktop_parse
+from kupfer.support import desktop_parse, kupferstring, pretty
 
 __all__ = ["launch_app_info", "spawn_app", "spawn_app_id"]
 
@@ -166,6 +166,12 @@ def _get_file_path(gfile: Gio.File) -> str:
     return (gfile.get_path() or gfile.get_uri()) if gfile else ""  # type: ignore
 
 
+@dataclass
+class _Flags:
+    did_see_small_f: bool = False
+    did_see_large_f: bool = False
+
+
 def _replace_format_specs(
     argv: list[str],
     location: str,
@@ -203,9 +209,7 @@ def _replace_format_specs(
     supports_single_file = False
     files_added_at_end = False
 
-    class Flags:
-        did_see_small_f = False
-        did_see_large_f = False
+    flags = _Flags()
 
     fileiter = iter(gfilelist)
 
@@ -216,6 +220,7 @@ def _replace_format_specs(
 
         return ""
 
+    # pylint: disable=too-many-return-statements
     def replace_single_code(key: str) -> str | None:
         "Handle all embedded format codes, including those to be removed"
         if key in ("%d", "%D", "%n", "%N", "%v", "%m"):  # deprecated keys
@@ -225,11 +230,11 @@ def _replace_format_specs(
             return "%"
 
         if key in ("%f", "%u"):
-            if Flags.did_see_large_f or Flags.did_see_small_f:
+            if flags.did_see_large_f or flags.did_see_small_f:
                 warning_log("Warning, multiple file format specs!")
                 return ""
 
-            Flags.did_see_small_f = True
+            flags.did_see_small_f = True
             return get_next_file_path()
 
         if key == "%c":
@@ -248,11 +253,11 @@ def _replace_format_specs(
         where flag is true if something was replaced
         """
         if elem in ("%U", "%F"):
-            if Flags.did_see_large_f or Flags.did_see_small_f:
+            if flags.did_see_large_f or flags.did_see_small_f:
                 warning_log("Warning, multiple file format specs!")
                 return True, []
 
-            Flags.did_see_large_f = True
+            flags.did_see_large_f = True
             return True, list(filter(bool, map(_get_file_path, gfilelist)))
 
         if elem == "%i":
@@ -277,10 +282,10 @@ def _replace_format_specs(
             if arg := _two_part_unescaper(x, replace_single_code):
                 new_argv.append(arg)
 
-    if len(gfilelist) > 1 and not Flags.did_see_large_f:
+    if len(gfilelist) > 1 and not flags.did_see_large_f:
         supports_single_file = True
 
-    if not Flags.did_see_small_f and not Flags.did_see_large_f and gfilelist:
+    if not flags.did_see_small_f and not flags.did_see_large_f and gfilelist:
         files_added_at_end = True
         new_argv.append(get_next_file_path())
 
@@ -311,8 +316,9 @@ def _info_for_desktop_file(
 LaunchCallback = ty.Callable[[list[str], int, int, list[str], int], None]
 
 
+# pylint: disable=too-many-locals
 def launch_app_info(
-    app_info: Gio.AppInfo,  # TODO: check
+    app_info: Gio.AppInfo,
     gfiles: ty.Iterable[Gio.File] | None = None,
     in_terminal: bool | None = None,
     timestamp: float | None = None,
@@ -326,8 +332,7 @@ def launch_app_info(
     @in_terminal: override Terminal flag
     @timestamp: override timestamp
     @desktop_file: specify location of desktop file
-    @launch_cb: Called once per launched process,
-                like ``spawn_app``
+    @launch_cb: Called once per launched process, like ``spawn_app``
 
     Will pass on exceptions from spawn_app
     """

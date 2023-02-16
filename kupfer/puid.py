@@ -18,11 +18,10 @@ import contextlib
 import pickle
 import typing as ty
 
-from kupfer.support import pretty, conspickle
-from kupfer.core import actioncompat
-from kupfer.core import qfurl
-from kupfer.obj.base import Leaf, Action, AnySource
+from kupfer.core import actioncompat, qfurl
 from kupfer.core.sources import get_source_controller
+from kupfer.obj.base import Action, AnySource, Leaf, Source
+from kupfer.support import conspickle, pretty
 
 __all__ = [
     "SerializedObject",
@@ -108,7 +107,7 @@ def _is_currently_excluding(src: ty.Any) -> bool:
 
 
 def _find_obj_in_catalog(
-    puid: str, catalog: ty.Collection[AnySource]
+    puid: str, catalog: ty.Collection[Source]
 ) -> Leaf | None:
     if puid.startswith(qfurl.QFURL_SCHEME):
         qfu = qfurl.Qfurl(url=puid)
@@ -121,7 +120,7 @@ def _find_obj_in_catalog(
         with _exclusion(src):
             for obj in src.get_leaves() or []:
                 if repr(obj) == puid:
-                    return obj  # type: ignore
+                    return obj
 
     return None
 

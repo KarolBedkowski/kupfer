@@ -6,6 +6,7 @@ from kupfer.core.commandexec import ExecutionToken
 from kupfer.obj import FileLeaf
 
 
+# pylint: disable=too-few-public-methods
 class AsyncFileResult:
     """Expect a given file path to be created, and when (probably) done,
     post the file as a late result.

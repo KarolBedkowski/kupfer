@@ -4,10 +4,9 @@ import typing as ty
 
 from gi.repository import GObject
 
-from kupfer.support import pretty
-from kupfer.core import settings
-from kupfer.core import plugins
 from kupfer import utils
+from kupfer.core import plugins, settings
+from kupfer.support import pretty
 
 __all__ = [
     "UserNamePassword",
@@ -28,7 +27,7 @@ def _is_core_setting(key: str) -> bool:
 SettingChangeCB = ty.Callable[[ty.Any, str, ty.Any], None]
 
 
-class PluginSettings(GObject.GObject, pretty.OutputMixin):
+class PluginSettings(GObject.GObject, pretty.OutputMixin):  # type:ignore
     """Allows plugins to have preferences by assigning an instance
     of this class to the plugin's __kupfer_settings__ attribute.
 
@@ -203,9 +202,7 @@ def check_keybinding_support() -> None:
     """
     Check if we can make global keybindings
     """
-    from kupfer.ui import (
-        keybindings,
-    )  # pylint: disable=import-outside-toplevel
+    from kupfer.ui import keybindings  # pylint: disable=import-outside-toplevel
 
     if not keybindings.is_available():
         raise ImportError(_("Dependency '%s' is not available") % "Keybinder")
@@ -281,9 +278,7 @@ def register_alternative(
         _plugin_configuration_error(
             caller, f"Configuration error for alternative '{category_key}':"
         )
-        _plugin_configuration_error(
-            caller, f"Missing keys: {req_set - kw_set}"
-        )
+        _plugin_configuration_error(caller, f"Missing keys: {req_set - kw_set}")
         return False
 
     _ALTERNATIVES[category_key][full_id] = kwargs
