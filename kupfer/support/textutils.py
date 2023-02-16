@@ -15,9 +15,7 @@ def _split_first_words(text: str, maxlen: int) -> tuple[str, str]:
     first_text = _unicode_truncate(text, maxlen)
     words = first_text.split()
     if len(words) > 3:
-        # TODO: why skip last world here and below? wrong indent?
-        words = words[:-1]
-        first_words = " ".join(words[:-1])
+        first_words = " ".join(words[:-2])
         if text.startswith(first_words):
             first_text = first_words
 

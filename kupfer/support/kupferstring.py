@@ -1,6 +1,8 @@
-import typing as ty
+from __future__ import annotations
+
 import locale
-from unicodedata import normalize, category
+import typing as ty
+from unicodedata import category, normalize
 
 # TODO: check is functions below are still relevant
 
@@ -41,8 +43,6 @@ def tounicode(utf8str: ty.Union[str, bytes, None]) -> str | None:
     if isinstance(utf8str, str) or utf8str is None:
         return utf8str
 
-    ic_stack()
-    ic(utf8str)
     return utf8str.decode("UTF-8", "replace") if utf8str is not None else ""
 
 

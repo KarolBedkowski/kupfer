@@ -4,6 +4,8 @@ import pickle
 import sys
 import typing as ty
 
+
+# pylint: disable=too-few-public-methods
 class UniversalSet:
     def __contains__(self, item: ty.Any) -> bool:
         return True
@@ -33,7 +35,7 @@ class ConservativeUnpickler(pickle.Unpickler):
     UnpicklingError: Refusing to load module kupfer.obj.base
     """
 
-    safe_modules : ty.Dict[str, ty.Any] ={
+    safe_modules: ty.Dict[str, ty.Any] = {
         "builtins": {"set", "sum", "object"},
         "copy_reg": {"_reconstructor"},
         "kupfer.*": UniversalSet(),
@@ -74,7 +76,7 @@ class BasicUnpickler(ConservativeUnpickler):
     UnpicklingError: Refusing unsafe kupfer.obj.objects.FileLeaf
     """
 
-    safe_modules : ty.Dict[str, ty.Set[str]] = {
+    safe_modules: ty.Dict[str, ty.Set[str]] = {
         "__builtin__": {"object"},
         "copy_reg": {"_reconstructor"},
         "kupfer.puid": {"SerializedObject"},

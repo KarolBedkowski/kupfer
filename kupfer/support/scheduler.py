@@ -12,7 +12,7 @@ def get_scheduler() -> Scheduler:
     return Scheduler.instance()
 
 
-class Scheduler(GObject.GObject, pretty.OutputMixin):
+class Scheduler(GObject.GObject, pretty.OutputMixin):  # type:ignore
     __gtype_name__ = "Scheduler"
 
     _instance: Scheduler | None = None

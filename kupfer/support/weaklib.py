@@ -4,8 +4,8 @@ more information.
 """
 from __future__ import annotations
 
-import typing as ty
 import sys
+import typing as ty
 import weakref
 
 from gi.repository import GObject
@@ -23,8 +23,10 @@ class WeakCallback:
 
     def __init__(self, mcallback: MCallback) -> None:
         """Create a new Weak Callback calling the method @mcallback"""
-        obj = mcallback.__self__  # pylint: disable=no-member
-        attr = mcallback.__func__.__name__  # pylint: disable=no-member
+        # pylint: disable=no-member
+        obj = mcallback.__self__  # type: ignore
+        # pylint: disable=no-member
+        attr = mcallback.__func__.__name__  # type: ignore
         self.wref = weakref.ref(obj, self.object_deleted)
         self.callback_attr = attr
         self.token = None
@@ -83,7 +85,7 @@ class GobjectWeakCallback(WeakCallback):
 
     __senders: dict[ty.Any, GObject] = {}
 
-    def object_deleted(self, wref: weakref.ReferenceType):
+    def object_deleted(self, wref: weakref.ReferenceType[GObject]) -> None:
         # App is shutting down
         try:
             if sys.is_finalizing():
@@ -106,9 +108,9 @@ class GobjectWeakCallback(WeakCallback):
     ) -> None:
         # We save references to the sender in a class variable,
         # this is the only way to have it accessible when obj expires.
-        wc = cls(mcallback)
-        wc.token = sender.connect(signal, wc, *user_args)
-        cls.__senders[wc.token] = sender
+        wcb = cls(mcallback)
+        wcb.token = sender.connect(signal, wcb, *user_args)
+        cls.__senders[wcb.token] = sender
 
 
 def gobject_connect_weakly(
@@ -131,6 +133,7 @@ def gobject_connect_weakly(
     deleted
     >>>
     """
+    # pylint: disable=protected-access
     GobjectWeakCallback._connect(sender, signal, mcallback, *user_args)
 
 

@@ -8,8 +8,8 @@ The unescaping we are doing is only one way.. so we unescape according to the
 rules, but we accept everything, if validly quoted or not.
 """
 
-import typing as ty
 import shlex
+import typing as ty
 
 # This is the "string" type encoding escapes
 # this is unescaped before we process anything..

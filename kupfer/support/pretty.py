@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import typing as ty
 import sys
 import traceback
-from time import time as timestamp
 import types
+import typing as ty
+from time import time as timestamp
 
 DEBUG = False
 
@@ -48,11 +48,11 @@ class OutputMixin:
 
     def output_exc(self, exc_info: ExecInfo | None = None) -> None:
         """Output current exception, or use @exc_info if given"""
-        etype, value, tb = exc_info or sys.exc_info()
+        etype, value, tback = exc_info or sys.exc_info()
         assert etype
         if DEBUG:
             self._output_core("Exception in ", "", "\n", sys.stderr)
-            traceback.print_exception(etype, value, tb, file=sys.stderr)
+            traceback.print_exception(etype, value, tback, file=sys.stderr)
             return
 
         msg = f"{etype.__name__}: {value}"
@@ -117,9 +117,7 @@ def timing_start() -> list[float] | None:
     return None
 
 
-def timing_step(
-    modulename: str, start: list[float] | None, label: str
-) -> None:
+def timing_step(modulename: str, start: list[float] | None, label: str) -> None:
     if DEBUG and start:
         cts = timestamp()
         print_debug(modulename, label, f"in {cts - start[0]:.6f} s")

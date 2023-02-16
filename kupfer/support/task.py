@@ -3,12 +3,10 @@ from __future__ import annotations
 import sys
 import threading
 import typing as ty
-import types
 
 from gi.repository import GLib
 
-from kupfer.support import scheduler, pretty
-
+from kupfer.support import pretty, scheduler
 
 TaskCallback = ty.Callable[[ty.Any], None]
 
@@ -56,9 +54,9 @@ class ThreadTask(Task):
     def thread_finally(self, exc_info: pretty.ExecInfo | None) -> None:
         """Always run at thread finish"""
         if exc_info is not None:
-            etype, value, tb = exc_info
+            etype, value, tback = exc_info
             if etype:
-                raise etype(value).with_traceback(tb)
+                raise etype(value).with_traceback(tback)
 
     def _thread_finally(self, exc_info: pretty.ExecInfo | None) -> None:
         try:
@@ -72,7 +70,7 @@ class ThreadTask(Task):
         try:
             self.thread_do()
             GLib.idle_add(self.thread_finish)
-        except:
+        except Exception:
             exc_info = sys.exc_info()
         finally:
             GLib.idle_add(self._thread_finally, exc_info)
