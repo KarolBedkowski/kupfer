@@ -119,7 +119,7 @@ class MultipleLeaf(Leaf):
 
     def __init__(self, obj: ty.Any, name: ty.Optional[str] = None) -> None:
         # modifying the list of objects is strictly forbidden
-        robj = list(datatools.UniqueIterator(obj))
+        robj = list(datatools.unique_iterator(obj))
         Leaf.__init__(self, robj, name or _("Multiple Objects"))
 
     def get_multiple_leaf_representation(self) -> ty.Iterable[Leaf]:

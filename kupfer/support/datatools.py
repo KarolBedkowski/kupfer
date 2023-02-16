@@ -1,8 +1,6 @@
-import typing as ty
 import itertools
-
+import typing as ty
 from collections import OrderedDict
-
 
 T = ty.TypeVar("T")
 
@@ -87,16 +85,16 @@ class SavedIterable(ty.Generic[T]):
         return (list, (), None, iter(self))
 
 
-def UniqueIterator(
+def unique_iterator(
     seq: ty.Iterable[T],
     key: ty.Optional[ty.Callable[[T], ty.Any]] = None,
 ) -> ty.Iterator[T]:
     """
     yield items of @seq with set semantics; no duplicates
 
-    >>> list(UniqueIterator([1, 2, 3, 3, 5, 1]))
+    >>> list(unique_iterator([1, 2, 3, 3, 5, 1]))
     [1, 2, 3, 5]
-    >>> list(UniqueIterator([1, -2, 3, -3, -5, 2], key=abs))
+    >>> list(unique_iterator([1, -2, 3, -3, -5, 2], key=abs))
     [1, -2, 3, -5]
     """
     coll = set()

@@ -58,7 +58,7 @@ def _peekfirst(
 
 def _as_set_iter(seq: ty.Iterable[Rankable]) -> ty.Iterable[Rankable]:
     key = operator.attrgetter("object")
-    return datatools.UniqueIterator(seq, key=key)
+    return datatools.unique_iterator(seq, key=key)
 
 
 def _valid_check(seq: ty.Iterable[Rankable]) -> ty.Iterable[Rankable]:

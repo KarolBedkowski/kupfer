@@ -60,7 +60,7 @@ class MultiSource(Source):
         return True
 
     def get_items(self) -> ty.Iterable[Leaf]:
-        uniq_srcs = datatools.UniqueIterator(
+        uniq_srcs = datatools.unique_iterator(
             S.toplevel_source() for S in self.sources
         )
         for src in uniq_srcs:
