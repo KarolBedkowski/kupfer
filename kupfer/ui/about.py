@@ -14,6 +14,7 @@ from kupfer import version
 from .uievents import GUIEnvironmentContext
 
 
+# pylint: disable=too-few-public-methods
 class _AboutDialog:
     _dialog = None
 

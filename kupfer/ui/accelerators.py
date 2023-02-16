@@ -1,3 +1,9 @@
+import typing as ty
+
+if ty.TYPE_CHECKING:
+    _ = str
+
+
 ACCELERATOR_NAMES = {
     # TRANS: Names of accelerators in the interface
     "activate": _("Alternate Activate"),

@@ -18,7 +18,7 @@ from kupfer import version
 from kupfer.core import settings
 from kupfer.core.datactrl import DataController
 from kupfer.support import pretty, scheduler
-from kupfer.ui import about, keybindings, listen, uievents, kupferhelp
+from kupfer.ui import about, keybindings, kupferhelp, listen, uievents
 
 from . import preferences
 from .interface import Interface
@@ -606,7 +606,7 @@ class WindowController(pretty.OutputMixin):
     def on_execute_file(
         self,
         sender: ty.Any,
-        filepath: ty.Iterable[str],
+        filepath: str,
         display: str,
         timestamp: float,
     ) -> None:
@@ -660,6 +660,7 @@ class WindowController(pretty.OutputMixin):
         Connect to desktop services (keybinding callback, session logout
         callbacks etc).
         """
+        # pylint: disable=import-outside-toplevel
         from kupfer.ui import session
 
         self.output_debug("in lazy_setup")

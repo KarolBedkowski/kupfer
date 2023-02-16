@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import typing as ty
 import functools
+import typing as ty
 
 import glib
 from gi.repository import Gtk
 
-from kupfer import version, config
-
+from kupfer import config, version
 
 T = ty.TypeVar("T")
 

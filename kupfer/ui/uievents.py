@@ -4,7 +4,7 @@ import contextlib
 import os
 import typing as ty
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk, Gtk
 
 from kupfer.support import pretty
 from kupfer.ui import keybindings
@@ -32,9 +32,7 @@ def try_close_unused_displays(screen: Gdk.Screen) -> None:
                 continue
 
             if not window.get_property("visible"):
-                pretty.print_debug(
-                    __name__, "Moving window", window.get_name()
-                )
+                pretty.print_debug(__name__, "Moving window", window.get_name())
                 pretty.print_debug(__name__, "Moving", window.get_title())
                 window.set_screen(screen)
             else:

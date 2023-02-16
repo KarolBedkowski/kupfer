@@ -47,7 +47,7 @@ _INTERFACE_NAME_NEW: ty.Final = "io.github.kupferlauncher.Listener"
 _OBJECT_NAME_NEW: ty.Final = "/io/github/kupferlauncher"
 
 
-class Service(ExportedGObject):
+class Service(ExportedGObject):  # type:ignore
     def __init__(self):
         """Create a new Kupfer service on the Session Bus
 
@@ -76,9 +76,7 @@ class Service(ExportedGObject):
     def PresentWithStartup(self, notify_id):
         self.PresentOnDisplay("", notify_id)
 
-    @dbus.service.method(
-        _INTERFACE_NAME, in_signature="ayay", byte_arrays=True
-    )
+    @dbus.service.method(_INTERFACE_NAME, in_signature="ayay", byte_arrays=True)
     def PresentOnDisplay(self, display, notify_id):
         with uievents.using_startup_notify_id(notify_id) as time:
             self.emit("present", display, time)
@@ -210,7 +208,7 @@ GObject.signal_new(
 )
 
 
-class ServiceNew(ExportedGObject):
+class ServiceNew(ExportedGObject):  # type: ignore
     def __init__(self):
         """Create a new Kupfer service on the Session Bus
 

@@ -1,22 +1,19 @@
 #! /usr/bin/env python3
 from __future__ import annotations
 
-import itertools
 import enum
+import itertools
 import typing as ty
 
-from gi.repository import Gtk, Gdk, GObject
-from gi.repository import GLib, Pango
-from gi.repository import GdkPixbuf
+from gi.repository import Gdk, GdkPixbuf, GLib, GObject, Gtk, Pango
 
-from kupfer.core import relevance, learn
-from kupfer.core.search import Rankable
-from kupfer.core import settings, actionaccel
-from kupfer.obj.base import Leaf, Action, KupferObject, AnySource
-from kupfer import icons
-from kupfer.support import pretty
 import kupfer.config
 import kupfer.environment
+from kupfer import icons
+from kupfer.core import actionaccel, learn, relevance, settings
+from kupfer.core.search import Rankable
+from kupfer.obj.base import Action, AnySource, KupferObject, Leaf
+from kupfer.support import pretty
 
 from .support import escape_markup_str, text_direction_is_ltr
 
@@ -143,7 +140,6 @@ class LeafModel:
         if not self._base:
             return None
 
-        # FIXME: there is now path for num=None, added this; check
         iterator: ty.Iterator[Rankable] = self._base
         if num:
             iterator = itertools.islice(self._base, num)
@@ -250,6 +246,7 @@ _LABEL_CHAR_WIDTH = 25
 _PREEDIT_CHAR_WIDTH = 5
 
 
+# pylint: disable=too-many-instance-attributes
 class MatchViewOwner(pretty.OutputMixin):
     """
     Owner of the widget for displaying name, icon and name underlining (if
@@ -283,9 +280,7 @@ class MatchViewOwner(pretty.OutputMixin):
         key: ty.Optional[str],
         value: ty.Any,
     ) -> None:
-        self._icon_size = setctl.get_config_int(
-            "Appearance", "icon_large_size"
-        )
+        self._icon_size = setctl.get_config_int("Appearance", "icon_large_size")
 
     def _read_icon_size(self, *_args: ty.Any) -> None:
         setctl = settings.get_settings_controller()
@@ -334,6 +329,7 @@ class MatchViewOwner(pretty.OutputMixin):
         """
         return self._child
 
+    # pylint: disable=too-many-locals
     def _render_composed_icon(
         self,
         base: GdkPixbuf.Pixbuf,
@@ -519,7 +515,8 @@ _PAGE_STEP: ty.Final = 7
 _SHOW_MORE: ty.Final = 10
 
 
-class Search(GObject.GObject, pretty.OutputMixin):
+# pylint: disable=too-many-public-methods
+class Search(GObject.GObject, pretty.OutputMixin):  # type:ignore
     """
     Owner of a widget for displaying search results (using match view),
     keeping current search result list and its display.
@@ -595,9 +592,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         key: str | None,
         value: ty.Any,
     ) -> None:
-        self._icon_size = setctl.get_config_int(
-            "Appearance", "icon_large_size"
-        )
+        self._icon_size = setctl.get_config_int("Appearance", "icon_large_size")
         self._icon_size_small = setctl.get_config_int(
             "Appearance", "icon_small_size"
         )
@@ -805,7 +800,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
         if self.get_table_visible():
             self._table_set_cursor_at_row(0)
 
-    def _window_config(
+    def window_config(
         self, widget: Gtk.Widget, event: Gdk.EventConfigure
     ) -> None:
         """
@@ -818,7 +813,7 @@ class Search(GObject.GObject, pretty.OutputMixin):
             self.hide_table()
             GLib.timeout_add(300, self._show_table)
 
-    def _window_hidden(self, window: Gtk.Widget) -> None:
+    def window_hidden(self, window: Gtk.Widget) -> None:
         """
         Window changed hid
         """
@@ -1055,7 +1050,7 @@ class ActionSearch(Search):
         else:
             pretty.print_error("Unknown modifier key", value)
 
-    def _get_aux_info(self, leaf: Action) -> str:
+    def _get_aux_info(self, leaf: Action) -> str:  # type:ignore
         if not self.action_accel_config:
             return ""
 

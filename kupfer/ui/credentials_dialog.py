@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from gi.repository import Gtk
 
-from kupfer import version, config
+from kupfer import config, version
 from kupfer.support import kupferstring
 
 
@@ -45,11 +45,11 @@ class CredentialsDialogController:
 
     @property
     def username(self) -> str:
-        return kupferstring.tounicode(self.entry_user.get_text())
+        return kupferstring.tounicode(self.entry_user.get_text())  # type:ignore
 
     @property
     def password(self) -> str:
-        return kupferstring.tounicode(self.entry_pass.get_text())
+        return kupferstring.tounicode(self.entry_pass.get_text())  # type:ignore
 
 
 def ask_user_credentials(

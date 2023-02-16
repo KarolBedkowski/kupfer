@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import typing as ty
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk, Gtk
 
-from kupfer import version, config
+from kupfer import config, version
 
 CheckCallback = ty.Callable[[str], bool]
 

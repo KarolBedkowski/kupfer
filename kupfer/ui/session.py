@@ -7,18 +7,18 @@ the module API does not depend on the session API used
 """
 from __future__ import annotations
 
-import typing as ty
 import os
 import time
+import typing as ty
 
-from gi.repository import GObject
 import dbus
+from gi.repository import GObject
 
 from kupfer import version
 from kupfer.support import pretty
 
 
-class SessionClient(GObject.GObject, pretty.OutputMixin):
+class SessionClient(GObject.GObject, pretty.OutputMixin):  # type:ignore
     """Session handling controller
 
     signals:

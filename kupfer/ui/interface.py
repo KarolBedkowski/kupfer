@@ -16,11 +16,11 @@ from kupfer.core.datactrl import DataController, PaneMode, PaneSel
 from kupfer.core.search import Rankable
 from kupfer.obj import AnySource, FileLeaf, KupferObject
 from kupfer.support import pretty, scheduler
-from kupfer.ui import accelerators, uievents, kupferhelp, uiutils
+from kupfer.ui import accelerators, getkey_dialog, kupferhelp, uievents, uiutils
 
+from . import preferences
 from .search import ActionSearch, LeafSearch, Search, State
 from .support import escape_markup_str, text_direction_is_ltr
-from . import preferences
 
 _ELLIPSIZE_MIDDLE = Pango.EllipsizeMode.MIDDLE
 _SLOW_INPUT_INTERVAL = 2
@@ -78,7 +78,8 @@ def _get_accel(key: str, acf: AccelFunc) -> tuple[str, AccelFunc]:
     return (accelerators.ACCELERATOR_NAMES[key], acf)
 
 
-class Interface(GObject.GObject, pretty.OutputMixin):
+# pylint: disable=too-many-public-methods,too-many-instance-attributes
+class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
     """
     Controller object that controls the input and
     the state (current active) search object/widget
@@ -116,12 +117,27 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self._pane_three_is_visible = False
         self._is_text_mode = False
         self._latest_input_timer = scheduler.Timer()
-        # self._key_press_time = None
-        # self._key_repeat_key = None  # TODO: check; not set
-        # self._key_repeat_active = False  # TODO: check: not set
         self._reset_to_toplevel = False
         self._reset_when_back = False
+        self._preedit_text = ""
 
+        self._create_widgets(window)
+
+        self._data_ctrl = controller
+        self._data_ctrl.connect("search-result", self._search_result)
+        self._data_ctrl.connect("source-changed", self._new_source)
+        self._data_ctrl.connect("pane-reset", self._pane_reset)
+        self._data_ctrl.connect("mode-changed", self._show_hide_third)
+        self._data_ctrl.connect(
+            "object-stack-changed", self._object_stack_changed
+        )
+        # Setup keyval mapping
+        self._key_book = _prepare_key_book()
+        self._keys_sensible = set(self._key_book.values())
+        self._action_accel_config = actionaccel.AccelConfig()
+        self.search.reset()
+
+    def _create_widgets(self, window: Gtk.Window) -> None:
         self._entry = Gtk.Entry()
         self._preedit = Gtk.Entry()
         ## make sure we lose the preedit focus ring
@@ -129,7 +145,6 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self._preedit.set_has_frame(False)
         self._preedit.set_width_chars(0)
         self._preedit.set_alignment(1)
-        self._preedit_text = ""
 
         self._label = Gtk.Label()
         self._label.set_width_chars(50)
@@ -161,22 +176,8 @@ class Interface(GObject.GObject, pretty.OutputMixin):
             widget_owner.connect("cursor-changed", self._selection_changed)
             widget.connect("button-press-event", self._panewidget_button_press)
             # window signals
-            window.connect("configure-event", widget_owner._window_config)
-            window.connect("hide", widget_owner._window_hidden)
-
-        self._data_ctrl = controller
-        self._data_ctrl.connect("search-result", self._search_result)
-        self._data_ctrl.connect("source-changed", self._new_source)
-        self._data_ctrl.connect("pane-reset", self._pane_reset)
-        self._data_ctrl.connect("mode-changed", self._show_hide_third)
-        self._data_ctrl.connect(
-            "object-stack-changed", self._object_stack_changed
-        )
-        # Setup keyval mapping
-        self._key_book = _prepare_key_book()
-        self._keys_sensible = set(self._key_book.values())
-        self._action_accel_config = actionaccel.AccelConfig()
-        self.search.reset()
+            window.connect("configure-event", widget_owner.window_config)
+            window.connect("hide", widget_owner.window_hidden)
 
     def get_widget(self) -> Gtk.Widget:
         """Return a Widget containing the whole Interface"""
@@ -227,7 +228,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
     def _entry_key_release(self, entry, event):
         return
 
-    def _process_accels(self, keyv, event_state) -> bool:
+    def _process_accels(self, keyv: int, event_state: int) -> bool:
         setctl = settings.get_settings_controller()
         # process accelerators
         for action, accel in setctl.get_accelerators().items():
@@ -263,6 +264,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         return event_state, keyv, shift_mask
 
+    # pylint: disable=too-many-statements,too-many-branches,too-many-return-statements
     def _entry_key_press(self, entry: Gtk.Entry, event: Gdk.EventKey) -> bool:
         """
         Intercept arrow keys and manipulate table
@@ -424,7 +426,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         self.reset_current()
         self.reset()
-        return False  # TODO: check, was no return
+        return False
 
     def _entry_paste_data_received(
         self,
@@ -739,6 +741,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
 
         cur = self.current.get_current()
         curpane = self._pane_for_widget(self.current)
+        assert cur
         if self._data_ctrl.object_stack_push(curpane, cur):
             self._relax_search_terms()
             if self._is_text_mode:
@@ -772,8 +775,6 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         return True
 
     def _assign_action_accelerator(self) -> None:
-        from kupfer.ui import getkey_dialog
-
         if self.action.get_match_state() != State.MATCH:
             raise RuntimeError("No Action Selected")
 
@@ -1003,7 +1004,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         self,
         filepath: str,
         display: str,
-        event_time: float,
+        event_time: int,
     ) -> None:
         """Execute a .kfcom file"""
 
@@ -1067,7 +1068,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):
         """
         pane = PaneSel(pane)
         wid = self._widget_for_pane(pane)
-        wid.set_object_stack(controller.get_object_stack(pane))
+        wid.set_object_stack(controller.get_object_stack(pane))  # type: ignore
 
     def _panewidget_button_press(
         self, widget: Gtk.Widget, event: Gdk.EventButton

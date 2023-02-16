@@ -13,11 +13,11 @@ import math
 import textwrap
 import typing as ty
 
-from gi.repository import Gtk, Gdk
-from gi.repository import Pango
+from gi.repository import Gdk, Gtk, Pango
 
-from kupfer.support import pretty
 from kupfer import config, version
+from kupfer.support import pretty
+
 from . import uievents
 
 if ty.TYPE_CHECKING:
@@ -98,6 +98,7 @@ class _ResultWindowBehavior:
         buf.copy_clipboard(clip)
 
 
+# pylint: disable=too-many-locals
 def _calculate_window_size(
     window: Gtk.Window, textview: Gtk.TextView
 ) -> tuple[int, int]:
@@ -228,12 +229,10 @@ def show_large_type(text: str, ctx: "ExecutionToken" | None = None) -> None:
     window.set_resizable(False)  # pylint: disable=no-member
     window.set_decorated(False)
     window.set_property("border-width", 10)
-    window.modify_bg(
-        Gtk.StateType.NORMAL, Gdk.color_parse("black")
-    )  # pylint: disable=no-member
-    label.modify_fg(
-        Gtk.StateType.NORMAL, Gdk.color_parse("white")
-    )  # pylint: disable=no-member
+    # pylint: disable=no-member
+    window.modify_bg(Gtk.StateType.NORMAL, Gdk.color_parse("black"))
+    # pylint: disable=no-member
+    label.modify_fg(Gtk.StateType.NORMAL, Gdk.color_parse("white"))
 
     def _window_destroy(widget, event):
         widget.destroy()
@@ -254,6 +253,7 @@ IFACE_NAME = "org.freedesktop.Notifications"
 
 def _get_notification_obj() -> ty.Any:
     "we will activate it over d-bus (start if not running)"
+    # pylint: disable=import-outside-toplevel
     import dbus
 
     try:

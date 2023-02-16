@@ -4,7 +4,7 @@ import typing as ty
 from enum import IntEnum
 
 import gi
-from gi.repository import GObject, Gdk
+from gi.repository import Gdk, GObject
 
 from kupfer import environment
 from kupfer.support import pretty
@@ -37,7 +37,7 @@ def get_keybound_object():
     return KeyboundObject.instance()
 
 
-class KeyboundObject(GObject.GObject):
+class KeyboundObject(GObject.GObject):  # type:ignore
     """Keybinder object
 
     signals:
