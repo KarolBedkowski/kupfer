@@ -141,7 +141,7 @@ class ExecutionToken:
         raise RuntimeError("Environment Context not available")
 
 
-class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
+class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: ignore
     """
     command-result (result_type, result)
         Emitted when a command is carried out, with its resulting value
@@ -360,6 +360,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):
         ret: ty.Any,
         ui_ctx: GUIEnvironmentContext | None,
     ) -> tuple[ExecResult, ty.Any]:
+        ic(res, ret)
         if not self._is_nested():
             self._append_result(res, ret)
             self.emit("command-result", res, ret, ui_ctx)
@@ -458,8 +459,7 @@ GObject.signal_new(
 )
 
 
-def default_action_execution_context() -> ActionExecutionContext:
-    return ActionExecutionContext.instance()
+default_action_execution_context = ActionExecutionContext.instance
 
 
 def activate_action(
