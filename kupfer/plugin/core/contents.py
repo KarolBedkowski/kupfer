@@ -1,9 +1,14 @@
+import atexit
+import os
+import sys
+import typing as ty
+
 from gi.repository import Gtk
 
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer.objects import RunnableLeaf, Source
 from kupfer.support import pretty
-from kupfer.ui import about, preferences, kupferhelp
+from kupfer.ui import about, kupferhelp, preferences
 from kupfer.version import DESKTOP_ID
 
 __kupfer_sources__ = ("KupferSource",)
@@ -11,6 +16,10 @@ __kupfer_actions__ = ()
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 __all__ = __kupfer_sources__ + __kupfer_actions__
+
+
+if ty.TYPE_CHECKING:
+    _ = str
 
 
 def _is_debug():
@@ -24,14 +33,9 @@ class DebugRestart(RunnableLeaf):
 
     @classmethod
     def _exec_new_kupfer(cls, executable, argv):
-        import os
-
         os.execvp(executable, [executable] + argv)
 
     def run(self, ctx=None):
-        import atexit
-        import sys
-
         Gtk.main_quit()
         atexit.register(self._exec_new_kupfer, sys.executable, sys.argv)
 

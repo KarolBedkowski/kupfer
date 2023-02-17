@@ -1,12 +1,16 @@
-from kupfer.objects import Source, Leaf
-from kupfer.objects import RunnableLeaf
+import typing as ty
+
 from kupfer.core import commandexec
+from kupfer.objects import Leaf, RunnableLeaf, Source
 
 __kupfer_sources__ = (
     "KupferInterals",
     "CommandResults",
 )
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
+
+if ty.TYPE_CHECKING:
+    _ = str
 
 
 class LastCommand(RunnableLeaf):
@@ -44,15 +48,18 @@ class KupferInterals(Source):
 class LastResultObject(Leaf):
     "dummy superclass"
 
+    def __init__(self, leaf):
+        super().__init__(leaf.object, _("Last Result"))
+
 
 def _make_first_result_object(leaf):
-    global LastResultObject
+    #    global LastResultObject
 
-    class LastResultObject(LastResultObject):
+    class _LastResultObject(LastResultObject):
         qf_id = "lastresult"
 
         def __init__(self, leaf):
-            Leaf.__init__(self, leaf.object, _("Last Result"))
+            super().__init__(leaf)
             vars(self).update(vars(leaf))
             self.name = _("Last Result")
             self.__orignal_leaf = leaf
@@ -64,13 +71,13 @@ def _make_first_result_object(leaf):
         def get_icon_name(self):
             return Leaf.get_icon_name(self)
 
-        def get_thumbnail(self, w, h):
+        def get_thumbnail(self, width, height):
             return None
 
         def get_description(self):
             return str(self.__orignal_leaf)
 
-    return LastResultObject(leaf)
+    return _LastResultObject(leaf)
 
 
 class CommandResults(Source):

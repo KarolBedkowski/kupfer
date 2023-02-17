@@ -4,15 +4,16 @@ This module contains internal and / or experimental Kupfer features.
 These are not meant to be useful to "normal" users of Kupfer -- if they are,
 they can be tested here before they migrate to a fitting plugin.
 """
+import io
 
+from kupfer import puid
+
+# NOTE: Core imports
+from kupfer.core import learn, qfurl
 from kupfer.obj.base import Action, Leaf, Source
 from kupfer.obj.compose import ComposedLeaf
 from kupfer.support import pretty
 from kupfer.ui import uiutils
-
-# NOTE: Core imports
-from kupfer.core import qfurl
-from kupfer import puid
 
 __kupfer_sources__ = ()
 __kupfer_contents__ = ("ComposedSource",)
@@ -32,9 +33,7 @@ class DebugInfo(Action):
     def __init__(self):
         Action.__init__(self, "Debug Info")
 
-    def activate(self, leaf):
-        import io
-
+    def activate(self, leaf, iobj=None, ctx=None):
         output = io.StringIO()
 
         def print_func(*args):
@@ -49,6 +48,7 @@ class DebugInfo(Action):
                 return qfurl.Qfurl(leaf)
             except qfurl.QfurlError:
                 pass
+            return None
 
         def get_object_fields(leaf):
             return {
@@ -131,18 +131,15 @@ class Forget(Action):
         Action.__init__(self, "Forget")
 
     def activate(self, leaf, iobj=None, ctx=None):
-        # NOTE: Core imports
-        from kupfer.core import learn
-
         # FIXME: This is a large, total, utter HACK
         if isinstance(leaf, ComposedLeaf):
             for obj in leaf.object:
-                learn._register.pop(repr(obj), None)
+                learn.unregister(repr(obj))
 
         if isinstance(leaf, ActionLeaf):
-            learn._register.pop(repr(leaf.object), None)
+            learn.unregister(repr(leaf.object))
         else:
-            learn._register.pop(repr(leaf), None)
+            learn.unregister(repr(leaf))
 
     def item_types(self):
         yield Leaf
@@ -195,8 +192,8 @@ class Apply(Action):
     def wants_context(self):
         return self.action.wants_context()
 
-    def activate(self, leaf, iobj, **kwargs):
-        return self.action.activate(iobj, **kwargs)
+    def activate(self, leaf, iobj=None, ctx=None):
+        return self.action.activate(iobj, ctx=ctx)
 
 
 class ComposedSource(Source):

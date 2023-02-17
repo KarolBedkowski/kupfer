@@ -1,10 +1,14 @@
 __kupfer_actions__ = ("SaveToFile",)
 
 import os
+import typing as ty
 
 from kupfer.core import execfile
 from kupfer.obj import Action, FileLeaf, TextLeaf, TextSource
 from kupfer.obj.compose import ComposedLeaf
+
+if ty.TYPE_CHECKING:
+    _ = str
 
 
 class SaveToFile(Action):
@@ -14,11 +18,11 @@ class SaveToFile(Action):
     def has_result(self):
         return True
 
-    def activate(self, obj, iobj=None, ctx=None):
+    def activate(self, leaf, iobj=None, ctx=None):
         assert iobj
         filepath = iobj.object
-        execfile.save_to_file(obj, filepath)
-        execfile.update_icon(obj, iobj.object)
+        execfile.save_to_file(leaf, filepath)
+        execfile.update_icon(leaf, iobj.object)
         return FileLeaf(os.path.abspath(filepath))
 
     def item_types(self):

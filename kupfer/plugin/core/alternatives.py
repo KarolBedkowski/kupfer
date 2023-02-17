@@ -1,20 +1,24 @@
-from kupfer import plugin_support
-from kupfer import icons
+import typing as ty
+
+from kupfer import icons, plugin_support
+
+if ty.TYPE_CHECKING:
+    _ = str
 
 
-def initialize_alternatives(__name__):
+def initialize_alternatives(name):
     plugin_support.register_alternative(
-        __name__,
+        name,
         "icon_renderer",
         "gtk",
         **{
             "name": _("GTK+"),
             "renderer": icons.IconRenderer,
-        }
+        },
     )
 
     plugin_support.register_alternative(
-        __name__,
+        name,
         "terminal",
         "gnome-terminal",
         **{
@@ -23,11 +27,11 @@ def initialize_alternatives(__name__):
             "exearg": "-x",
             "desktopid": "gnome-terminal.desktop",
             "startup_notify": True,
-        }
+        },
     )
 
     plugin_support.register_alternative(
-        __name__,
+        name,
         "terminal",
         "xfce4-terminal",
         **{
@@ -36,11 +40,11 @@ def initialize_alternatives(__name__):
             "exearg": "-x",
             "desktopid": "xfce4-terminal.desktop",
             "startup_notify": True,
-        }
+        },
     )
 
     plugin_support.register_alternative(
-        __name__,
+        name,
         "terminal",
         "exo-open",
         **{
@@ -49,11 +53,11 @@ def initialize_alternatives(__name__):
             "exearg": "",
             "desktopid": "",
             "startup_notify": False,
-        }
+        },
     )
 
     plugin_support.register_alternative(
-        __name__,
+        name,
         "terminal",
         "lxterminal",
         **{
@@ -62,11 +66,11 @@ def initialize_alternatives(__name__):
             "exearg": "-e",
             "desktopid": "lxterminal.desktop",
             "startup_notify": False,
-        }
+        },
     )
 
     plugin_support.register_alternative(
-        __name__,
+        name,
         "terminal",
         "xterm",
         **{
@@ -75,11 +79,11 @@ def initialize_alternatives(__name__):
             "exearg": "-e",
             "desktopid": "xterm.desktop",
             "startup_notify": False,
-        }
+        },
     )
 
     plugin_support.register_alternative(
-        __name__,
+        name,
         "terminal",
         "x-terminal-emulator",
         **{
@@ -88,11 +92,11 @@ def initialize_alternatives(__name__):
             "exearg": "-e",
             "desktopid": "",
             "startup_notify": False,
-        }
+        },
     )
 
     plugin_support.register_alternative(
-        __name__,
+        name,
         "terminal",
         "urxvt",
         **{
@@ -101,11 +105,11 @@ def initialize_alternatives(__name__):
             "exearg": "-e",
             "desktopid": "urxvt.desktop",
             "startup_notify": False,
-        }
+        },
     )
 
     plugin_support.register_alternative(
-        __name__,
+        name,
         "terminal",
         "konsole",
         **{
@@ -115,5 +119,5 @@ def initialize_alternatives(__name__):
             "desktopid": "konsole.desktop",
             # Not sure here, so setting to false
             "startup_notify": False,
-        }
+        },
     )

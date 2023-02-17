@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-import os
-import urllib.parse
-import urllib.request, urllib.parse, urllib.error
+import typing as ty
 
-from kupfer.obj import TextSource, TextLeaf, FileLeaf, UrlLeaf, OpenUrl
+import os
+import urllib.error
+import urllib.parse
+import urllib.request
+import socket
+
 from kupfer import utils
+from kupfer.support import pretty
+from kupfer.obj import FileLeaf, OpenUrl, TextLeaf, TextSource, UrlLeaf
 
 __kupfer_name__ = "Free-text Queries"
 __kupfer_sources__ = ()
@@ -18,6 +23,10 @@ __kupfer_actions__ = ("OpenTextUrl",)
 __description__ = "Basic support for free-text queries"
 __version__ = "2021.1"
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
+
+
+if ty.TYPE_CHECKING:
+    _ = str
 
 
 class BasicTextSource(TextSource):
@@ -34,25 +43,25 @@ class BasicTextSource(TextSource):
         yield TextLeaf
 
 
-class PathTextSource(TextSource):
+class PathTextSource(TextSource, pretty.OutputMixin):
     """Return existing full paths if typed"""
 
     def __init__(self):
         TextSource.__init__(self, name="Filesystem Text Matches")
+        self._hostname: str | None = None
 
     def get_rank(self):
         return 80
 
-    def _get_hostname(self):
-        if not hasattr(self, "_hostname"):
+    def _get_hostname(self) -> str:
+        if self._hostname is None:
             try:
-                import socket
-
                 self._hostname = socket.gethostname()
             except Exception:
                 self._hostname = ""
                 self.output_exc()
 
+        assert self._hostname
         return self._hostname
 
     def _is_local_file_url(self, url):
@@ -89,7 +98,7 @@ class PathTextSource(TextSource):
         yield FileLeaf
 
 
-def is_url(text) -> str | None:
+def is_url(text: str) -> str | None:
     """If @text is an URL, return a cleaned-up URL, else return None"""
     text = text.strip()
     components = list(urllib.parse.urlparse(text))
@@ -121,7 +130,7 @@ def is_url(text) -> str | None:
     return None
 
 
-def try_unquote_url(url):
+def try_unquote_url(url: str) -> str:
     """Try to turn an URL-escaped string into a Unicode string
 
     Where we assume UTF-8 encoding; and return the original url if
@@ -134,8 +143,8 @@ class OpenTextUrl(OpenUrl):
     rank_adjust = 1
 
     def activate(self, leaf, iobj=None, ctx=None):
-        url = is_url(leaf.object)
-        utils.show_url(url)
+        if url := is_url(leaf.object):
+            utils.show_url(url)
 
     def item_types(self):
         yield TextLeaf

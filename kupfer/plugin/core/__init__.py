@@ -13,15 +13,19 @@ __version__ = ""
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 from contextlib import suppress
+import typing as ty
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk, Gtk
 
-from kupfer.objects import Leaf, Action
-from kupfer.objects import InvalidLeafError
+from kupfer import interface, objects
 from kupfer.obj.sources import MultiSource
-from kupfer import objects
-from kupfer import interface
+from kupfer.objects import Action, InvalidLeafError, Leaf
 from kupfer.support import pretty, task
+
+from kupfer.plugin.core import commands, contents, internal, text
+
+if ty.TYPE_CHECKING:
+    _ = str
 
 
 def _is_debug():
@@ -42,8 +46,6 @@ def register_subplugin(module):
         globals().update((sym, getattr(module, sym)) for sym in object_names)
 
 
-from kupfer.plugin.core import contents, text, internal, commands
-
 register_subplugin(contents)
 register_subplugin(text)
 register_subplugin(internal)
@@ -56,6 +58,7 @@ if _is_debug():
 
 
 def initialize_plugin(x):
+    # pylint: disable=import-outside-toplevel
     from kupfer.plugin.core import alternatives
 
     alternatives.initialize_alternatives(__name__)
@@ -81,8 +84,8 @@ class SearchInside(Action):
 
         return leaf.content_source()
 
-    def activate_multiple(self, objects):
-        return _MultiSource([L.content_source() for L in objects])
+    def activate_multiple(self, objs):
+        return _MultiSource([L.content_source() for L in objs])
 
     def item_types(self):
         yield Leaf
