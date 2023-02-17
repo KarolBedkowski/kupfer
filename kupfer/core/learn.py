@@ -247,3 +247,7 @@ def remove_favorite(obj: KupferObject) -> None:
 
 def is_favorite(obj: KupferObject) -> bool:
     return repr(obj) in _FAVORITES
+
+
+def unregister(obj):
+    _REGISTER.pop(obj, None)
