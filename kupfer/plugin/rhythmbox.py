@@ -506,7 +506,7 @@ def _locale_sort_artist_album_songs(artists):
     """
     for artist in utils.locale_sort(artists):
         artist_songs = artists[artist]
-        albums = {}
+        albums: dict[str, list[rhythmbox_support.Song]] = {}
         for album, songs in itertools.groupby(
             artist_songs, lambda song: song["album"]  # type: ignore
         ):

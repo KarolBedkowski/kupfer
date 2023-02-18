@@ -4,7 +4,7 @@ __kupfer_actions__ = (
     "SendKeys",
     "TypeText",
 )
-__description__ = _("Send synthetic keyboard events using " "xautomation")
+__description__ = _("Send synthetic keyboard events using xautomation")
 __version__ = ""
 __author__ = ""
 

@@ -113,13 +113,14 @@ class DownloadTo(Action):
 
     def activate(self, leaf, iobj=None, ctx=None):
         assert ctx
+        assert iobj
 
         uri = leaf.object
 
         def finish_action(filename):
             ctx.register_late_result(FileLeaf(filename))
 
-        return DownloadTask(uri, obj.object, False, finish_action)
+        return DownloadTask(uri, iobj.object, False, finish_action)
 
     def item_types(self):
         yield UrlLeaf

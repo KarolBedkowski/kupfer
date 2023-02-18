@@ -608,7 +608,7 @@ class WindowController(pretty.OutputMixin):
         sender: ty.Any,
         filepath: str,
         display: str,
-        timestamp: float,
+        timestamp: int,
     ) -> None:
         self._interface.execute_file(filepath, display, timestamp)
 

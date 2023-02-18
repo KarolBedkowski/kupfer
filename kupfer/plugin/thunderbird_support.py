@@ -185,6 +185,7 @@ def _read_mork(filename: str) -> dict[str, _Table]:
 
                 if not active_trans or tran != "-":
                     rowdata = row[2:]
+                    rowcell: str
                     for rowcell in filter(None, rowdata):
                         for cell in _RE_CELL.findall(rowcell):
                             atom, col = None, None

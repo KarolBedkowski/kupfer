@@ -60,7 +60,7 @@ class MoveTo(Action, pretty.OutputMixin):
             )
             self.output_debug(f"Move {sfile} to {dfile} (ret: {ret})")
         except GLib.Error as exc:
-            raise OperationError(str(exc))
+            raise OperationError(str(exc)) from exc
         else:
             return FileLeaf(dfile.get_path())
 
@@ -220,6 +220,7 @@ class CopyTask(task.ThreadTask, pretty.OutputMixin):
             )
             self.output_debug(f"Copy ret {ret!r}")
         except GLib.Error as exc:
+            # pylint: disable=no-member
             raise OperationError(exc.message) from exc
 
     def thread_finish(self):

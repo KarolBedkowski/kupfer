@@ -83,9 +83,7 @@ class ArchiveContent(Source):
             self.unarchived_files.append(pth)
             self.end_timer.set(VERY_LONG_TIME_S, self.clean_up_unarchived_files)
 
-        files = list(
-            DirectorySource(pth, show_hidden=True).get_leaves()  # type:ignore
-        )
+        files = list(DirectorySource(pth, show_hidden=True).get_leaves())
         if len(files) == 1 and files[0].has_content():
             csrc = files[0].content_source()
             return (csrc.get_leaves() or []) if csrc else []

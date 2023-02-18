@@ -252,7 +252,11 @@ class TrackerQuerySource(Source):
 
         try:
             et = ElementTree(file=leaf.object)
-            query = et.getroot().find("text").text
+            text_elem = et.getroot().find("text")
+            if not text_elem:
+                return None
+
+            query = text_elem.text
             if not query:
                 return None
 

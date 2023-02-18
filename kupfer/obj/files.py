@@ -30,6 +30,7 @@ if ty.TYPE_CHECKING:
     _ = str
 
 
+# FIXME: rename
 def ConstructFileLeaf(obj: str) -> Leaf:
     """
     If the path in @obj points to a Desktop Item file,

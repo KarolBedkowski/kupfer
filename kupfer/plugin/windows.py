@@ -7,10 +7,16 @@ __description__ = _("All windows on all workspaces")
 __version__ = "2020-04-14"
 __author__ = ""
 
+import typing as ty
+
 from gi.repository import Wnck
 
 from kupfer.objects import Action, Leaf, Source
 from kupfer.support import weaklib
+
+
+if ty.TYPE_CHECKING:
+    from gettext import gettext as _, ngettext
 
 
 def _get_window(xid):
@@ -410,7 +416,9 @@ class ActivateWorkspace(Action):
     def wants_context(self):
         return True
 
-    def activate(self, leaf, ctx):
+    def activate(self, leaf, iobj=None, ctx=None):
+        assert ctx
+
         if workspace := _get_workspace(leaf.object):
             time = ctx.environment.get_timestamp()
             workspace.activate(time)

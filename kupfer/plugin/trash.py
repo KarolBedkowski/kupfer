@@ -36,7 +36,8 @@ class MoveToTrash(Action):
         try:
             gfile.trash()
         except GLib.Error as exc:
-            raise OperationError(exc.message)
+            # pylint: disable=no-member
+            raise OperationError(exc.message) from exc
 
     def valid_for_item(self, leaf):
         gfile = leaf.get_gfile()

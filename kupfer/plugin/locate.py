@@ -71,9 +71,6 @@ class LocateQuerySource(Source):
             f"'{self.query}'"
         )
 
-        p1 = subprocess.Popen(first_command, shell=True, stdout=subprocess.PIPE)
-        p2 = subprocess.Popen(full_command, shell=True, stdout=subprocess.PIPE)
-
         def get_locate_output(proc, offset=0):
             out, ignored_err = proc.communicate()
             return (
@@ -81,8 +78,16 @@ class LocateQuerySource(Source):
                 for f in out.split(b"\x00")[offset:-1]
             )
 
-        yield from get_locate_output(p1, 0)
-        yield from get_locate_output(p2, first_num)
+        with (
+            subprocess.Popen(
+                first_command, shell=True, stdout=subprocess.PIPE
+            ) as sp1,
+            subprocess.Popen(
+                full_command, shell=True, stdout=subprocess.PIPE
+            ) as sp2,
+        ):
+            yield from get_locate_output(sp1, 0)
+            yield from get_locate_output(sp2, first_num)
 
     def get_gicon(self):
         return icons.ComposedIcon("gnome-terminal", self.get_icon_name())
