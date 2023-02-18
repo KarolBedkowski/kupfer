@@ -23,13 +23,13 @@ if environment.allows_keybinder():
 else:
     pretty.print_debug(__name__, "Keybinder disabled")
 
+KeybindingTarget = int
+
 KEYRANGE_RESERVED = (3, 0x1000)
 KEYRANGE_TRIGGERS = (0x1000, 0x2000)
 
-
-class KeybindingTarget(IntEnum):
-    DEFAULT = 1
-    MAGIC = 2
+KEYBINDING_TARGET_DEFAULT = 1
+KEYBINDING_TARGET_MAGIC = 2
 
 
 def get_keybound_object():
@@ -129,14 +129,14 @@ def _register_bound_key(keystr: str | None, target: int) -> None:
 
 
 def _get_currently_bound_key(
-    target: KeybindingTarget = KeybindingTarget.DEFAULT,
+    target: KeybindingTarget = KEYBINDING_TARGET_DEFAULT,
 ) -> str | None:
     return _CURRENTLY_BOUND.get(target)
 
 
 def bind_key(
     keystr: str | None,
-    keybinding_target: KeybindingTarget = KeybindingTarget.DEFAULT,
+    keybinding_target: KeybindingTarget = KEYBINDING_TARGET_DEFAULT,
 ) -> bool:
     """
     Bind @keystr, unbinding any previous key for @keybinding_target.

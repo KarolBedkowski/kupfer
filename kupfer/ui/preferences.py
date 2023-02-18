@@ -85,9 +85,9 @@ _KEYBINDING_NAMES: dict[str, str] = {
     "magickeybinding": _("Show with Selection"),
 }
 
-_KEYBINDING_TARGETS: dict[str, keybindings.KeybindingTarget] = {
-    "keybinding": keybindings.KeybindingTarget.DEFAULT,
-    "magickeybinding": keybindings.KeybindingTarget.MAGIC,
+_KEYBINDING_TARGETS: dict[str, int] = {
+    "keybinding": keybindings.KEYBINDING_TARGET_DEFAULT,
+    "magickeybinding": keybindings.KEYBINDING_TARGET_MAGIC,
 }
 
 _KUPFER_DESKTOP: ty.Final = "kupfer.desktop"
