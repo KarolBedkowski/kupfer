@@ -13,13 +13,13 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 import os
 import shutil
-import urllib.request
-import urllib.parse
-import urllib.error
 import typing as ty
+import urllib.error
+import urllib.parse
+import urllib.request
 
-from kupfer.obj import Action, UrlLeaf, FileLeaf
 from kupfer import utils
+from kupfer.obj import Action, FileLeaf, UrlLeaf
 from kupfer.support import task
 
 
@@ -32,6 +32,7 @@ def header_name(headers):
     for part in content_disp.split(";"):
         if part.strip().lower().startswith("filename="):
             return part.split("=", 1)[-1]
+
     return content_disp
 
 

@@ -11,8 +11,8 @@ Changes:
           author: Joseph Lansdowne
 """
 
-from kupfer.plugin import session_support as support
 
+from kupfer.plugin import session_support as support
 
 # sequences of argument lists
 LOGOUT_CMD = (

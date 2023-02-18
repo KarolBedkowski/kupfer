@@ -6,12 +6,10 @@ __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 import subprocess
 
-from kupfer.objects import Action, Source
-from kupfer.objects import TextLeaf
 from kupfer import icons, plugin_support
-from kupfer.support import kupferstring
 from kupfer.obj.files import ConstructFileLeaf
-
+from kupfer.objects import Action, Source, TextLeaf
+from kupfer.support import kupferstring
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {
@@ -67,7 +65,11 @@ class LocateQuerySource(Source):
         first_command = (
             f"locate --null --limit {first_num} {ignore_case} '{self.query}'"
         )
-        full_command = f"locate --null --limit {self.max_items} {ignore_case} '{self.query}'"
+        full_command = (
+            "locate --null "
+            f"--limit {self.max_items} {ignore_case}"
+            f"'{self.query}'"
+        )
 
         p1 = subprocess.Popen(first_command, shell=True, stdout=subprocess.PIPE)
         p2 = subprocess.Popen(full_command, shell=True, stdout=subprocess.PIPE)

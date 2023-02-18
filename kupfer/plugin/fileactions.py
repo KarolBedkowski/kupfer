@@ -18,7 +18,7 @@ from pathlib import Path
 
 from gi.repository import Gio, GLib
 
-from kupfer.obj import Action, FileLeaf, TextLeaf, TextSource, OperationError
+from kupfer.obj import Action, FileLeaf, OperationError, TextLeaf, TextSource
 from kupfer.support import pretty, task
 
 
@@ -28,6 +28,7 @@ def _good_destination(dpath, spath):
     """
     if not os_path.isdir(dpath):
         return False
+
     spath = os_path.normpath(spath)
     dpath = os_path.normpath(dpath)
     if not os.access(dpath, os.R_OK | os.W_OK | os.X_OK):
@@ -136,7 +137,7 @@ class Rename(Action, pretty.OutputMixin):
             )
             self.output_debug(f"Move {sfile} to {dfile} (ret: {ret})")
         except GLib.Error as exc:
-            raise OperationError(str(exc))
+            raise OperationError(str(exc)) from exc
         else:
             return FileLeaf(dfile.get_path())
 
@@ -219,7 +220,7 @@ class CopyTask(task.ThreadTask, pretty.OutputMixin):
             )
             self.output_debug(f"Copy ret {ret!r}")
         except GLib.Error as exc:
-            raise OperationError(exc.message)
+            raise OperationError(exc.message) from exc
 
     def thread_finish(self):
         self.ctx.register_late_result(FileLeaf(self.gdest.get_path()))
