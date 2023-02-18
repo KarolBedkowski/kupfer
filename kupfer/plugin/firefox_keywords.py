@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __kupfer_name__ = _("Firefox Keywords")
 __kupfer_sources__ = ("KeywordsSource",)
 __kupfer_text_sources__ = ("KeywordSearchSource",)
@@ -25,7 +27,7 @@ from kupfer.obj import (
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer.obj.helplib import FilesystemWatchMixin
 
-from ._firefox_support import get_firefox_home_file
+from ._firefox_support import get_firefox_home_file, get_ffdb_conn_str
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {
@@ -55,12 +57,10 @@ class Keyword(Leaf):
         name = f"{kw} ({title})"
         super().__init__(url, name)
         self.keyword = kw
-
-    def is_search(self) -> bool:
-        return "%s" in self.object
+        self.is_search = "%s" in self.object
 
     def get_actions(self):
-        if self.is_search():
+        if self.is_search:
             yield SearchFor()
         else:
             yield OpenUrl()
@@ -76,7 +76,7 @@ class Keyword(Leaf):
 
 
 _KEYWORDS_SQL = """
-SELECT moz_places.url, moz_places.title, moz_keywords.keyword
+SELECT distinct moz_places.url, moz_places.title, moz_keywords.keyword
 FROM moz_places, moz_keywords
 WHERE moz_places.id = moz_keywords.place_id
 """
@@ -85,7 +85,7 @@ WHERE moz_places.id = moz_keywords.place_id
 class KeywordsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
     appleaf_content_id = ("firefox", "firefox-esr")
 
-    instance = None
+    instance: KeywordsSource = None  # type: ignore
 
     def __init__(self):
         self.monitor_token = None
@@ -95,23 +95,21 @@ class KeywordsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
         KeywordsSource.instance = self
         profile = __kupfer_settings__["profile"]
         if ff_home := get_firefox_home_file("", profile):
-            self.monitor_token = self.monitor_directories(ff_home)
+            self.monitor_token = self.monitor_directories(str(ff_home))
 
     def finalize(self):
-        KeywordsSource.instance = None
+        KeywordsSource.instance = None  # type: ignore
 
     def monitor_include_file(self, gfile):
         return gfile and gfile.get_basename() == "lock"
 
-    def _get_ffx3_bookmarks(self):
+    def get_items(self):
         """Query the firefox places bookmark database"""
-        profile = __kupfer_settings__["profile"]
-        fpath = get_firefox_home_file("places.sqlite", profile)
-        if not (fpath and os.path.isfile(fpath)):
+        fpath = get_ffdb_conn_str(
+            __kupfer_settings__["profile"], "places.sqlite"
+        )
+        if not fpath:
             return []
-
-        fpath = fpath.replace("?", "%3f").replace("#", "%23")
-        fpath = "file:" + fpath + "?immutable=1&mode=ro"
 
         for _ in range(2):
             try:
@@ -130,13 +128,6 @@ class KeywordsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
 
         self.output_exc()
         return []
-
-    def get_items(self):
-        seen_keywords = set()
-        for keyword in self._get_ffx3_bookmarks():
-            if keyword not in seen_keywords:
-                seen_keywords.add(keyword.keyword)
-                yield keyword
 
     def get_description(self):
         return None
@@ -194,7 +185,8 @@ class SearchFor(Action):
     def __init__(self):
         Action.__init__(self, _("Search For..."))
 
-    def activate(self, leaf, iobj, ctx=None):
+    def activate(self, leaf, iobj=None, ctx=None):
+        assert iobj
         url = leaf.object
         terms = iobj.object
         _do_search_engine(terms, url)
@@ -208,12 +200,12 @@ class SearchFor(Action):
     def object_types(self):
         yield TextLeaf
 
-    def object_source(self, for_item):
+    def object_source(self, for_item=None):
         return TextSource(placeholder=_("Search Terms"))
 
     def valid_object(self, obj, for_item):
         # NOTE: Using exact class to skip subclasses
-        return type(obj) == TextLeaf
+        return type(obj) == TextLeaf  # pylint: disable=unidiomatic-typecheck
 
     def get_description(self):
         return _("Search the web with Firefox keywords")
@@ -235,9 +227,10 @@ class KeywordSearchSource(TextSource):
             return
 
         query = parts[1] if len(parts) > 1 else ""
-        for kw in KeywordsSource.instance.get_leaves():
-            if kw.is_search() and kw.keyword == parts[0]:
-                yield SearchWithKeyword(kw, query)
+        for keyword in KeywordsSource.instance.get_leaves():
+            assert isinstance(keyword, Keyword)
+            if keyword.is_search and keyword.keyword == parts[0]:
+                yield SearchWithKeyword(keyword, query)
                 return
 
         if default := __kupfer_settings__["default"].strip():

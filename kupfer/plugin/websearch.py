@@ -136,8 +136,8 @@ def _get_plugin_dirs() -> ty.Iterator[str]:
 
     # firefox in home directory
     ffx_home = get_firefox_home_file("searchplugins")
-    if ffx_home and os.path.isdir(ffx_home):
-        yield ffx_home
+    if ffx_home and ffx_home.is_dir():
+        yield str(ffx_home)
 
     yield from config.get_data_dirs("searchplugins", package="firefox")
     yield from config.get_data_dirs("searchplugins", package="iceweasel")
@@ -165,9 +165,7 @@ def _get_plugin_dirs() -> ty.Iterator[str]:
     # try to find all versions of firefox
     for prefix in ("/usr/lib", "/usr/share"):
         for dirname in os.listdir(prefix):
-            if dirname.startswith("firefox") or dirname.startswith(
-                "iceweasel"
-            ):
+            if dirname.startswith("firefox") or dirname.startswith("iceweasel"):
                 addon_dir = Path(prefix, dirname, "searchplugins")
                 if addon_dir.is_dir():
                     yield str(addon_dir)

@@ -4,18 +4,17 @@ __description__ = _("Browse Firefox bookmarks by tags")
 __version__ = "2021-09-05"
 __author__ = "Karol Będkowski"
 
-from contextlib import closing
-import os
+import itertools
 import sqlite3
 import time
-import itertools
+from contextlib import closing
 
 from kupfer import plugin_support
-from kupfer.objects import Source, Leaf, UrlLeaf
-from kupfer.obj.helplib import FilesystemWatchMixin
 from kupfer.obj.apps import AppLeafContentMixin
+from kupfer.obj.helplib import FilesystemWatchMixin
+from kupfer.objects import Leaf, Source, UrlLeaf
 
-from ._firefox_support import get_firefox_home_file
+from ._firefox_support import get_firefox_home_file, get_ffdb_conn_str
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {
@@ -59,20 +58,18 @@ class TagsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
     def initialize(self):
         profile = __kupfer_settings__["profile"]
         if ff_home := get_firefox_home_file("", profile):
-            self.monitor_token = self.monitor_directories(ff_home)
+            self.monitor_token = self.monitor_directories(str(ff_home))
 
     def monitor_include_file(self, gfile):
         return gfile and gfile.get_basename() == "lock"
 
     def get_items(self):
         """Get tags from firefox places database"""
-        profile = __kupfer_settings__["profile"]
-        fpath = get_firefox_home_file("places.sqlite", profile)
-        if not (fpath and os.path.isfile(fpath)):
+        fpath = get_ffdb_conn_str(
+            __kupfer_settings__["profile"], "places.sqlite"
+        )
+        if not fpath:
             return []
-
-        fpath = fpath.replace("?", "%3f").replace("#", "%23")
-        fpath = "file:" + fpath + "?immutable=1&mode=ro"
 
         for _ in range(2):
             try:
@@ -83,6 +80,7 @@ class TagsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
                     cur = conn.cursor()
                     cur.execute(_TAGS_SQL)
                     return list(itertools.starmap(FirefoxTag, cur))
+
             except sqlite3.Error as err:
                 self.output_debug("Read bookmarks error:", str(err))
                 # Something is wrong with the database
@@ -96,7 +94,10 @@ class TagsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
         return _("Index of Firefox bookmarks by tags")
 
     def get_gicon(self):
-        return self.get_leaf_repr() and self.get_leaf_repr().get_gicon()
+        if lrepr := self.get_leaf_repr():
+            return lrepr.get_gicon()
+
+        return None
 
     def get_icon_name(self):
         return "web-browser"
@@ -116,7 +117,7 @@ LIMIT ?"""
 
 
 class TagBookmarksSource(Source):
-    def __init__(self, tag_id: str, tag: str):
+    def __init__(self, tag_id: int, tag: str):
         super().__init__(_("Firefox Bookmarks by tag"))
         self.tag = tag
         self.tag_id = tag_id
@@ -124,13 +125,11 @@ class TagBookmarksSource(Source):
     def get_items(self):
         """Query the firefox places database for bookmarks with tag"""
 
-        profile = __kupfer_settings__["profile"]
-        fpath = get_firefox_home_file("places.sqlite", profile)
-        if not (fpath and os.path.isfile(fpath)):
+        fpath = get_ffdb_conn_str(
+            __kupfer_settings__["profile"], "places.sqlite"
+        )
+        if not fpath:
             return []
-
-        fpath = fpath.replace("?", "%3f").replace("#", "%23")
-        fpath = "file:" + fpath + "?immutable=1&mode=ro"
 
         for _ in range(2):
             try:

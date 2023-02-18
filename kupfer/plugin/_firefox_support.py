@@ -1,8 +1,10 @@
 """Firefox common functions."""
 
+from __future__ import annotations
+
 import typing as ty
-from pathlib import Path
 from configparser import RawConfigParser
+from pathlib import Path
 
 from kupfer.support import pretty
 
@@ -71,7 +73,7 @@ def _find_default_profile(firefox_dir: Path) -> ty.Optional[Path]:
 
 def get_firefox_home_file(
     needed_file: str, profile_dir: ty.Union[str, Path, None] = None
-) -> ty.Optional[str]:
+) -> ty.Optional[Path]:
     """Get path to `needed_file` in `profile_dir`.
 
     When no `profile_dir` is not given try to find default profile
@@ -89,7 +91,7 @@ def get_firefox_home_file(
             )
             return None
 
-        return str(profile_dir.joinpath(needed_file))
+        return profile_dir.joinpath(needed_file)
 
     firefox_dir = Path("~/.mozilla/firefox").expanduser()
     if not firefox_dir.exists():
@@ -107,4 +109,17 @@ def get_firefox_home_file(
     path = _find_default_profile(firefox_dir)
     pretty.print_debug(__name__, "Profile path", path)
 
-    return str(path.joinpath(needed_file)) if path else None
+    return path.joinpath(needed_file) if path else None
+
+
+def get_ffdb_conn_str(profile: str, fname: str) -> str | None:
+    path = get_firefox_home_file(fname, profile)
+    if not path:
+        return None
+
+    if not path.is_file():
+        return None
+
+    fpath = str(path).replace("?", "%3f").replace("#", "%23")
+    fpath = "file:" + fpath + "?immutable=1&mode=ro"
+    return fpath
