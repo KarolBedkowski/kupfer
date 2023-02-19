@@ -461,9 +461,6 @@ class SourceController(pretty.OutputMixin):
         return src in self._sources
 
     def __getitem__(self, src: AnySource) -> AnySource:
-        # TODO: check is necessary, rather no ???
-        # if not src in self:
-        #     raise KeyError
         for source in self._sources:
             if source == src:
                 return source

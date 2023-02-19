@@ -39,7 +39,7 @@ _ESCAPE_TABLE = {
 # reserved.extend([' ', '\t', '\n'])
 
 
-def two_part_unescaper(string: str, reptable: ty.Dict[str, str]) -> str:
+def _two_part_unescaper(string: str, reptable: ty.Dict[str, str]) -> str:
     "Scan @s two characters at a time and replace using @reptable"
     if not string:
         return string
@@ -90,7 +90,7 @@ def _custom_shlex_split(
 
     ## extra-unescape  ` and $ that are not handled by shlex
     quoted_shlex = {r"\`": "`", r"\$": "$"}
-    output = (two_part_unescaper(x, quoted_shlex) for x in lex_output)
+    output = (_two_part_unescaper(x, quoted_shlex) for x in lex_output)
     if isinstance(string, str):
         return list(output)
 
@@ -99,7 +99,7 @@ def _custom_shlex_split(
 
 def _unescape(string: str) -> str:
     "Primary unescape of control sequences"
-    return two_part_unescaper(string, _ESCAPE_TABLE)
+    return _two_part_unescaper(string, _ESCAPE_TABLE)
 
 
 def test_unescape():
