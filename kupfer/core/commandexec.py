@@ -41,6 +41,7 @@ from kupfer.obj.exceptions import OperationError
 from kupfer.obj.objects import SourceLeaf
 from kupfer.obj.sources import MultiSource
 from kupfer.support import pretty, task
+from kupfer.support.types import ExecInfo
 from kupfer.ui import uiutils
 from kupfer.ui.uievents import GUIEnvironmentContext
 
@@ -59,7 +60,6 @@ class ExecResult(IntEnum):
 
 _MAX_LAST_RESULTS = 10
 
-ExecInfo = pretty.ExecInfo
 CmdTuple = tuple[Leaf, Action, ty.Optional[Leaf]]
 Token = tuple[int, ty.Optional[CmdTuple]]
 

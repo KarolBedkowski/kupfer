@@ -27,6 +27,7 @@ from kupfer.obj import (
     compose,
 )
 from kupfer.support import pretty, scheduler
+from kupfer.support.types import ExecInfo
 from kupfer.ui.uievents import GUIEnvironmentContext
 
 from . import commandexec, execfile, learn, pluginload, qfurl, search, settings
@@ -546,7 +547,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self,
         filepath: str,
         ui_ctx: GUIEnvironmentContext,
-        on_error: ty.Callable[[commandexec.ExecInfo], None],
+        on_error: ty.Callable[[ExecInfo], None],
     ) -> bool:
         ctx = self._execution_context
         try:
@@ -576,7 +577,6 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         if pane != PaneSel.SOURCE:
             raise ValueError("Can only insert in first pane")
 
-        # FIXME: !!check; added * before objects
         self._decorate_object(*objects[:-1])
         self._set_object_stack(pane, objects[:-1])  # type: ignore
         self._insert_object(pane, objects[-1])
