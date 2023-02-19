@@ -30,8 +30,7 @@ if ty.TYPE_CHECKING:
     _ = str
 
 
-# FIXME: rename
-def ConstructFileLeaf(obj: str) -> Leaf:
+def construct_file_leaf(obj: str) -> Leaf:
     """
     If the path in @obj points to a Desktop Item file,
     return an AppLeaf, otherwise return a FileLeaf
@@ -647,7 +646,7 @@ class DirectorySource(Source, PicklingHelperMixin, FilesystemWatchMixin):
                     continue
 
                 if self.show_hidden or not fname.startswith("."):
-                    yield ConstructFileLeaf(path.join(self.directory, fname))
+                    yield construct_file_leaf(path.join(self.directory, fname))
 
         except OSError as exc:
             self.output_error(exc)
@@ -725,7 +724,7 @@ class FileSource(Source):
                     directory, max_depth=self.depth, exclude=self._exclude_file
                 )
             )
-            yield from map(ConstructFileLeaf, files)
+            yield from map(construct_file_leaf, files)
 
     def should_sort_lexically(self) -> bool:
         return True
