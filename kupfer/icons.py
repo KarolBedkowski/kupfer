@@ -484,13 +484,13 @@ def get_gicon_with_fallbacks(
     if is_good(gicon):
         return gicon
 
+    name = None
     for name in names:
         gicon = ThemedIcon.new(name)
         if is_good(gicon):
             return gicon
 
-    # TODO: check; was: return ThemedIcon.new(last_name)
-    return None
+    return ThemedIcon.new(name) if name else None
 
 
 def get_good_name_for_icon_names(names: ty.Iterable[str]) -> str | None:
