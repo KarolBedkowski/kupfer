@@ -239,7 +239,7 @@ class AppLeaf(Leaf):
         self.init_item_id = app_id and app_id + ".desktop"
         # finish will raise InvalidDataError on invalid item
         self.finish(require_x)
-        Leaf.__init__(self, self.object, self.object.get_name())
+        super().__init__(self.object, self.object.get_name())
         self._add_aliases()
 
     def _add_aliases(self) -> None:

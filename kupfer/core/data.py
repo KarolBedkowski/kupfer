@@ -117,9 +117,8 @@ class Searcher:
         for src in sources_:
             fixedrank = 0
             can_cache = True
-            rankables = None
             if hasattr(src, "__iter__"):
-                items = src
+                rankables = search.make_rankables(item_check(src))  # type: ignore
                 can_cache = False
             else:
                 # Look in source cache for stored rankables
@@ -135,8 +134,7 @@ class Searcher:
                         # Source
                         items = src.get_leaves()  # type: ignore
 
-            if rankables is None:
-                rankables = search.make_rankables(item_check(items))  # type: ignore
+                    rankables = search.make_rankables(item_check(items))
 
             assert rankables is not None
 
@@ -148,11 +146,14 @@ class Searcher:
                         search.score_objects(rankables, key), key
                     )
 
+                rankables = list(rankables)  # type: ignore
                 if can_cache:
-                    rankables = list(rankables)
                     self._source_cache[src] = rankables
 
-            match_lists.append(list(rankables))
+            else:
+                rankables = list(rankables)  # type: ignore
+
+            match_lists.append(rankables)  # type: ignore
 
         if score:
             matches = search.find_best_sort(match_lists)
