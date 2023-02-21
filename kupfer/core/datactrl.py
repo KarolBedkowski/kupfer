@@ -9,6 +9,7 @@ import itertools
 import os
 import sys
 import typing as ty
+from collections import defaultdict
 from contextlib import suppress
 from enum import IntEnum
 
@@ -126,10 +127,10 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self, plugin_id: str, actions: list[Action]
     ) -> None:
         # Keep a mapping: Decorated Leaf Type -> List of actions
-        decorate_types: ty.Dict[ty.Any, list[Action]] = {}
+        decorate_types: ty.Dict[ty.Any, list[Action]] = defaultdict(list)
         for action in actions:
             for appl_type in action.item_types():
-                decorate_types.setdefault(appl_type, []).append(action)
+                decorate_types[appl_type].append(action)
 
         if not decorate_types:
             return
@@ -148,11 +149,11 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         """
         # Keep a mapping:
         # Decorated Leaf Type -> Set of content decorator types
-        decorate_item_types: ty.Dict[ty.Any, set[Source]] = {}
+        decorate_item_types: dict[ty.Any, set[Source]] = defaultdict(set)
         for content in contents:
             with suppress(AttributeError):
                 applies = content.decorates_type()  # type: ignore
-                decorate_item_types.setdefault(applies, set()).add(content)
+                decorate_item_types[applies].add(content)
 
         if not decorate_item_types:
             return

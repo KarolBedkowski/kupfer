@@ -405,12 +405,12 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
 
         # Re-parse result values
         res = ExecResult.NONE
-        resmap: dict[ExecResult, ty.Any] = {}
+        resmap: dict[ExecResult, list[ty.Any]] = collections.defaultdict(list)
         for ret in retvals:
             if ret is not None:
                 res_type, ret_obj = ret
                 if res_type != ExecResult.NONE:
-                    resmap.setdefault(res_type, []).append(ret_obj)
+                    resmap[res_type].append(ret_obj)
                     res = res_type
 
         # register tasks

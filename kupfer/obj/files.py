@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import typing as ty
+from collections import defaultdict
 from contextlib import suppress
 from os import path
 
@@ -515,12 +516,12 @@ class Open(Action):
         self, objects: ty.Iterable[FileLeaf], ctx: ty.Any
     ) -> None:
         appmap: dict[str, Gio.AppInfo] = {}
-        leafmap: dict[str, list[FileLeaf]] = {}
+        leafmap: dict[str, list[FileLeaf]] = defaultdict(list)
         for obj in objects:
             app = self.default_application_for_leaf(obj)
             id_ = app.get_id()
             appmap[id_] = app
-            leafmap.setdefault(id_, []).append(obj)
+            leafmap[id_].append(obj)
 
         for id_, leaves in leafmap.items():
             app = appmap[id_]
