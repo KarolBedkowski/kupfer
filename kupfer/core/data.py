@@ -113,7 +113,7 @@ class Searcher:
         item_check = item_check or _identity
         decorator = decorator or _identity
         start_time = pretty.timing_start()
-        match_lists: list[list[Rankable]] = []
+        match_lists: list[Rankable] = []
         for src in sources_:
             fixedrank = 0
             can_cache = True
@@ -146,19 +146,13 @@ class Searcher:
                         search.score_objects(rankables, key), key
                     )
 
-                rankables = list(rankables)  # type: ignore
                 if can_cache:
+                    rankables = tuple(rankables)
                     self._source_cache[src] = rankables
 
-            else:
-                rankables = list(rankables)  # type: ignore
+            match_lists.extend(rankables)
 
-            match_lists.append(rankables)  # type: ignore
-
-        if score:
-            matches = search.find_best_sort(match_lists)
-        else:
-            matches = itertools.chain(*match_lists)
+        matches = search.find_best_sort(match_lists) if score else match_lists
 
         # Check if the items are valid as the search
         # results are accessed through the iterators

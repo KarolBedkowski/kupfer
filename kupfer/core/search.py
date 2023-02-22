@@ -11,7 +11,7 @@ from . import learn, relevance
 
 def make_rankables(
     itr: ty.Iterable[KupferObject], rank: int = 0
-) -> ty.Iterator[Rankable]:
+) -> ty.Iterable[Rankable]:
     """Create Rankable from some KupferObject:w"""
     return (Rankable(str(obj), obj, rank) for obj in itr)
 
@@ -143,26 +143,12 @@ def score_actions(
         yield obj
 
 
-# K: not in use
-# def _max_multiple(iterables, key):
-#     maxval = None
-#     for iterable in iterables:
-#         try:
-#             new_max = max(iterable, key=key)
-#         except ValueError:
-#             continue
-
-#         if maxval is None:
-#             maxval = new_max
-#         else:
-#             maxval = max(maxval, new_max, key=key)
-
-#     return maxval
+_rank_key = operator.attrgetter("rank")
 
 
 def find_best_sort(
-    rankables: list[list[Rankable]],
-) -> ty.Iterator[Rankable]:
+    rankables: ty.Iterable[Rankable],
+) -> ty.Iterable[Rankable]:
     """
     rankables: List[List[Rankable]]
 
@@ -176,11 +162,9 @@ def find_best_sort(
     Yield rankables in best rank first order
     """
 
-    key = operator.attrgetter("rank")
-    # maxval = _max_multiple(rankables, key)
-    maxval = max(itertools.chain(*rankables), default=None, key=key)
+    maxval = max(rankables, default=None, key=_rank_key)
     if maxval is None:
         return
 
     yield maxval
-    yield from sorted(itertools.chain(*rankables), key=key, reverse=True)
+    yield from sorted(rankables, key=_rank_key, reverse=True)
