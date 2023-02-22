@@ -49,7 +49,6 @@ def bonus_objects(
     rankables: List[Rankable]
     inncrement each for mnemonic score for key.
     """
-    key = key.lower()
     get_record_score = learn.get_record_score
     for obj in rankables:
         obj.rank += get_record_score(obj.object, key)
@@ -65,7 +64,6 @@ def bonus_actions(
     Add bonus for mnemonics and rank_adjust
 
     rank is added to prev rank, all items are yielded"""
-    key = key.lower()
     get_record_score = learn.get_record_score
     for obj in rankables:
         obj.rank += get_record_score(obj.object, key) + obj.object.rank_adjust
@@ -107,16 +105,22 @@ def score_objects(
     _score = _score_for_key(key)
     for rankable in rankables:
         # Rank object
-        rank = rankable.rank = _score(rankable.value, key) * 100
+        rank = _score(rankable.value, key) * 100
         if rank < 90:
-            for alias in rankable.aliases:
-                # consider aliases and change rb.value if alias is better
-                # aliases rank lower so that value is chosen when close
-                if (arank := _score(alias, key) * 95) > rank:
+            # consider aliases and change rb.value if alias is better
+            # aliases rank lower so that value is chosen when close
+            arank_value = max(
+                ((_score(alias, key), alias) for alias in rankable.aliases),
+                default=None,
+            )
+            if arank_value:
+                arank, value = arank_value
+                arank *= 0.95
+                if arank > rank:
+                    rankable.value = value
                     rank = arank
-                    rankable.value = alias
 
-            rankable.rank = rank
+        rankable.rank = rank
 
         if rankable.rank > 10:
             yield rankable

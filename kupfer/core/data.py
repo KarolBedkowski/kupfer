@@ -103,6 +103,8 @@ class Searcher:
         Return (first, match_iter), where first is the first match,
         and match_iter an iterator to all matches, including the first match.
         """
+        key = key.lower()
+
         if not self._old_key or not key.startswith(self._old_key):
             self._source_cache.clear()
 
@@ -179,6 +181,7 @@ class Searcher:
         """
         item_check = item_check or _identity
         decorator = decorator or _identity
+        key = key.lower()
 
         rankables = search.make_rankables(item_check(objects))
         if key:
