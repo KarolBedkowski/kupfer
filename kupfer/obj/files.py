@@ -36,8 +36,7 @@ def construct_file_leaf(obj: str) -> Leaf:
     If the path in @obj points to a Desktop Item file,
     return an AppLeaf, otherwise return a FileLeaf
     """
-    _root, ext = path.splitext(obj)
-    if ext == ".desktop":
+    if obj.endswith(".desktop"):
         with suppress(InvalidDataError):
             return AppLeaf(init_path=obj)
 
@@ -121,7 +120,7 @@ class FileLeaf(Leaf, TextRepresentation):
     def is_writable(self) -> bool:
         return os.access(self.object, os.W_OK)
 
-    def _is_executable(self) -> bool:
+    def is_executable(self) -> bool:
         return os.access(self.object, os.R_OK | os.X_OK)
 
     def is_dir(self) -> bool:
@@ -214,7 +213,7 @@ class FileLeaf(Leaf, TextRepresentation):
         return predicate(content_type, ctype)  # type: ignore
 
     def _is_good_executable(self):
-        if not self._is_executable():
+        if not self.is_executable():
             return False
 
         ctype, uncertain = Gio.content_type_guess(self.object, None)
@@ -234,11 +233,10 @@ class AppLeaf(Leaf):
 
         @require_x: require executable file
         """
-        self.init_item = item
-        self.init_path = init_path
-        self.init_item_id = app_id and app_id + ".desktop"
+        self._init_path = init_path
+        self._init_item_id = app_id and app_id + ".desktop"
         # finish will raise InvalidDataError on invalid item
-        self.finish(require_x)
+        self.finish(require_x, item)
         super().__init__(self.object, self.object.get_name())
         self._add_aliases()
 
@@ -257,39 +255,36 @@ class AppLeaf(Leaf):
         return isinstance(other, type(self)) and self.get_id() == other.get_id()
 
     def __getstate__(self) -> ty.Dict[str, ty.Any]:
-        self.init_item_id = self.object and self.object.get_id()
+        self._init_item_id = self.object and self.object.get_id()
         state = dict(vars(self))
         state["object"] = None
-        state["init_item"] = None
         return state
 
     def __setstate__(self, state: ty.Dict[str, ty.Any]) -> None:
         vars(self).update(state)
         self.finish()
 
-    def finish(self, require_x: bool = False) -> None:
+    def finish(self, require_x: bool = False, init_item: ty.Any = None) -> None:
         """Try to set self.object from init's parameters"""
-        item = None
-        if self.init_item:
-            item = self.init_item
-        else:
+        item = init_item
+        if not item:
             # Construct an AppInfo item from either path or item_id
             try:
-                if self.init_path and (
-                    not require_x or os.access(self.init_path, os.X_OK)
+                if self._init_path and (
+                    not require_x or os.access(self._init_path, os.X_OK)
                 ):
                     # serilizable if created from a "loose file"
                     self.serializable = 1
-                    item = Gio.DesktopAppInfo.new_from_filename(self.init_path)
-                elif self.init_item_id:
-                    item = Gio.DesktopAppInfo.new(self.init_item_id)
+                    item = Gio.DesktopAppInfo.new_from_filename(self._init_path)
+                elif self._init_item_id:
+                    item = Gio.DesktopAppInfo.new(self._init_item_id)
 
             except TypeError as exc:
                 pretty.print_debug(
                     __name__,
                     "Application not found:",
-                    self.init_item_id,
-                    self.init_path,
+                    self._init_item_id,
+                    self._init_path,
                 )
                 raise InvalidDataError from exc
 
@@ -323,7 +318,7 @@ class AppLeaf(Leaf):
                 files=files,
                 paths=paths,
                 activate=activate,
-                desktop_file=self.init_path,
+                desktop_file=self._init_path,
                 screen=ctx and ctx.environment.get_screen(),
             )
         except launch.SpawnError as exc:  # type: ignore
@@ -335,7 +330,7 @@ class AppLeaf(Leaf):
         This is the GIO id "gedit.desktop" minus the .desktop part for
         system-installed applications.
         """
-        return launch.application_id(self.object, self.init_path)
+        return launch.application_id(self.object, self._init_path)
 
     def get_actions(self) -> ty.Iterable[Action]:
         id_ = self.get_id()
@@ -355,8 +350,8 @@ class AppLeaf(Leaf):
         # for "file-based" applications we show the path
         app_desc = kupferstring.tounicode(self.object.get_description())
         ret = kupferstring.tounicode(app_desc or self.object.get_executable())
-        if self.init_path:
-            app_path = utils.get_display_path_for_bytestring(self.init_path)
+        if self._init_path:
+            app_path = utils.get_display_path_for_bytestring(self._init_path)
             return f"({app_path}) {ret}"
 
         return ret
@@ -641,12 +636,13 @@ class DirectorySource(Source, PicklingHelperMixin, FilesystemWatchMixin):
         return self.show_hidden or not gfile.get_basename().startswith(".")
 
     def get_items(self) -> ty.Iterator[Leaf]:
+        show_hidden = self.show_hidden
         try:
             for fname in os.listdir(self.directory):
                 if not _representable_fname(fname):
                     continue
 
-                if self.show_hidden or not fname.startswith("."):
+                if show_hidden or not fname[0] == ".":
                     yield construct_file_leaf(path.join(self.directory, fname))
 
         except OSError as exc:
