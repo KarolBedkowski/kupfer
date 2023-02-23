@@ -19,7 +19,8 @@ from kupfer.support import datatools, kupferstring, pretty, scheduler
 
 ICON_CACHE: dict[int, datatools.LruCache[str, GdkPixbuf.Pixbuf]] = {}
 # number of elements in icon lru cache (per icon size)
-ICON_CACHE_SIZE = 15
+ICON_CACHE_SIZE_LARGE = 15
+ICON_CACHE_SIZE = 64
 
 LARGE_SZ = 128
 SMALL_SZ = 24
@@ -148,7 +149,11 @@ def store_icon(key: str, icon_size: int, icon: GdkPixbuf.Pixbuf) -> None:
     """
     assert icon, f"icon {key} may not be {icon}"
     if icon_size not in ICON_CACHE:
-        ICON_CACHE[icon_size] = datatools.LruCache(ICON_CACHE_SIZE)
+        cache_size = ICON_CACHE_SIZE
+        if icon_size == LARGE_SZ:
+            cache_size = ICON_CACHE_SIZE_LARGE
+
+        ICON_CACHE[icon_size] = datatools.LruCache(cache_size)
 
     ICON_CACHE[icon_size][key] = icon
 
@@ -418,8 +423,10 @@ def get_icon_for_name(
     icon_size: int,
     icon_names: ty.Iterable[str] | None = None,
 ) -> GdkPixbuf.Pixbuf | None:
-    for i in get_icon(icon_name, icon_size):
-        return i
+    try:
+        return ICON_CACHE[icon_size][icon_name]
+    except KeyError:
+        pass
 
     # Try the whole list of given names
     for load_name in icon_names or (icon_name,):
@@ -450,8 +457,10 @@ def get_icon_from_file(
     icon_file: str, icon_size: int
 ) -> GdkPixbuf.Pixbuf | None:
     # try to load from cache
-    for icon in get_icon(icon_file, icon_size):
-        return icon
+    try:
+        return ICON_CACHE[icon_size][icon_file]
+    except KeyError:
+        pass
 
     if icon := _ICON_RENDERER.pixbuf_for_file(icon_file, icon_size):
         store_icon(icon_file, icon_size, icon)
