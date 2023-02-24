@@ -24,7 +24,7 @@ from .exceptions import (
     NoDefaultApplicationError,
     OperationError,
 )
-from .helplib import FilesystemWatchMixin, PicklingHelperMixin
+from .helplib import FilesystemWatchMixin
 from .representation import TextRepresentation
 
 if ty.TYPE_CHECKING:
@@ -609,7 +609,9 @@ class Execute(Action):
         return _("Run this program")
 
 
-class DirectorySource(Source, PicklingHelperMixin, FilesystemWatchMixin):
+class DirectorySource(Source, FilesystemWatchMixin):
+    source_use_cache = False
+
     def __init__(self, directory: str, show_hidden: bool = False) -> None:
         # Use glib filename reading to make display name out of filenames
         # this function returns a `unicode` object
@@ -627,7 +629,8 @@ class DirectorySource(Source, PicklingHelperMixin, FilesystemWatchMixin):
         )
 
     def initialize(self) -> None:
-        self.monitor = self.monitor_directories(self.directory)
+        # self.monitor = self.monitor_directories(self.directory)
+        pass
 
     def finalize(self) -> None:
         self.monitor = None
@@ -696,6 +699,8 @@ def _representable_fname(fname: str) -> bool:
 
 
 class FileSource(Source):
+    source_use_cache = False
+
     def __init__(self, dirlist: ty.List[str], depth: int = 0) -> None:
         """
         @dirlist: Directories as byte strings
