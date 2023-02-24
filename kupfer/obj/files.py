@@ -716,10 +716,8 @@ class FileSource(Source):
 
     def get_items(self) -> ty.Iterable[Leaf]:
         for directory in self.dirlist:
-            files = list(
-                utils.get_dirlist(
-                    directory, max_depth=self.depth, exclude=self._exclude_file
-                )
+            files = utils.get_dirlist(
+                directory, max_depth=self.depth, exclude=self._exclude_file
             )
             yield from map(construct_file_leaf, files)
 

@@ -43,7 +43,7 @@ def get_dirlist(
     for dirname, dirnames, fnames in os.walk(folder):
         # skip deep directories
         depth = len(os.path.relpath(dirname, folder).split(os.path.sep)) - 1
-        if depth > max_depth:
+        if depth >= max_depth:
             dirnames.clear()
             continue
 
