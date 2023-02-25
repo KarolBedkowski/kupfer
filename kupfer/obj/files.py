@@ -25,6 +25,7 @@ from .exceptions import (
     OperationError,
 )
 from .representation import TextRepresentation
+from .helplib import FilesystemWatchMixin, PicklingHelperMixin
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -604,20 +605,40 @@ class Execute(Action):
         return _("Run this program")
 
 
-class DirectorySource(Source):
-    def __init__(self, directory: str, show_hidden: bool = False) -> None:
+class DirectorySource(Source, FilesystemWatchMixin):
+    def __init__(
+        self,
+        directory: str,
+        show_hidden: bool = False,
+        *,
+        toplevel: bool = False,
+    ) -> None:
         # Use glib filename reading to make display name out of filenames
         # this function returns a `unicode` object
+        # TODO: need use glib?
         name = GLib.filename_display_basename(directory)
         super().__init__(name)
         self._directory = directory
         self._show_hidden = show_hidden
+        self._toplevel = toplevel
+        self.monitor: ty.Any = None
 
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__module__}.{self.__class__.__name__}"
             f'("{self._directory}", show_hidden={self._show_hidden})'
         )
+
+    def initialize(self) -> None:
+        # only toplevel directories are active monitored
+        if self._toplevel:
+            self.monitor = self.monitor_directories(self._directory)
+
+    def finalize(self) -> None:
+        self.monitor = None
+
+    def monitor_include_file(self, gfile: Gio.File) -> bool:
+        return self._show_hidden or not gfile.get_basename().startswith(".")
 
     def get_items(self) -> ty.Iterator[Leaf]:
         try:

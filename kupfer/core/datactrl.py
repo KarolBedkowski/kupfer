@@ -207,7 +207,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
 
         indir_sources = itertools.chain(
             (
-                DirectorySource(item)
+                DirectorySource(item, toplevel=True)
                 for item in setctl.get_directories(False)
                 if os.path.isdir(item)
             ),
@@ -219,7 +219,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
 
         dir_sources = itertools.chain(
             (
-                DirectorySource(item)
+                DirectorySource(item, toplevel=True)
                 for item in setctl.get_directories(True)
                 if os.path.isdir(item)
             ),
