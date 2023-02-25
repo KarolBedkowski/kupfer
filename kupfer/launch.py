@@ -44,10 +44,7 @@ def application_id(
 ) -> str:
     """Return an application id (string) for GAppInfo @app_info"""
     app_id = app_info.get_id() or desktop_file or ""
-
-    if app_id.endswith(".desktop"):
-        app_id = app_id[: -len(".desktop")]
-
+    app_id = app_id.removesuffix(".desktop")
     return app_id
 
 
@@ -75,12 +72,9 @@ def launch_application(
     Raises SpawnError on failed program start.
     """
     assert app_info
-
-    if paths:
-        files = [Gio.File.new_for_path(p) for p in paths]
-
-    if uris:
-        files = [Gio.File.new_for_uri(p) for p in uris]
+    assert not (
+        bool(paths) and bool(paths)
+    ), "either paths or uris must be given: " + repr((paths, uris))
 
     svc = get_applications_matcher_service()
     app_id = application_id(app_info, desktop_file)
@@ -92,11 +86,17 @@ def launch_application(
     launch_callback = None
     if track:
         # An launch callback closure for the @app_id
-        def app_launch_callback(argv, pid, notify_id, files, timestamp):
+        def app_launch_callback(argv, pid, _notify_id, _files, _timestamp):
             if not terminal.is_known_terminal_executable(argv[0]):
                 svc.launched_application(app_id, pid)
 
         launch_callback = app_launch_callback
+
+    if paths:
+        files = [Gio.File.new_for_path(p) for p in paths]
+
+    if uris:
+        files = [Gio.File.new_for_uri(p) for p in uris]
 
     desktop_launch.launch_app_info(
         app_info,
@@ -268,23 +268,22 @@ class ApplicationsMatcherService(pretty.OutputMixin):
 
         return False
 
-    def _get_application_windows(self, app_id: str) -> list["Wnck.Window"]:
+    def _get_application_windows(
+        self, app_id: str
+    ) -> ty.Iterator["Wnck.Window"]:
         if not Wnck:
-            return []
+            return
 
-        application_windows = [
-            w
-            for w in self._get_wnck_screen_windows_stacked()
+        for win in self._get_wnck_screen_windows_stacked():
             if (
-                w.get_application()
-                and self._is_match(app_id, w)
-                and w.get_window_type() == Wnck.WindowType.NORMAL
-            )
-        ]
-        return application_windows
+                win.get_application()
+                and self._is_match(app_id, win)
+                and win.get_window_type() == Wnck.WindowType.NORMAL
+            ):
+                yield win
 
     def application_to_front(self, app_id: str) -> None:
-        application_windows = self._get_application_windows(app_id)
+        application_windows = list(self._get_application_windows(app_id))
         if not application_windows:
             return
 
@@ -321,7 +320,7 @@ class ApplicationsMatcherService(pretty.OutputMixin):
                 wspc = win.get_workspace() or cur_workspace
                 workspaces[wspc].append(win)
 
-        cur_wspc_windows = workspaces.get(cur_workspace, [])
+        cur_wspc_windows = workspaces[cur_workspace]
         # make a rotated workspace list, with current workspace first
         all_workspaces = cur_screen.get_workspaces()
         all_workspaces.pop(cur_workspace.get_number())
@@ -334,11 +333,11 @@ class ApplicationsMatcherService(pretty.OutputMixin):
             focus_windows = cur_wspc_windows
             ## if the topmost window is already active, take another
             if focus_windows[-1] == vis_windows[-1]:
-                focus_windows = focus_windows[:-1]
+                focus_windows.pop()
         else:
             # all windows are focused, find on next workspace
             for wspc in all_workspaces[1:]:
-                if focus_windows := workspaces.get(wspc, []):
+                if focus_windows := workspaces[wspc]:
                     break
             else:
                 # no windows on other workspaces, so we rotate among
@@ -381,6 +380,5 @@ class ApplicationsMatcherService(pretty.OutputMixin):
                 win.close(evttime)
 
 
-def get_applications_matcher_service() -> ApplicationsMatcherService:
-    """Get the (singleton) ApplicationsMatcherService"""
-    return ApplicationsMatcherService.instance()
+# Get the (singleton) ApplicationsMatcherService"
+get_applications_matcher_service = ApplicationsMatcherService.instance
