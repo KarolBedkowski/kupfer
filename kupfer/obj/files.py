@@ -24,7 +24,6 @@ from .exceptions import (
     NoDefaultApplicationError,
     OperationError,
 )
-from .helplib import FilesystemWatchMixin, PicklingHelperMixin
 from .representation import TextRepresentation
 
 if ty.TYPE_CHECKING:
@@ -615,37 +614,37 @@ class DirectorySource(Source):
         # this function returns a `unicode` object
         name = GLib.filename_display_basename(directory)
         super().__init__(name)
-        self.directory = directory
-        self.show_hidden = show_hidden
+        self._directory = directory
+        self._show_hidden = show_hidden
 
     def __repr__(self) -> str:
-        mod = self.__class__.__module__
-        cname = self.__class__.__name__
         return (
-            f'{mod}.{cname}("{self.directory}", show_hidden={self.show_hidden})'
+            f"{self.__class__.__module__}.{self.__class__.__name__}"
+            f'("{self._directory}", show_hidden={self._show_hidden})'
         )
 
     def get_items(self) -> ty.Iterator[Leaf]:
-        show_hidden = self.show_hidden
         try:
-            for fname in os.listdir(self.directory):
-                if not _representable_fname(fname):
-                    continue
-
-                if show_hidden or not fname[0] == ".":
-                    yield construct_file_leaf(path.join(self.directory, fname))
-
+            files: ty.Iterable[str] = os.listdir(self._directory)
         except OSError as exc:
             self.output_error(exc)
+        else:
+            if not self._show_hidden:
+                files = (f for f in files if f[0] != ".")
+
+            yield from (
+                construct_file_leaf(path.join(self._directory, fname))
+                for fname in files
+            )
 
     def should_sort_lexically(self) -> bool:
         return True
 
     def _parent_path(self) -> str:
-        return path.normpath(path.join(self.directory, path.pardir))
+        return path.normpath(path.join(self._directory, path.pardir))
 
     def has_parent(self) -> bool:
-        return not path.samefile(self.directory, self._parent_path())
+        return not path.samefile(self._directory, self._parent_path())
 
     def get_parent(self) -> ty.Optional[DirectorySource]:
         if not self.has_parent():
@@ -654,22 +653,22 @@ class DirectorySource(Source):
         return DirectorySource(self._parent_path())
 
     def get_description(self) -> str:
-        return _("Directory source %s") % self.directory
+        return _("Directory source %s") % self._directory
 
     def get_gicon(self) -> GdkPixbuf.Pixbuf | None:
-        return icons.get_gicon_for_file(self.directory)
+        return icons.get_gicon_for_file(self._directory)
 
     def get_icon_name(self) -> str:
         return "folder"
 
     def get_leaf_repr(self) -> ty.Optional[Leaf]:
         alias = None
-        if os.path.isdir(self.directory) and os.path.samefile(
-            self.directory, os.path.expanduser("~")
+        if os.path.isdir(self._directory) and os.path.samefile(
+            self._directory, os.path.expanduser("~")
         ):
             alias = _("Home Folder")
 
-        return FileLeaf(self.directory, alias=alias)
+        return FileLeaf(self._directory, alias=alias)
 
     def provides(self) -> ty.Iterable[ty.Type[Leaf]]:
         yield FileLeaf
@@ -678,7 +677,7 @@ class DirectorySource(Source):
 
 def _representable_fname(fname: str) -> bool:
     "Return False if fname contains surrogate escapes"
-    # TODO: it still relevant?
+    # all string are utf so this is unnecessary
     try:
         fname.encode("utf-8")
         return True
