@@ -191,7 +191,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
 
     def _get_directory_sources(
         self,
-    ) -> tuple[ty.Iterator[DirectorySource], ty.Iterator[DirectorySource],]:
+    ) -> tuple[tuple[DirectorySource, ...], tuple[DirectorySource, ...]]:
         """
         Return a tuple of dir_sources, indir_sources for
         directory sources directly included and for
@@ -199,27 +199,18 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         """
         setctl = settings.get_settings_controller()
         source_config = setctl.get_config
+        dir_depth = source_config("DeepDirectories", "Depth")
 
         def file_source(opt, depth=1):
             abs_path = os.path.abspath(os.path.expanduser(opt))
             return FileSource([abs_path], depth)
 
-        indir_sources: ty.Iterator[DirectorySource] = (
-            DirectorySource(item)
-            for item in setctl.get_directories(False)
-            if os.path.isdir(item)
-        )
-
-        dir_sources: ty.Iterator[DirectorySource] = (
-            DirectorySource(item)
-            for item in setctl.get_directories(True)
-            if os.path.isdir(item)
-        )
-
-        dir_depth = source_config("DeepDirectories", "Depth")
-
         indir_sources = itertools.chain(
-            indir_sources,
+            (
+                DirectorySource(item)
+                for item in setctl.get_directories(False)
+                if os.path.isdir(item)
+            ),
             (
                 file_source(item, dir_depth)
                 for item in source_config("DeepDirectories", "Catalog")
@@ -227,14 +218,18 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         )
 
         dir_sources = itertools.chain(
-            dir_sources,
+            (
+                DirectorySource(item)
+                for item in setctl.get_directories(True)
+                if os.path.isdir(item)
+            ),
             (
                 file_source(item, dir_depth)
                 for item in source_config("DeepDirectories", "Direct")
             ),
         )
 
-        return dir_sources, indir_sources
+        return tuple(dir_sources), tuple(indir_sources)
 
     def _load_all_plugins(self):
         """
