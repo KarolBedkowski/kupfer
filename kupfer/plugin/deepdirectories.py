@@ -40,8 +40,6 @@ _MAX_DEPTH = 10
 
 
 class DeepDirSource(FileSource):
-    source_use_cache = False
-
     def __init__(self, name=_("Deep Directories")):
         FileSource.__init__(
             self,

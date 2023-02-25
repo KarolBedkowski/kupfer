@@ -24,7 +24,7 @@ from .exceptions import (
     NoDefaultApplicationError,
     OperationError,
 )
-from .helplib import FilesystemWatchMixin
+from .helplib import FilesystemWatchMixin, PicklingHelperMixin
 from .representation import TextRepresentation
 
 if ty.TYPE_CHECKING:
@@ -609,9 +609,7 @@ class Execute(Action):
         return _("Run this program")
 
 
-class DirectorySource(Source, FilesystemWatchMixin):
-    source_use_cache = False
-
+class DirectorySource(Source):
     def __init__(self, directory: str, show_hidden: bool = False) -> None:
         # Use glib filename reading to make display name out of filenames
         # this function returns a `unicode` object
@@ -619,7 +617,6 @@ class DirectorySource(Source, FilesystemWatchMixin):
         super().__init__(name)
         self.directory = directory
         self.show_hidden = show_hidden
-        self.monitor: ty.Any = None
 
     def __repr__(self) -> str:
         mod = self.__class__.__module__
@@ -627,16 +624,6 @@ class DirectorySource(Source, FilesystemWatchMixin):
         return (
             f'{mod}.{cname}("{self.directory}", show_hidden={self.show_hidden})'
         )
-
-    def initialize(self) -> None:
-        # self.monitor = self.monitor_directories(self.directory)
-        pass
-
-    def finalize(self) -> None:
-        self.monitor = None
-
-    def monitor_include_file(self, gfile: Gio.File) -> bool:
-        return self.show_hidden or not gfile.get_basename().startswith(".")
 
     def get_items(self) -> ty.Iterator[Leaf]:
         show_hidden = self.show_hidden
@@ -700,8 +687,6 @@ def _representable_fname(fname: str) -> bool:
 
 
 class FileSource(Source):
-    source_use_cache = False
-
     def __init__(self, dirlist: ty.List[str], depth: int = 0) -> None:
         """
         @dirlist: Directories as byte strings
