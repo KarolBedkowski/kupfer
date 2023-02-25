@@ -322,7 +322,7 @@ class LeafPane(Pane, pretty.OutputMixin):
     def browse_up(self) -> bool:
         """Try to browse up to previous sources, from current
         source"""
-        succ = bool(self.pop_source())
+        succ = self.pop_source()
         if not succ:
             assert self.source
             if self.source.has_parent():

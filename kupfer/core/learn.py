@@ -114,7 +114,8 @@ def get_record_score(obj: ty.Any, key: str = "") -> float:
     bonus score is given for @key matches
     """
     name = repr(obj)
-    fav = 7 * (name in _FAVORITES)
+    fav = 7 if name in _FAVORITES else 0
+
     if name not in _REGISTER:
         return fav
 
@@ -125,9 +126,8 @@ def get_record_score(obj: ty.Any, key: str = "") -> float:
 
     stats = mns.mnemonics
     closescr = sum(stats[m] for m in stats if m.startswith(key))
-    mnscore = 30 * (1 - 1.0 / (closescr + 1))
     exact = stats.get(key, 0)
-    mnscore += 50 * (1 - 1.0 / (exact + 1))
+    mnscore = 30 * (1 - 1.0 / (closescr + 1)) + 50 * (1 - 1.0 / (exact + 1))
     return fav + mnscore
 
 

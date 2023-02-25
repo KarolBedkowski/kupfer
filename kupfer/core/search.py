@@ -134,15 +134,17 @@ def score_actions(
     """
     get_record_score = learn.get_record_score
     for obj in rankables:
-        rank_adj = obj.object.rank_adjust
-        rank_adj += learn.get_correlation_bonus(obj.object, for_leaf)
+        obj_object = obj.object
+        rank_adj = obj_object.rank_adjust + learn.get_correlation_bonus(
+            obj_object, for_leaf
+        )
 
         if rank_adj > 0:
-            obj.rank = 50 + rank_adj + get_record_score(obj.object) // 2
+            obj.rank = 50 + rank_adj + get_record_score(obj_object) // 2
         elif rank_adj == 0:
-            obj.rank = get_record_score(obj.object)
+            obj.rank = get_record_score(obj_object)
         else:
-            obj.rank = -50 + rank_adj + get_record_score(obj.object)
+            obj.rank = -50 + rank_adj + get_record_score(obj_object)
 
         yield obj
 
