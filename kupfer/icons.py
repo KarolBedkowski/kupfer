@@ -36,6 +36,9 @@ kupfer_icon_fallbacks = {
 
 kupfer_locally_installed_names: set[str] = set()
 
+# keep missing files to prevent try to load every time
+MISSING_ICON_FILES = set()
+
 
 def _icon_theme_changed(theme):
     pretty.print_info(__name__, "Icon theme changed, clearing cache")
@@ -301,10 +304,14 @@ def get_gicon_for_file(uri: str) -> GIcon | None:
     return None if not found
     """
 
+    if uri in MISSING_ICON_FILES:
+        return None
+
     gfile = File.new_for_path(uri)
     if not gfile.query_exists():
         gfile = File.new_for_uri(uri)
         if not gfile.query_exists():
+            MISSING_ICON_FILES.add(uri)
             return None
 
     finfo = gfile.query_info(
@@ -462,10 +469,14 @@ def get_icon_from_file(
     except KeyError:
         pass
 
+    if icon_file in MISSING_ICON_FILES:
+        return None
+
     if icon := _ICON_RENDERER.pixbuf_for_file(icon_file, icon_size):
         store_icon(icon_file, icon_size, icon)
         return icon
 
+    MISSING_ICON_FILES.add(icon_file)
     return None
 
 
