@@ -80,7 +80,16 @@ def icon_stats():
     print("missing icon files: ", MISSING_ICON_FILES)
 
 
+def learn_stats():
+    from kupfer.core.learn import _REGISTER
+
+    print("Learn _REGISTER:")
+    for k, v in _REGISTER.items():
+        print(f"  {k}: {v}")
+
+
 def install():
     """Install atexit handlers for debug information"""
     atexit.register(mem_stats)
     atexit.register(icon_stats)
+    atexit.register(learn_stats)
