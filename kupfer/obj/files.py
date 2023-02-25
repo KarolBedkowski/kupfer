@@ -635,7 +635,9 @@ class DirectorySource(Source, FilesystemWatchMixin):
             self.monitor = self.monitor_directories(self._directory)
 
     def finalize(self) -> None:
-        self.monitor = None
+        if self.monitor:
+            self.stop_monitor_directories(self.monitor)
+            self.monitor = None
 
     def monitor_include_file(self, gfile: Gio.File) -> bool:
         return self._show_hidden or not gfile.get_basename().startswith(".")
