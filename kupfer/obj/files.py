@@ -242,9 +242,8 @@ class AppLeaf(Leaf):
     def _add_aliases(self) -> None:
         # find suitable alias
         # use package name: non-extension part of ID
-        lowername = str(self).lower()
-        package_name = self._get_package_name()
-        if package_name and package_name not in lowername:
+        package_name = GLib.filename_display_basename(self.get_id())
+        if package_name and package_name not in str(self).lower():
             self.kupfer_add_alias(package_name)
 
     def __hash__(self) -> int:
@@ -293,9 +292,6 @@ class AppLeaf(Leaf):
 
     def repr_key(self) -> ty.Any:
         return self.get_id()
-
-    def _get_package_name(self) -> str:
-        return GLib.filename_display_basename(self.get_id())  # type: ignore
 
     def launch(
         self,
