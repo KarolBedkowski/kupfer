@@ -45,7 +45,7 @@ def construct_file_leaf(obj: str) -> Leaf:
 
 class FileLeaf(Leaf, TextRepresentation):
     """
-    Represents one file: the represented object is a bytestring (important!)
+    Represents one file: the represented object is a string.
     """
 
     serializable: int | None = 1
@@ -691,6 +691,7 @@ class DirectorySource(Source, FilesystemWatchMixin):
 
 def _representable_fname(fname: str) -> bool:
     "Return False if fname contains surrogate escapes"
+    # TODO: it still relevant?
     try:
         fname.encode("utf-8")
         return True

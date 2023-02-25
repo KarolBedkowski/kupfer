@@ -84,9 +84,9 @@ def _custom_shlex_split(
         lex.commenters = ""
 
     try:
-        lex_output = list(lex)
+        lex_output = tuple(lex)
     except ValueError:
-        lex_output = [ustring]
+        lex_output = (ustring,)
 
     ## extra-unescape  ` and $ that are not handled by shlex
     quoted_shlex = {r"\`": "`", r"\$": "$"}
@@ -94,7 +94,7 @@ def _custom_shlex_split(
     if isinstance(string, str):
         return list(output)
 
-    return [x.encode("UTF-8") for x in lex_output]
+    return [x.encode("UTF-8") for x in output]
 
 
 def _unescape(string: str) -> str:

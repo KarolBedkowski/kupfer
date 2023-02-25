@@ -119,13 +119,15 @@ class Searcher:
         for src in sources_:
             fixedrank = 0
             can_cache = True
+            src_hash = None
             if hasattr(src, "__iter__"):
                 rankables = search.make_rankables(item_check(src))  # type: ignore
                 can_cache = False
             else:
+                src_hash = hash(src)
                 # Look in source cache for stored rankables
                 try:
-                    rankables = self._source_cache[src]
+                    rankables = self._source_cache[src_hash]
                 except KeyError:
                     try:
                         # TextSources
@@ -150,7 +152,7 @@ class Searcher:
 
                 if can_cache:
                     rankables = tuple(rankables)
-                    self._source_cache[src] = rankables
+                    self._source_cache[src_hash] = rankables
 
             match_lists.extend(rankables)
 
@@ -401,7 +403,7 @@ GObject.signal_new(
 class PrimaryActionPane(Pane):
     def __init__(self):
         super().__init__()
-        self._action_valid_cache = {}
+        self._action_valid_cache: dict[int, bool] = {}
         self.set_item(None)
 
     def select(self, item: KupferObject | None) -> None:
@@ -438,18 +440,18 @@ class PrimaryActionPane(Pane):
         actions = actioncompat.actions_for_item(leaf, get_source_controller())
         cache = self._action_valid_cache
 
-        def is_valid_cached(action: Action) -> bool:
-            """Check if @action is valid for current item"""
-            valid = cache.get(action)
-            if valid is None:
-                valid = actioncompat.action_valid_for_item(action, leaf)  # type: ignore
-                cache[action] = valid
-
-            return valid
-
         def valid_decorator(seq):
             """Check if actions are valid before access"""
-            return (obj for obj in seq if is_valid_cached(obj.object))
+            for obj in seq:
+                action = obj.object
+                action_hash = hash(action)
+                valid = cache.get(action_hash)
+                if valid is None:
+                    valid = actioncompat.action_valid_for_item(action, leaf)  # type: ignore
+                    cache[action_hash] = valid
+
+                if valid:
+                    yield obj
 
         match, match_iter = self.searcher.rank_actions(
             actions, key, leaf, decorator=valid_decorator
