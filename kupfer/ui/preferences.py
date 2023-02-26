@@ -34,6 +34,7 @@ if ty.TYPE_CHECKING:
 
 # A major HACK
 # http://tadeboro.blogspot.com/2009/05/wrapping-adn-resizing-gtklabel.html
+# k 2023-02-26: probably not necessary
 def _cb_allocate(
     label: Gtk.Label, allocation: Gdk.Rectangle, maxwid: int
 ) -> None:
@@ -46,7 +47,7 @@ def _cb_allocate(
 def wrapped_label(text: str | None = None, maxwid: int = -1) -> Gtk.Label:
     label = Gtk.Label.new(text)
     label.set_line_wrap(True)
-    label.connect("size-allocate", _cb_allocate, maxwid)
+    # label.connect("size-allocate", _cb_allocate, maxwid)
     return label
 
 
@@ -72,6 +73,7 @@ def set_combobox(value: ty.Any, combobox: Gtk.ComboBoxText) -> None:
 
 
 def _make_combobox_model(combobox: Gtk.ComboBox) -> None:
+    # List store with columns (Name, ID)
     combobox_store = Gtk.ListStore(GObject.TYPE_STRING, GObject.TYPE_STRING)
     combobox.set_model(combobox_store)
     combobox_cell = Gtk.CellRendererText()
@@ -79,13 +81,7 @@ def _make_combobox_model(combobox: Gtk.ComboBox) -> None:
     combobox.add_attribute(combobox_cell, "text", 0)
 
 
-_KEYBINDING_NAMES: dict[str, str] = {
-    # TRANS: Names of global keyboard shortcuts
-    "keybinding": _("Show Main Interface"),
-    "magickeybinding": _("Show with Selection"),
-}
-
-_KEYBINDING_TARGETS: dict[str, int] = {
+_KEYBINDING_TARGETS: ty.Final[dict[str, int]] = {
     "keybinding": keybindings.KEYBINDING_TARGET_DEFAULT,
     "magickeybinding": keybindings.KEYBINDING_TARGET_MAGIC,
 }
@@ -110,94 +106,103 @@ class PreferencesWindowController(pretty.OutputMixin):
         """Load ui from data file"""
         builder = Gtk.Builder()
         builder.set_translation_domain(version.PACKAGE_NAME)
-        self.window: Gtk.Window
+        self.window: Gtk.Window = None
 
         if ui_file := config.get_data_file("preferences.ui"):
             builder.add_from_file(ui_file)
         else:
-            self.window = None
             return
 
         self.window = builder.get_object("preferenceswindow")
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.connect("delete-event", self._close_window)
-        self.pluglist_parent = builder.get_object("plugin_list_parent")
-        self.dirlist_parent = builder.get_object("directory_list_parent")
         self.plugin_about_parent = builder.get_object("plugin_about_parent")
         self.preferences_notebook = builder.get_object("preferences_notebook")
-
         self.buttonremovedirectory = builder.get_object("buttonremovedirectory")
-        checkautostart = builder.get_object("checkautostart")
-        checkstatusicon_gtk = builder.get_object("checkstatusicon_gtk")
-        checkstatusicon_ai = builder.get_object("checkstatusicon_ai")
-        combo_icons_large_size = builder.get_object("icons_large_size")
-        combo_icons_small_size = builder.get_object("icons_small_size")
-        checkusecommandkeys = builder.get_object("checkusecommandkeys")
-        radio_actionaccelalt = builder.get_object("radio_actionaccelalt")
-        radio_actionaccelctrl = builder.get_object("radio_actionaccelctrl")
         self.entry_plugins_filter = builder.get_object("entry_plugins_filter")
-        self.keybindings_list_parent = builder.get_object(
-            "keybindings_list_parent"
+        self.sources_list_ctrl = SourceListController(
+            builder.get_object("source_list_parent")
         )
-        self.gkeybindings_list_parent = builder.get_object(
-            "gkeybindings_list_parent"
-        )
-        source_list_parent = builder.get_object("source_list_parent")
-        button_reset_keys = builder.get_object("button_reset_keys")
-        self.sources_list_ctrl = SourceListController(source_list_parent)
 
         setctl = settings.get_settings_controller()
-        checkautostart.set_active(self._get_should_autostart())
+        builder.get_object("checkautostart").set_active(
+            self._get_should_autostart()
+        )
+
+        set_combobox(
+            setctl.get_config_int("Appearance", "icon_large_size"),
+            builder.get_object("icons_large_size"),
+        )
+        set_combobox(
+            setctl.get_config_int("Appearance", "icon_small_size"),
+            builder.get_object("icons_small_size"),
+        )
+
+        checkstatusicon_gtk = builder.get_object("checkstatusicon_gtk")
+        checkstatusicon_gtk.set_label(
+            checkstatusicon_gtk.get_label() + " (GtkStatusIcon)"
+        )
         checkstatusicon_gtk.set_active(setctl.get_show_status_icon())
 
-        large_icon_size = setctl.get_config_int("Appearance", "icon_large_size")
-        small_icon_size = setctl.get_config_int("Appearance", "icon_small_size")
-
-        set_combobox(large_icon_size, combo_icons_large_size)
-        set_combobox(small_icon_size, combo_icons_small_size)
-
+        checkstatusicon_ai = builder.get_object("checkstatusicon_ai")
+        checkstatusicon_ai.set_label(
+            checkstatusicon_ai.get_label() + " (AppIndicator)"
+        )
         if supports_app_indicator():
             checkstatusicon_ai.set_active(setctl.get_show_status_icon_ai())
         else:
             checkstatusicon_ai.set_sensitive(False)
 
-        label = checkstatusicon_gtk.get_label()
-        checkstatusicon_gtk.set_label(label + " (GtkStatusIcon)")
-        label = checkstatusicon_ai.get_label()
-        checkstatusicon_ai.set_label(label + " (AppIndicator)")
-
-        checkusecommandkeys.set_active(setctl.get_use_command_keys())
-        radio_actionaccelalt.set_active(
+        builder.get_object("checkusecommandkeys").set_active(
+            setctl.get_use_command_keys()
+        )
+        builder.get_object("radio_actionaccelalt").set_active(
             setctl.get_action_accelerator_modifer() != "ctrl"
         )
-        radio_actionaccelctrl.set_active(
+        builder.get_object("radio_actionaccelctrl").set_active(
             setctl.get_action_accelerator_modifer() == "ctrl"
         )
 
-        # List store with columns (Name, ID)
         # Make alternative comboboxes
-        terminal_combobox = builder.get_object("terminal_combobox")
-        icons_combobox = builder.get_object("icons_combobox")
+        self.terminal_combobox = builder.get_object("terminal_combobox")
+        _make_combobox_model(self.terminal_combobox)
+        self._update_alternative_combobox("terminal", self.terminal_combobox)
 
-        _make_combobox_model(terminal_combobox)
-        _make_combobox_model(icons_combobox)
-
-        self._update_alternative_combobox("terminal", terminal_combobox)
-        self._update_alternative_combobox("icon_renderer", icons_combobox)
-        self.terminal_combobox = terminal_combobox
-        self.icons_combobox = icons_combobox
-        setctl.connect("alternatives-changed", self._on_alternatives_changed)
+        self.icons_combobox = builder.get_object("icons_combobox")
+        _make_combobox_model(self.icons_combobox)
+        self._update_alternative_combobox("icon_renderer", self.icons_combobox)
 
         # Plugin List
-        columns = [
-            {"key": "plugin_id", "type": str},
-            {"key": "enabled", "type": bool},
-            {"key": "icon-name", "type": str},
-            {"key": "text", "type": str},
-        ]
+        self._init_plugin_lists(builder.get_object("plugin_list_parent"))
+
+        # Directory List
+        self._init_dir_widgets(builder.get_object("directory_list_parent"))
+        self._read_directory_settings()
+
+        # global keybindings list
+        self.keybind_table, self.keybind_store = _create_conf_keys_list()
+        builder.get_object("keybindings_list_parent").add(self.keybind_table)
+        self.keybind_table.connect(
+            "row-activated", self.on_keybindings_row_activate
+        )
+        builder.get_object("button_reset_keys").set_sensitive(
+            keybindings.is_available()
+        )
+        self.keybind_table.set_sensitive(keybindings.is_available())
+
+        # kupfer interface (accelerators) keybindings list
+        self._init_keybindings(builder.get_object("gkeybindings_list_parent"))
+        self._show_keybindings(setctl)
+        self._show_gkeybindings(setctl)
+
+        # Connect to signals at the last point
+        builder.connect_signals(self)  # pylint: disable=no-member
+        setctl.connect("alternatives-changed", self._on_alternatives_changed)
+
+    def _init_plugin_lists(self, parent: Gtk.Widget) -> None:
         # setup plugin list table
-        column_types = [c["type"] for c in columns]
-        self.columns = [c["key"] for c in columns]
+        column_types = [str, bool, str, str]
+        self.columns = ("plugin_id", "enabled", "icon-name", "text")
         self.store = Gtk.ListStore.new(column_types)
         self.table = Gtk.TreeView.new_with_model(self.store)
         self.table.set_headers_visible(False)
@@ -234,66 +239,59 @@ class PreferencesWindowController(pretty.OutputMixin):
         self.plugin_info = utils.locale_sort(
             plugins.get_plugin_info(), key=lambda rec: rec["localized_name"]
         )
+
         self._refresh_plugin_list()
         self.output_debug(f"Standard Plugins: {len(self.store)}")
         self.table.show()
-        self.pluglist_parent.add(self.table)
 
-        # Directory List
+        parent.add(self.table)
+
+    def _init_dir_widgets(self, parent: Gtk.Widget) -> None:
         self.dir_store = Gtk.ListStore.new([str, Gio.Icon, str])
-        self.dir_table = Gtk.TreeView.new_with_model(self.dir_store)
-        self.dir_table.set_headers_visible(False)
-        self.dir_table.set_property("enable-search", False)
-        self.dir_table.connect("cursor-changed", self._dir_table_cursor_changed)
-        self.dir_table.get_selection().set_mode(Gtk.SelectionMode.BROWSE)
+        self.dir_table = dir_table = Gtk.TreeView.new_with_model(self.dir_store)
+        dir_table.set_headers_visible(False)
+        dir_table.set_property("enable-search", False)
+        dir_table.connect("cursor-changed", self._dir_table_cursor_changed)
+        dir_table.get_selection().set_mode(Gtk.SelectionMode.BROWSE)
 
         icon_cell = Gtk.CellRendererPixbuf()
         icon_col = Gtk.TreeViewColumn("icon", icon_cell)
         icon_col.add_attribute(icon_cell, "gicon", 1)
 
         cell = Gtk.CellRendererText()
+        cell.set_property("ellipsize", Pango.EllipsizeMode.END)
+
         col = Gtk.TreeViewColumn("name", cell)
         col.add_attribute(cell, "text", 2)
-        cell.set_property("ellipsize", Pango.EllipsizeMode.END)
-        self.dir_table.append_column(icon_col)
-        self.dir_table.append_column(col)
-        self.dir_table.show()
-        self.dirlist_parent.add(self.dir_table)
-        self._read_directory_settings()
 
-        # global keybindings list
-        self.keybind_table, self.keybind_store = _create_conf_keys_list()
-        self.keybindings_list_parent.add(self.keybind_table)
-        self.keybind_table.connect(
-            "row-activated", self.on_keybindings_row_activate
-        )
-        button_reset_keys.set_sensitive(keybindings.is_available())
-        self.keybind_table.set_sensitive(keybindings.is_available())
+        dir_table.append_column(icon_col)
+        dir_table.append_column(col)
+        dir_table.show()
 
-        # kupfer interface (accelerators) keybindings list
+        parent.add(self.dir_table)
+
+    def _init_keybindings(self, parent: Gtk.Widget) -> None:
         self.gkeybind_table, self.gkeybind_store = _create_conf_keys_list()
-        self.gkeybindings_list_parent.add(self.gkeybind_table)
+        parent.add(self.gkeybind_table)
         self.gkeybind_table.connect(
             "row-activated", self.on_gkeybindings_row_activate
         )
 
         # Requires GTK 3.22
         with suppress(AttributeError):
-            self.gkeybindings_list_parent.set_propagate_natural_height(True)
-
-        self._show_keybindings(setctl)
-        self._show_gkeybindings(setctl)
-
-        # Connect to signals at the last point
-        builder.connect_signals(self)  # pylint: disable=no-member
+            parent.set_propagate_natural_height(True)
 
     def _show_keybindings(self, setctl: settings.SettingsController) -> None:
-        names = _KEYBINDING_NAMES
+        names = (
+            # TRANS: Names of global keyboard shortcuts
+            (_("Show Main Interface"), "keybinding"),
+            (_("Show with Selection"), "magickeybinding"),
+        )
         self.keybind_store.clear()
-        for binding in sorted(names, key=lambda k: str(names[k])):
+        for name, binding in sorted(names):
             accel = setctl.get_global_keybinding(binding) or ""
             label = Gtk.accelerator_get_label(*Gtk.accelerator_parse(accel))
-            self.keybind_store.append((names[binding], label, binding))
+            self.keybind_store.append((name, label, binding))
 
     def _show_gkeybindings(self, setctl: settings.SettingsController) -> None:
         names = accelerators.ACCELERATOR_NAMES
