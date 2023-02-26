@@ -30,6 +30,7 @@ if ty.TYPE_CHECKING:
 
 KUPFER_CSS = b"""
 #kupfer {
+    border-radius: 0.6em;
 }
 
 .matchview {
