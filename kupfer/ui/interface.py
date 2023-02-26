@@ -33,9 +33,9 @@ if ty.TYPE_CHECKING:
     _ = str
 
 AccelFunc = ty.Callable[[], ty.Any]
-# KeyCallback = ty.Callable[[int, int, ...], bool]
 
 
+# pylint: disable=too-few-public-methods
 class KeyCallback(ty.Protocol):
     def __call__(self, shift_mask: int, mod_mask: int, /) -> bool:
         pass
@@ -109,8 +109,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
             "object-stack-changed", self._object_stack_changed
         )
         # Setup keyval mapping
-        self._key_book, self._key_book_cbs = self._prepare_key_book()
-        self._keys_sensible = set(self._key_book.values())
+        self._prepare_key_book()
         self._action_accel_config = actionaccel.AccelConfig()
         self.search.reset()
 
@@ -156,9 +155,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
             window.connect("configure-event", widget_owner.window_config)
             window.connect("hide", widget_owner.window_hidden)
 
-    def _prepare_key_book(
-        self,
-    ) -> tuple[dict[str, int], dict[int, KeyCallback]]:
+    def _prepare_key_book(self) -> None:
         keys = (
             "Up",
             "Down",
@@ -176,7 +173,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
             "End",
             "Return",
         )
-        key_book = {k: Gdk.keyval_from_name(k) for k in keys}
+        self._key_book = key_book = {k: Gdk.keyval_from_name(k) for k in keys}
         if not text_direction_is_ltr():
             # for RTL languages, simply swap the meaning of Left and Right
             # (for keybindings!)
@@ -185,7 +182,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
                 key_book["Left"],
             )
 
-        callbacks: dict[int, KeyCallback] = {
+        self._key_book_cbs: dict[int, KeyCallback] = {
             key_book["Escape"]: self._on_escape_key_press,
             key_book["Up"]: self._on_up_key_press,
             key_book["Page_Up"]: self._on_page_up_key_press,
@@ -202,7 +199,6 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
             ),
             key_book["Home"]: self._on_home_key_press,
         }
-        return key_book, callbacks
 
     def get_widget(self) -> Gtk.Widget:
         """Return a Widget containing the whole Interface"""
@@ -281,6 +277,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         ) = Gdk.Keymap.get_default().translate_keyboard_state(
             event.hardware_keycode, event_state, event.group
         )
+
         all_modifiers = Gtk.accelerator_get_default_mod_mask()
         shift_mask = (
             event_state & all_modifiers
@@ -337,7 +334,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
                     return True
 
             elif keyv in init_text_keys:
-                if self.try_enable_text_mode():
+                if self._try_enable_text_mode():
                     # swallow if it is the direct key
                     return keyv == direct_text_key
 
@@ -357,18 +354,10 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
             ):
                 return False
 
-        # exit here if it's not a special key
-        if keyv not in self._keys_sensible:
-            return False
-
-        self._reset_to_toplevel = False
-        mod1_mask = (
-            event_state
-            == Gdk.ModifierType.MOD1_MASK  # pylint: disable=no-member
-        )
-
         if key_cb := self._key_book_cbs.get(keyv):
-            return key_cb(shift_mask, mod1_mask)  # type: ignore
+            self._reset_to_toplevel = False
+            # pylint: disable=no-member
+            return key_cb(shift_mask, event_state == Gdk.ModifierType.MOD1_MASK)
 
         return False
 
@@ -415,7 +404,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
             ## done
         else:
             # enable text mode and reemit to paste text
-            self.try_enable_text_mode()
+            self._try_enable_text_mode()
             if self._is_text_mode:
                 entry.emit("paste-clipboard")
 
@@ -499,7 +488,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self.reset_text()
         self.current.relax_match()
 
-    def get_can_enter_text_mode(self) -> bool:
+    def _get_can_enter_text_mode(self) -> bool:
         """We can enter text mode if the data backend allows,
         and the text entry is ready for input (empty)
         """
@@ -511,12 +500,12 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         entry_text = self._entry.get_text()
         return val and not entry_text
 
-    def try_enable_text_mode(self) -> bool:
+    def _try_enable_text_mode(self) -> bool:
         """Perform a soft reset if possible and then try enabling text mode"""
         if self._reset_to_toplevel:
             self.soft_reset()
 
-        if self.get_can_enter_text_mode():
+        if self._get_can_enter_text_mode():
             return self._toggle_text_mode(True)
 
         return False
@@ -525,7 +514,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         """Toggle text mode on/off per @val,
         and return the subsequent on/off state.
         """
-        val = val and self.get_can_enter_text_mode()
+        val = val and self._get_can_enter_text_mode()
         self._is_text_mode = val
         self._update_text_mode()
         self.reset()
@@ -748,7 +737,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
 
         yield _get_accel("select_selected_text", self.select_selected_text)
 
-        if self.get_can_enter_text_mode():
+        if self._get_can_enter_text_mode():
             yield _get_accel(
                 "toggle_text_mode_quick", self.toggle_text_mode_quick
             )
@@ -1045,7 +1034,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         Put @text into the interface to search, to use
         for "queries" from other sources
         """
-        self.try_enable_text_mode()
+        self._try_enable_text_mode()
         self._entry.set_text(text)
         self._entry.set_position(-1)
 
