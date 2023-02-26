@@ -5,6 +5,7 @@ UI Interface controller
 """
 from __future__ import annotations
 
+import functools
 import textwrap
 import typing as ty
 
@@ -32,42 +33,18 @@ if ty.TYPE_CHECKING:
     _ = str
 
 AccelFunc = ty.Callable[[], ty.Any]
+# KeyCallback = ty.Callable[[int, int, ...], bool]
+
+
+class KeyCallback(ty.Protocol):
+    def __call__(self, shift_mask: int, mod_mask: int, /) -> bool:
+        pass
 
 
 def _trunc_long_str(instr: ty.Any) -> str:
     "truncate long object names"
     ustr = str(instr)
     return ustr[:25] + "…" if len(ustr) > 27 else ustr
-
-
-def _prepare_key_book():
-    keys = (
-        "Up",
-        "Down",
-        "Right",
-        "Left",
-        "Tab",
-        "ISO_Left_Tab",
-        "BackSpace",
-        "Escape",
-        "Delete",
-        "space",
-        "Page_Up",
-        "Page_Down",
-        "Home",
-        "End",
-        "Return",
-    )
-    key_book = {k: Gdk.keyval_from_name(k) for k in keys}
-    if not text_direction_is_ltr():
-        # for RTL languages, simply swap the meaning of Left and Right
-        # (for keybindings!)
-        key_book["Left"], key_book["Right"] = (
-            key_book["Right"],
-            key_book["Left"],
-        )
-
-    return key_book
 
 
 def _get_accel(key: str, acf: AccelFunc) -> tuple[str, AccelFunc]:
@@ -132,7 +109,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
             "object-stack-changed", self._object_stack_changed
         )
         # Setup keyval mapping
-        self._key_book = _prepare_key_book()
+        self._key_book, self._key_book_cbs = self._prepare_key_book()
         self._keys_sensible = set(self._key_book.values())
         self._action_accel_config = actionaccel.AccelConfig()
         self.search.reset()
@@ -178,6 +155,54 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
             # window signals
             window.connect("configure-event", widget_owner.window_config)
             window.connect("hide", widget_owner.window_hidden)
+
+    def _prepare_key_book(
+        self,
+    ) -> tuple[dict[str, int], dict[int, KeyCallback]]:
+        keys = (
+            "Up",
+            "Down",
+            "Right",
+            "Left",
+            "Tab",
+            "ISO_Left_Tab",
+            "BackSpace",
+            "Escape",
+            "Delete",
+            "space",
+            "Page_Up",
+            "Page_Down",
+            "Home",
+            "End",
+            "Return",
+        )
+        key_book = {k: Gdk.keyval_from_name(k) for k in keys}
+        if not text_direction_is_ltr():
+            # for RTL languages, simply swap the meaning of Left and Right
+            # (for keybindings!)
+            key_book["Left"], key_book["Right"] = (
+                key_book["Right"],
+                key_book["Left"],
+            )
+
+        callbacks: dict[int, KeyCallback] = {
+            key_book["Escape"]: self._on_escape_key_press,
+            key_book["Up"]: self._on_up_key_press,
+            key_book["Page_Up"]: self._on_page_up_key_press,
+            key_book["Down"]: self._on_down_key_press,
+            key_book["Page_Down"]: self._on_page_down_key_press,
+            key_book["Right"]: self._on_right_key_press,
+            key_book["BackSpace"]: self._on_backspace_key_press,
+            key_book["Left"]: self._on_back_key_press,
+            key_book["Tab"]: functools.partial(
+                self._on_tab_key_press, reverse=False
+            ),
+            key_book["ISO_Left_Tab"]: functools.partial(
+                self._on_tab_key_press, reverse=True
+            ),
+            key_book["Home"]: self._on_home_key_press,
+        }
+        return key_book, callbacks
 
     def get_widget(self) -> Gtk.Widget:
         """Return a Widget containing the whole Interface"""
@@ -337,70 +362,15 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
             return False
 
         self._reset_to_toplevel = False
+        mod1_mask = (
+            event_state
+            == Gdk.ModifierType.MOD1_MASK  # pylint: disable=no-member
+        )
 
-        if keyv == key_book["Escape"]:
-            self._escape_key_press()
-            return True
+        if key_cb := self._key_book_cbs.get(keyv):
+            return key_cb(shift_mask, mod1_mask)  # type: ignore
 
-        if keyv == key_book["Up"]:
-            self.current.go_up()
-
-        elif keyv == key_book["Page_Up"]:
-            self.current.go_page_up()
-
-        elif keyv == key_book["Down"]:
-            ## if typing with shift key, switch to action pane
-            if shift_mask and self.current == self.search:
-                self.current.hide_table()
-                self._switch_current()
-
-            if (
-                not self.current.get_current()
-                and self.current.get_match_state() is State.WAIT
-            ):
-                self._populate_search()
-
-            self.current.go_down()
-
-        elif keyv == key_book["Page_Down"]:
-            if (
-                not self.current.get_current()
-                and self.current.get_match_state() is State.WAIT
-            ):
-                self._populate_search()
-
-            self.current.go_page_down()
-
-        elif keyv == key_book["Right"]:
-            # MOD1_MASK is alt/option
-            mod1_mask = (
-                event_state
-                == Gdk.ModifierType.MOD1_MASK  # pylint: disable=no-member
-            )
-            self._browse_down(alternate=mod1_mask)
-
-        elif keyv == key_book["BackSpace"]:
-            if not self._entry.get_text():  # not has_input
-                self._backspace_key_press()
-            elif not self._is_text_mode:
-                self._entry.delete_text(self._entry.get_text_length() - 1, -1)
-            else:
-                return False
-
-        elif keyv == key_book["Left"]:
-            self._back_key_press()
-
-        elif keyv in (key_book["Tab"], key_book["ISO_Left_Tab"]):
-            self._switch_current(reverse=(keyv == key_book["ISO_Left_Tab"]))
-
-        elif keyv == key_book["Home"]:
-            self.current.go_first()
-
-        else:
-            # cont. processing
-            return False
-
-        return True
+        return False
 
     def _entry_copy_clipboard(self, entry: Gtk.Entry) -> bool:
         # Copy current selection to clipboard
@@ -511,28 +481,6 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
 
         self._reset_to_toplevel = False
 
-    def _escape_key_press(self) -> None:
-        """Handle escape if first pane is reset, cancel (put away) self."""
-        assert self.current
-
-        if self.current.has_result():
-            if self.current.is_showing_result():
-                self.reset_current(populate=True)
-            else:
-                self.reset_current()
-        else:
-            if self._is_text_mode:
-                self._toggle_text_mode(False)
-            elif not self.current.get_table_visible():
-                pane = self._pane_for_widget(self.current)
-                self._data_ctrl.object_stack_clear(pane)
-                self.emit("cancelled")
-
-            self._reset_to_toplevel = True
-            self.current.hide_table()
-
-        self.reset_text()
-
     def _backspace_key_press(self) -> None:
         # backspace: delete from stack
         pane = self._pane_for_widget(self.current)
@@ -541,21 +489,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
             self.reset_text()
             return
 
-        self._back_key_press()
-
-    def _back_key_press(self) -> None:
-        # leftarrow (or backspace without object stack)
-        # delete/go up through stource stack
-        assert self.current
-
-        if self.current.is_showing_result():
-            self.reset_current(populate=True)
-        elif not self._browse_up():
-            self.reset()
-            self.reset_current()
-            self._reset_to_toplevel = True
-
-        self.reset_text()
+        self._on_back_key_press()
 
     def _relax_search_terms(self) -> None:
         if self._is_text_mode:
@@ -761,6 +695,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         """
         if self.search.get_match_state() != State.MATCH:
             return False
+
         self.output_debug("Looking for action accelerator for", keystr)
         success, activate = self.action.select_action(keystr)
         if success:
@@ -1197,6 +1132,108 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self._data_ctrl.search(
             pane, key=text, context=text, text_mode=self._is_text_mode
         )
+
+    def _on_up_key_press(self, shift_mask: int, mod_mask: int) -> bool:
+        assert self.current
+        self.current.go_up()
+        return True
+
+    def _on_down_key_press(self, shift_mask: int, mod_mask: int) -> bool:
+        assert self.current
+
+        if shift_mask and self.current == self.search:
+            self.current.hide_table()
+            self._switch_current()
+
+        if (
+            not self.current.get_current()
+            and self.current.get_match_state() is State.WAIT
+        ):
+            self._populate_search()
+
+        self.current.go_down()
+        return True
+
+    def _on_page_up_key_press(self, shift_mask: int, mod_mask: int) -> bool:
+        assert self.current
+        self.current.go_page_up()
+        return True
+
+    def _on_page_down_key_press(self, shift_mask: int, mod_mask: int) -> bool:
+        assert self.current
+        if (
+            not self.current.get_current()
+            and self.current.get_match_state() is State.WAIT
+        ):
+            self._populate_search()
+
+        self.current.go_page_down()
+        return True
+
+    def _on_right_key_press(self, shift_mask: int, mod_mask: int) -> bool:
+        # MOD1_MASK is alt/option
+        self._browse_down(alternate=bool(mod_mask))
+        return True
+
+    def _on_backspace_key_press(self, shift_mask: int, mod_mask: int) -> bool:
+        if not self._entry.get_text():  # not has_input
+            self._backspace_key_press()
+        elif not self._is_text_mode:
+            self._entry.delete_text(self._entry.get_text_length() - 1, -1)
+        else:
+            return False
+        return True
+
+    def _on_tab_key_press(
+        self, shift_mask: int, mod_mask: int, reverse: bool
+    ) -> bool:
+        self._switch_current(reverse=reverse)
+        return True
+
+    def _on_home_key_press(self, shift_mask: int, mod_mask: int) -> bool:
+        assert self.current
+        self.current.go_first()
+        return True
+
+    def _on_back_key_press(
+        self, shift_mask: int = 0, mod_mask: int = 0
+    ) -> bool:
+        # leftarrow (or backspace without object stack)
+        # delete/go up through stource stack
+        assert self.current
+
+        if self.current.is_showing_result():
+            self.reset_current(populate=True)
+        elif not self._browse_up():
+            self.reset()
+            self.reset_current()
+            self._reset_to_toplevel = True
+
+        self.reset_text()
+        return True
+
+    def _on_escape_key_press(self, shift_mask: int, mod_mask: int) -> bool:
+        """Handle escape if first pane is reset, cancel (put away) self."""
+        assert self.current
+
+        if self.current.has_result():
+            if self.current.is_showing_result():
+                self.reset_current(populate=True)
+            else:
+                self.reset_current()
+        else:
+            if self._is_text_mode:
+                self._toggle_text_mode(False)
+            elif not self.current.get_table_visible():
+                pane = self._pane_for_widget(self.current)
+                self._data_ctrl.object_stack_clear(pane)
+                self.emit("cancelled")
+
+            self._reset_to_toplevel = True
+            self.current.hide_table()
+
+        self.reset_text()
+        return True
 
 
 GObject.type_register(Interface)
