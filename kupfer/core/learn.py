@@ -103,8 +103,13 @@ _REGISTER: dict[str, ty.Union[Mnemonics, dict[str, str]]] = {}
 def record_search_hit(obj: ty.Any, key: str | None = None) -> None:
     """
     Record that KupferObject @obj was used, with the optional
-    search term @key recording
+    search term @key recording.
+    When key is None - skip registeration (this is only valid when action is
+    performed by accelerator)
     """
+    if key is None:
+        return
+
     name = repr(obj)
     mns = _REGISTER.get(name)
     if not mns:
@@ -131,8 +136,8 @@ def get_record_score(obj: ty.Any, key: str = "") -> float:
         return fav + 50 * (1 - 1.0 / (mns.count + 1))
 
     stats = mns.mnemonics
-    closescr = sum(stats[m] for m in stats if m.startswith(key))
-    exact = stats.get(key, 0)
+    closescr = sum(val for m, val in stats.items() if m.startswith(key))
+    exact = stats[key]
     mnscore = 30 * (1 - 1.0 / (closescr + 1)) + 50 * (1 - 1.0 / (exact + 1))
     return fav + mnscore
 

@@ -227,6 +227,7 @@ class Pane(GObject.GObject):  # type:ignore
 
     def reset(self) -> None:
         self.selection = None
+        self.latest_key = None
 
     def get_latest_key(self) -> str | None:
         return self.latest_key

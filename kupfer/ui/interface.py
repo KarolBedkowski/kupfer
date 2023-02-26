@@ -280,7 +280,6 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         event_state, keyv, shift_mask = self._translate_keys(event)
 
         self._reset_input_timer()
-
         # process accelerators
         if self._process_accels(keyv, event_state):
             return True
@@ -694,6 +693,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self._data_ctrl.find_object("qpfer:clipboardtext#any.FileLeaf")
 
     def select_quit(self) -> None:
+        self._data_ctrl.reset()
         self._data_ctrl.find_object("qpfer:quit")
 
     def show_help(self) -> None:
@@ -701,6 +701,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self.emit("launched-action")
 
     def show_preferences(self) -> None:
+        self._data_ctrl.reset()
         preferences.show_preferences(self._make_gui_ctx())
         self.emit("launched-action")
 
