@@ -115,7 +115,7 @@ def score_objects(
             )
             if arank_value:
                 arank, value = arank_value
-                arank *= 0.95
+                arank *= 95
                 if arank > rank:
                     rankable.value = value
                     rank = arank
