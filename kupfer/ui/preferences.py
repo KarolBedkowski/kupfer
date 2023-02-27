@@ -16,7 +16,7 @@ from xdg import Exceptions as xdg_e
 from kupfer import config, icons, plugin_support, utils, version
 from kupfer.core import plugins, relevance, settings, sources
 from kupfer.obj.base import KupferObject
-from kupfer.support import kupferstring, pretty, scheduler
+from kupfer.support import kupferstring, pretty, scheduler, types as kty
 
 from . import accelerators, getkey_dialog, keybindings, kupferhelp
 from .credentials_dialog import ask_user_credentials
@@ -49,6 +49,41 @@ def wrapped_label(text: str | None = None, maxwid: int = -1) -> Gtk.Label:
     label.set_line_wrap(True)
     # label.connect("size-allocate", _cb_allocate, maxwid)
     return label
+
+
+def _new_label(
+    markup: str | tuple[str, ...],
+    parent: Gtk.Widget | None = None,
+    selectable: bool = True,
+) -> Gtk.Label:
+    if isinstance(markup, tuple):
+        markup = "".join(markup)
+
+    label = Gtk.Label()
+    label.set_alignment(0, 0)  # pylint: disable=no-member
+    label.set_markup(markup)
+    label.set_line_wrap(True)  # pylint: disable=no-member
+    label.set_selectable(selectable)
+    if parent:
+        parent.pack_start(label, False, True, 0)
+
+    return label
+
+
+def _format_exc_info(exc_info: kty.ExecInfo) -> str:
+    etype, error, _tb = exc_info
+    # TRANS: Error message when Plugin needs a Python module to load
+    import_error_localized = _("Python module '%s' is needed") % "\\1"
+    import_error_pat = r"No module named ([^\s]+)"
+    errmsg = str(error)
+
+    if re.match(import_error_pat, errmsg):
+        return re.sub(import_error_pat, import_error_localized, errmsg, count=1)
+
+    if etype and issubclass(etype, ImportError):
+        return errmsg
+
+    return "".join(traceback.format_exception(*exc_info))
 
 
 def kobject_should_show(obj: KupferObject) -> bool:
@@ -204,11 +239,11 @@ class PreferencesWindowController(pretty.OutputMixin):
         column_types = [str, bool, str, str]
         self.columns = ("plugin_id", "enabled", "icon-name", "text")
         self.store = Gtk.ListStore.new(column_types)
-        self.table = Gtk.TreeView.new_with_model(self.store)
-        self.table.set_headers_visible(False)
-        self.table.set_property("enable-search", False)
-        self.table.connect("cursor-changed", self.plugin_table_cursor_changed)
-        self.table.get_selection().set_mode(Gtk.SelectionMode.BROWSE)
+        self.table = table = Gtk.TreeView.new_with_model(self.store)
+        table.set_headers_visible(False)
+        table.set_property("enable-search", False)
+        table.connect("cursor-changed", self.plugin_table_cursor_changed)
+        table.get_selection().set_mode(Gtk.SelectionMode.BROWSE)
 
         checkcell = Gtk.CellRendererToggle()
         checkcol = Gtk.TreeViewColumn("item", checkcell)
@@ -230,10 +265,10 @@ class PreferencesWindowController(pretty.OutputMixin):
         col = Gtk.TreeViewColumn("item", cell)
         col.add_attribute(cell, "text", self.columns.index("text"))
 
-        self.table.append_column(checkcol)
+        table.append_column(checkcol)
         # hide icon for now
         # self.table.append_column(icon_col)
-        self.table.append_column(col)
+        table.append_column(col)
 
         self.plugin_list_timer = scheduler.Timer()
         self.plugin_info = utils.locale_sort(
@@ -242,7 +277,7 @@ class PreferencesWindowController(pretty.OutputMixin):
 
         self._refresh_plugin_list()
         self.output_debug(f"Standard Plugins: {len(self.store)}")
-        self.table.show()
+        table.show()
 
         parent.add(self.table)
 
@@ -507,9 +542,10 @@ class PreferencesWindowController(pretty.OutputMixin):
         if not info:
             return
 
-        title_label = Gtk.Label()
-        m_localized_name = GLib.markup_escape_text(info["localized_name"])
-        title_label.set_markup(f"<b><big>{m_localized_name}</big></b>")
+        _new_label(
+            f'<b><big>{GLib.markup_escape_text(info["localized_name"])}</big></b>',
+            about,
+        )
         ver, description, author = plugins.get_plugin_attributes(
             plugin_id,
             (
@@ -518,72 +554,44 @@ class PreferencesWindowController(pretty.OutputMixin):
                 "__author__",
             ),
         )
-        about.pack_start(title_label, False, True, 0)
         infobox = Gtk.VBox()
         infobox.set_property("spacing", 3)
+
         # TRANS: Plugin info fields
         for field, val in (
             (_("Description"), description),
             (_("Author"), author),
         ):
             if val:
-                label = Gtk.Label()
-                label.set_alignment(0, 0)  # pylint: disable=no-member
-                label.set_markup(f"<b>{field}</b>")
-                infobox.pack_start(label, False, True, 0)
-                label = wrapped_label()
-                label.set_alignment(0, 0)
-                label.set_markup(f"{GLib.markup_escape_text(val)}")
-                label.set_selectable(True)
-                infobox.pack_start(label, False, True, 0)
+                _new_label(("<b>", field, "</b>"), infobox)
+                _new_label(GLib.markup_escape_text(val), infobox)
 
         if ver:
-            label = wrapped_label()
-            label.set_alignment(0, 0)
-            m_version = GLib.markup_escape_text(ver)
-            label.set_markup(f"<b>{_('Version')}:</b> {m_version}")
-            label.set_selectable(True)
-            infobox.pack_start(label, False, True, 0)
+            _new_label(
+                ("<b>", _("Version"), ":</b> ", GLib.markup_escape_text(ver)),
+                infobox,
+            )
 
         about.pack_start(infobox, False, True, 0)
 
         # Check for plugin load exception
-        exc_info = plugins.get_plugin_error(plugin_id)
-        if exc_info is not None:
-            etype, error, _tb = exc_info
-            # TRANS: Error message when Plugin needs a Python module to load
-            import_error_localized = _("Python module '%s' is needed") % "\\1"
-            import_error_pat = r"No module named ([^\s]+)"
-            errmsg = str(error)
-
-            if re.match(import_error_pat, errmsg):
-                errstr = re.sub(
-                    import_error_pat, import_error_localized, errmsg, count=1
-                )
-            elif issubclass(etype, ImportError):
-                errstr = errmsg
-            else:
-                errstr = "".join(traceback.format_exception(*exc_info))
-
-            label = wrapped_label()
-            label.set_alignment(0, 0)
-            label.set_markup(
-                "<b>"
-                + _("Plugin could not be read due to an error:")
-                + "</b>\n\n"
-                + GLib.markup_escape_text(errstr)
+        if (exc_info := plugins.get_plugin_error(plugin_id)) is not None:
+            errstr = _format_exc_info(exc_info)
+            _new_label(
+                (
+                    "<b>",
+                    _("Plugin could not be read due to an error:"),
+                    "</b>\n\n",
+                    GLib.markup_escape_text(errstr),
+                ),
+                about,
             )
-            label.set_selectable(True)
-            about.pack_start(label, False, True, 0)
-
         elif not plugins.is_plugin_loaded(plugin_id):
-            label = Gtk.Label()
-            label.set_alignment(0, 0)  # pylint: disable=no-member
-            label.set_text(f"({_('disabled')})")
-            about.pack_start(label, False, True, 0)
+            _new_label(("(", _("disabled"), ")"), about, False)
 
-        wid = self._make_plugin_info_widget(plugin_id)
-        about.pack_start(wid, False, True, 0)
+        about.pack_start(
+            self._make_plugin_info_widget(plugin_id), False, True, 0
+        )
         if psettings_wid := self._make_plugin_settings_widget(plugin_id):
             about.pack_start(psettings_wid, False, True, 0)
 
