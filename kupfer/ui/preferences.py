@@ -130,6 +130,10 @@ _HIDDEN_KEY: ty.Final = "Hidden"
 # pylint: disable=too-many-instance-attributes
 class PreferencesWindowController(pretty.OutputMixin):
     _instance: PreferencesWindowController | None = None
+    _col_plugin_id = 0
+    _col_enabled = 1
+    _col_icon_name = 2
+    _col_text = 3
 
     @classmethod
     def instance(cls) -> PreferencesWindowController:
@@ -237,9 +241,7 @@ class PreferencesWindowController(pretty.OutputMixin):
 
     def _init_plugin_lists(self, parent: Gtk.Widget) -> None:
         # setup plugin list table
-        column_types = [str, bool, str, str]
-        self.columns = ("plugin_id", "enabled", "icon-name", "text")
-        self.store = Gtk.ListStore.new(column_types)
+        self.store = Gtk.ListStore.new((str, bool, str, str))
         self.table = table = Gtk.TreeView.new_with_model(self.store)
         table.set_headers_visible(False)
         table.set_property("enable-search", False)
@@ -248,9 +250,7 @@ class PreferencesWindowController(pretty.OutputMixin):
 
         checkcell = Gtk.CellRendererToggle()
         checkcol = Gtk.TreeViewColumn("item", checkcell)
-        checkcol.add_attribute(
-            checkcell, "active", self.columns.index("enabled")
-        )
+        checkcol.add_attribute(checkcell, "active", self._col_enabled)
         checkcell.connect("toggled", self.on_checkplugin_toggled)
 
         icon_cell = Gtk.CellRendererPixbuf()
@@ -258,13 +258,11 @@ class PreferencesWindowController(pretty.OutputMixin):
         icon_cell.set_property("width", _LIST_ICON_SIZE)
 
         icon_col = Gtk.TreeViewColumn("icon", icon_cell)
-        icon_col.add_attribute(
-            icon_cell, "icon-name", self.columns.index("icon-name")
-        )
+        icon_col.add_attribute(icon_cell, "icon-name", self._col_icon_name)
 
         cell = Gtk.CellRendererText()
         col = Gtk.TreeViewColumn("item", cell)
-        col.add_attribute(cell, "text", self.columns.index("text"))
+        col.add_attribute(cell, "text", self._col_text)
 
         table.append_column(checkcol)
         # hide icon for now
@@ -494,28 +492,25 @@ class PreferencesWindowController(pretty.OutputMixin):
     def on_checkplugin_toggled(
         self, cell: Gtk.CellRendererToggle, path: str
     ) -> None:
-        checkcol = self.columns.index("enabled")
         plugin_id = self._id_for_table_path(path)
         pathit = self.store.get_iter(path)
-        plugin_is_enabled = not self.store.get_value(pathit, checkcol)
-        self.store.set_value(pathit, checkcol, plugin_is_enabled)
+        plugin_is_enabled = not self.store.get_value(pathit, self._col_enabled)
+        self.store.set_value(pathit, self._col_enabled, plugin_is_enabled)
         setctl = settings.get_settings_controller()
         setctl.set_plugin_enabled(plugin_id, plugin_is_enabled)
         self.plugin_sidebar_update(plugin_id)
 
     def _id_for_table_path(self, path: str | Gtk.TreePath) -> str:
         pathit = self.store.get_iter(path)
-        id_col = self.columns.index("plugin_id")
-        plugin_id = self.store.get_value(pathit, id_col)
+        plugin_id = self.store.get_value(pathit, self._col_plugin_id)
         return plugin_id  # type: ignore
 
     def _table_path_for_id(self, plugin_id: str) -> Gtk.TreePath:
         """
         Find the tree path of @plugin_id
         """
-        id_col = self.columns.index("plugin_id")
         for row in self.store:
-            if plugin_id == row[id_col]:
+            if plugin_id == row[self._col_plugin_id]:
                 return row.path
 
         raise ValueError(f"No such plugin {plugin_id}")
