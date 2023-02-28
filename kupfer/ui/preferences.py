@@ -64,6 +64,7 @@ def _new_label(
     label.set_markup(markup)
     label.set_line_wrap(True)  # pylint: disable=no-member
     label.set_selectable(selectable)
+    # label.set_xalign(0.0)
     if parent:
         parent.pack_start(label, False, True, 0)
 
@@ -637,17 +638,12 @@ class PreferencesWindowController(pretty.OutputMixin):
                 image.set_property("gicon", obj.get_icon())
                 image.set_property("pixel-size", small_icon_size)
                 hbox.pack_start(image, False, True, 0)
-                m_name = GLib.markup_escape_text(str(obj))  # name
-                m_desc = GLib.markup_escape_text(obj.get_description() or "")
-                name_label = (
-                    f"{m_name}\n<small>{m_desc}</small>"
-                    if m_desc
-                    else str(m_name)
-                )
-                label = wrapped_label()
-                label.set_markup(name_label)
-                label.set_xalign(0.0)
-                hbox.pack_start(label, False, True, 0)
+                name_label = GLib.markup_escape_text(str(obj))  # name
+                if desc := GLib.markup_escape_text(obj.get_description() or ""):
+                    name_label = f"{name_label}\n<small>{desc}</small>"
+
+                _new_label(name_label, hbox)
+
                 objvbox.pack_start(hbox, True, True, 0)
                 # Display information for application content-sources.
                 if not kobject_should_show(obj):
@@ -749,20 +745,14 @@ class PreferencesWindowController(pretty.OutputMixin):
         plugin_settings = plugins.get_plugin_attribute(  # type:ignore
             plugin_id, plugins.PluginAttr.SETTINGS
         )
-
         if not plugin_settings:
             return None
 
-        title_label = Gtk.Label()
-        # TRANS: Plugin-specific configuration (header)
-        title_label.set_markup(f"<b>{_('Configuration')}</b>")
-        title_label.set_alignment(0, 0)  # pylint: disable=no-member
-
         vbox = Gtk.VBox()
-        vbox.pack_start(title_label, False, True, 0)
+        _new_label(f"<b>{_('Configuration')}</b>", vbox)
         # vbox.set_property("spacing", 5)
 
-        for setting in plugin_settings or ():
+        for setting in plugin_settings:
             hbox = Gtk.HBox()
             hbox.set_property("spacing", 10)
             if tooltip := plugin_settings.get_tooltip(setting):
@@ -770,6 +760,7 @@ class PreferencesWindowController(pretty.OutputMixin):
 
             label = plugin_settings.get_label(setting)
             typ = plugin_settings.get_value_type(setting)
+
             if issubclass(typ, plugin_support.UserNamePassword):
                 wid = Gtk.Button(label or _("Set username and password"))
                 wid.connect(
@@ -780,45 +771,15 @@ class PreferencesWindowController(pretty.OutputMixin):
                 vbox.pack_start(hbox, False, True, 0)
                 continue
 
-            label_wid = wrapped_label(label, maxwid=200)
-            label_wid.set_xalign(0.0)
-            if issubclass(typ, str):
-                if alternatives := plugin_settings.get_alternatives(setting):
-                    wid = Gtk.ComboBoxText.new()
-                    val = plugin_settings[setting]
-                    active_index = -1
-                    for idx, text in enumerate(alternatives):
-                        wid.append_text(text)
-                        if text == val:
-                            active_index = idx
-
-                    if active_index < 0:
-                        wid.prepend_text(val)
-                        active_index = 0
-
-                    wid.set_active(active_index)
-                    wid.connect(
-                        "changed",
-                        self._get_plugin_change_callback(
-                            plugin_id, setting, typ, "get_active_text"
-                        ),
-                    )
-                else:
-                    wid = Gtk.Entry()
-                    wid.set_text(plugin_settings[setting])
-                    wid.connect(
-                        "changed",
-                        self._get_plugin_change_callback(
-                            plugin_id,
-                            setting,
-                            typ,
-                            "get_text",
-                            no_false_values=True,
-                        ),
-                    )
-
+            if typ is not bool:
+                label_wid = wrapped_label(label, maxwid=200)
+                label_wid.set_xalign(0.0)
                 hbox.pack_start(label_wid, False, True, 0)
-                hbox.pack_start(wid, True, True, 0)
+
+            if issubclass(typ, str):
+                self._make_plugin_sett_widget_str(
+                    hbox, plugin_id, setting, plugin_settings
+                )
 
             elif issubclass(typ, bool):
                 wid = Gtk.CheckButton.new_with_label(label)
@@ -836,7 +797,6 @@ class PreferencesWindowController(pretty.OutputMixin):
                 wid.set_increments(1, 1)
                 wid.set_range(0, 1000)
                 wid.set_value(plugin_settings[setting])
-                hbox.pack_start(label_wid, False, True, 0)
                 hbox.pack_start(wid, False, True, 0)
                 wid.connect(
                     "changed",
@@ -853,6 +813,49 @@ class PreferencesWindowController(pretty.OutputMixin):
 
         vbox.show_all()
         return vbox
+
+    def _make_plugin_sett_widget_str(
+        self,
+        hbox: Gtk.HBox,
+        plugin_id: str,
+        setting: str,
+        plugin_settings: plugin_support.PluginSettings,
+    ) -> None:
+        if alternatives := plugin_settings.get_alternatives(setting):
+            wid = Gtk.ComboBoxText.new()
+            val = plugin_settings[setting]
+            active_index = -1
+            for idx, text in enumerate(alternatives):
+                wid.append_text(text)
+                if text == val:
+                    active_index = idx
+
+            if active_index < 0:
+                wid.prepend_text(val)
+                active_index = 0
+
+            wid.set_active(active_index)
+            wid.connect(
+                "changed",
+                self._get_plugin_change_callback(
+                    plugin_id, setting, str, "get_active_text"
+                ),
+            )
+        else:
+            wid = Gtk.Entry()
+            wid.set_text(plugin_settings[setting])
+            wid.connect(
+                "changed",
+                self._get_plugin_change_callback(
+                    plugin_id,
+                    setting,
+                    str,
+                    "get_text",
+                    no_false_values=True,
+                ),
+            )
+
+        hbox.pack_start(wid, True, True, 0)
 
     def on_buttonadddirectory_clicked(self, widget: Gtk.Widget) -> None:
         # TRANS: File Chooser Title
@@ -1122,21 +1125,16 @@ class PreferencesWindowController(pretty.OutputMixin):
         return result
 
 
-_CONF_KEYS_LIST_COLUMNS = [
-    {"key": "name", "type": str, "header": _("Command")},
-    {"key": "key", "type": str, "header": _("Shortcut")},
-    {"key": "keybinding_id", "type": str, "header": None},
-]
-_CONF_KEYS_LIST_COLUMN_TYPES = [c["type"] for c in _CONF_KEYS_LIST_COLUMNS]
-
-
 def _create_conf_keys_list() -> tuple[Gtk.TreeView, Gtk.ListStore]:
-    keybind_store = Gtk.ListStore.new(_CONF_KEYS_LIST_COLUMN_TYPES)
+    columns = (_("Command"), _("Shortcut"), None)
+    column_types = (str, str, str)
+
+    keybind_store = Gtk.ListStore.new(column_types)
     keybind_table = Gtk.TreeView.new_with_model(keybind_store)
-    for idx, col in enumerate(_CONF_KEYS_LIST_COLUMNS):
+    for idx, col_header in enumerate(columns):
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn(col["header"], renderer, text=idx)
-        column.set_visible(col["header"] is not None)
+        column = Gtk.TreeViewColumn(col_header, renderer, text=idx)
+        column.set_visible(col_header is not None)
         keybind_table.append_column(column)
 
     keybind_table.set_property("enable-search", False)
@@ -1148,20 +1146,12 @@ def _create_conf_keys_list() -> tuple[Gtk.TreeView, Gtk.ListStore]:
 get_preferences_window_controller = PreferencesWindowController.instance
 
 
-_SOURCE_LIST_COLUMNS = [
-    {"key": "source", "type": GObject.TYPE_PYOBJECT},
-    {"key": "plugin_id", "type": str},
-    {"key": "toplevel", "type": bool},
-    {"key": "icon", "type": Gio.Icon},
-    {"key": "text", "type": str},
-]
-
-
+# pylint: disable=too-few-public-methods
 class SourceListController:
     def __init__(self, parent_widget):
         # setup plugin list table
-        column_types = [c["type"] for c in _SOURCE_LIST_COLUMNS]
-        self.columns = [c["key"] for c in _SOURCE_LIST_COLUMNS]
+        column_types = (GObject.TYPE_PYOBJECT, str, bool, Gio.Icon, str)
+        columns = ("source", "plugin_id", "toplevel", "icon", "text")
         self.store = Gtk.ListStore(*column_types)
         self.table = Gtk.TreeView.new_with_model(self.store)
         self.table.set_headers_visible(False)
@@ -1171,9 +1161,7 @@ class SourceListController:
 
         checkcell = Gtk.CellRendererToggle()
         checkcol = Gtk.TreeViewColumn("item", checkcell)
-        checkcol.add_attribute(
-            checkcell, "active", self.columns.index("toplevel")
-        )
+        checkcol.add_attribute(checkcell, "active", columns.index("toplevel"))
         checkcell.connect("toggled", self.on_checktoplevel_enabled)
 
         icon_cell = Gtk.CellRendererPixbuf()
@@ -1181,11 +1169,11 @@ class SourceListController:
         icon_cell.set_property("width", _LIST_ICON_SIZE)
 
         icon_col = Gtk.TreeViewColumn("icon", icon_cell)
-        icon_col.add_attribute(icon_cell, "gicon", self.columns.index("icon"))
+        icon_col.add_attribute(icon_cell, "gicon", columns.index("icon"))
 
         cell = Gtk.CellRendererText()
         col = Gtk.TreeViewColumn("item", cell)
-        col.add_attribute(cell, "text", self.columns.index("text"))
+        col.add_attribute(cell, "text", columns.index("text"))
 
         self.table.append_column(checkcol)
         self.table.append_column(icon_col)
@@ -1221,19 +1209,16 @@ class SourceListController:
         self, cell: Gtk.CellRendererToggle, path: str
     ) -> None:
         pathit = self.store.get_iter(path)
-        checkcol = self.columns.index("toplevel")
-        idcol = self.columns.index("plugin_id")
-        srccol = self.columns.index("source")
-        is_toplevel = not self.store.get_value(pathit, checkcol)
-        plugin_id = self.store.get_value(pathit, idcol)
-        src = self.store.get_value(pathit, srccol)
+        is_toplevel = not self.store.get_value(pathit, 2)
+        plugin_id = self.store.get_value(pathit, 1)
+        src = self.store.get_value(pathit, 0)
 
         srcctl = sources.get_source_controller()
         srcctl.set_toplevel(src, is_toplevel)
 
         setctl = settings.get_settings_controller()
         setctl.set_source_is_toplevel(plugin_id, src, is_toplevel)
-        self.store.set_value(pathit, checkcol, is_toplevel)
+        self.store.set_value(pathit, 2, is_toplevel)
 
 
 def supports_app_indicator() -> bool:
@@ -1241,8 +1226,8 @@ def supports_app_indicator() -> bool:
         gi.require_version("AppIndicator3", "0.1")
     except ValueError:
         return False
-    else:
-        return True
+
+    return True
 
 
 def _get_time(ctxenv: GUIEnvironmentContext | None) -> int:
