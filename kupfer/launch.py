@@ -73,7 +73,7 @@ def launch_application(
     """
     assert app_info
     assert not (
-        bool(paths) and bool(paths)
+        bool(paths) and bool(uris)
     ), "either paths or uris must be given: " + repr((paths, uris))
 
     svc = get_applications_matcher_service()
