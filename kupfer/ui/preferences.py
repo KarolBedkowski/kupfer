@@ -32,42 +32,20 @@ if ty.TYPE_CHECKING:
     _ = str
 
 
-# A major HACK
-# http://tadeboro.blogspot.com/2009/05/wrapping-adn-resizing-gtklabel.html
-# k 2023-02-26: probably not necessary
-def _cb_allocate(
-    label: Gtk.Label, allocation: Gdk.Rectangle, maxwid: int
-) -> None:
-    if maxwid == -1:
-        maxwid = 300
-
-    label.set_size_request(min(maxwid, allocation.width), -1)
-
-
-def wrapped_label(text: str | None = None, maxwid: int = -1) -> Gtk.Label:
-    label = Gtk.Label.new(text)
-    label.set_line_wrap(True)
-    # label.connect("size-allocate", _cb_allocate, maxwid)
-    return label
-
-
 def _new_label(
-    markup: str | tuple[str, ...],
-    parent: Gtk.Widget | None = None,
+    parent: Gtk.Widget = None,
+    /,
+    *markup: str,
     selectable: bool = True,
 ) -> Gtk.Label:
-    if isinstance(markup, tuple):
-        markup = "".join(markup)
-
+    text = "".join(markup)
     label = Gtk.Label()
-    label.set_alignment(0, 0)  # pylint: disable=no-member
-    label.set_markup(markup)
+    label.set_alignment(0, 0.5)  # pylint: disable=no-member
+    label.set_markup(text)
     label.set_line_wrap(True)  # pylint: disable=no-member
     label.set_selectable(selectable)
     # label.set_xalign(0.0)
-    if parent:
-        parent.pack_start(label, False, True, 0)
-
+    parent.pack_start(label, False, True, 0)
     return label
 
 
@@ -87,7 +65,7 @@ def _format_exc_info(exc_info: kty.ExecInfo) -> str:
     return "".join(traceback.format_exception(*exc_info))
 
 
-def kobject_should_show(obj: KupferObject) -> bool:
+def _kobject_should_show(obj: KupferObject) -> bool:
     with suppress(AttributeError):
         if leaf_repr := obj.get_leaf_repr():  # type: ignore
             if hasattr(leaf_repr, "is_valid") and not leaf_repr.is_valid():
@@ -96,7 +74,7 @@ def kobject_should_show(obj: KupferObject) -> bool:
     return True
 
 
-def set_combobox(value: ty.Any, combobox: Gtk.ComboBoxText) -> None:
+def _set_combobox(value: ty.Any, combobox: Gtk.ComboBoxText) -> None:
     """
     Set activate the alternative in the combobox with text value
     """
@@ -127,7 +105,7 @@ _AUTOSTART_KEY: ty.Final = "X-GNOME-Autostart-enabled"
 _HIDDEN_KEY: ty.Final = "Hidden"
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,too-many-public-methods
 class PreferencesWindowController(pretty.OutputMixin):
     _instance: PreferencesWindowController | None = None
     _col_plugin_id = 0
@@ -169,11 +147,11 @@ class PreferencesWindowController(pretty.OutputMixin):
             self._get_should_autostart()
         )
 
-        set_combobox(
+        _set_combobox(
             setctl.get_config_int("Appearance", "icon_large_size"),
             builder.get_object("icons_large_size"),
         )
-        set_combobox(
+        _set_combobox(
             setctl.get_config_int("Appearance", "icon_small_size"),
             builder.get_object("icons_small_size"),
         )
@@ -188,7 +166,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         checkstatusicon_ai.set_label(
             checkstatusicon_ai.get_label() + " (AppIndicator)"
         )
-        if supports_app_indicator():
+        if _supports_app_indicator():
             checkstatusicon_ai.set_active(setctl.get_show_status_icon_ai())
         else:
             checkstatusicon_ai.set_sensitive(False)
@@ -241,11 +219,12 @@ class PreferencesWindowController(pretty.OutputMixin):
 
     def _init_plugin_lists(self, parent: Gtk.Widget) -> None:
         # setup plugin list table
+        # cols: ("plugin_id", "enabled", "icon-name", "text")
         self.store = Gtk.ListStore.new((str, bool, str, str))
         self.table = table = Gtk.TreeView.new_with_model(self.store)
         table.set_headers_visible(False)
         table.set_property("enable-search", False)
-        table.connect("cursor-changed", self.plugin_table_cursor_changed)
+        table.connect("cursor-changed", self._plugin_table_cursor_changed)
         table.get_selection().set_mode(Gtk.SelectionMode.BROWSE)
 
         checkcell = Gtk.CellRendererToggle()
@@ -369,7 +348,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         self, widget: Gtk.Widget, event: Gdk.EventKey
     ) -> bool:
         if event.keyval == Gdk.keyval_from_name("Escape"):
-            self.hide()
+            self._hide()
             return True
 
         return False
@@ -448,7 +427,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         kupferhelp.show_help()
 
     def on_closebutton_clicked(self, widget: Gtk.Widget) -> None:
-        self.hide()
+        self._hide()
 
     def _refresh_plugin_list(self, us_filter: str | None = None) -> None:
         "List plugins that pass text filter @us_filter or list all if None"
@@ -465,20 +444,18 @@ class PreferencesWindowController(pretty.OutputMixin):
             if setctl.get_plugin_is_hidden(plugin_id):
                 continue
 
-            enabled = setctl.get_plugin_enabled(plugin_id)
             name = info["localized_name"]
-            folded_name = kupferstring.tofolded(name)
-            desc = info["description"]
-            text = str(name)
 
             if us_filter:
                 name_score = relevance.score(name, us_filter)
+                folded_name = kupferstring.tofolded(name)
                 fold_name_score = relevance.score(folded_name, us_filter)
-                desc_score = relevance.score(desc, us_filter)
+                desc_score = relevance.score(info["description"], us_filter)
                 if not name_score and not fold_name_score and desc_score < 0.9:
                     continue
 
-            self.store.append((plugin_id, enabled, "kupfer-object", text))
+            enabled = setctl.get_plugin_enabled(plugin_id)
+            self.store.append((plugin_id, enabled, "kupfer-object", str(name)))
 
     def _show_focus_topmost_plugin(self) -> None:
         try:
@@ -498,7 +475,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         self.store.set_value(pathit, self._col_enabled, plugin_is_enabled)
         setctl = settings.get_settings_controller()
         setctl.set_plugin_enabled(plugin_id, plugin_is_enabled)
-        self.plugin_sidebar_update(plugin_id)
+        self._plugin_sidebar_update(plugin_id)
 
     def _id_for_table_path(self, path: str | Gtk.TreePath) -> str:
         pathit = self.store.get_iter(path)
@@ -522,15 +499,15 @@ class PreferencesWindowController(pretty.OutputMixin):
 
         return None
 
-    def plugin_table_cursor_changed(self, table: Gtk.TreeView) -> None:
+    def _plugin_table_cursor_changed(self, table: Gtk.TreeView) -> None:
         curpath, _curcol = table.get_cursor()
         if not curpath:
             return
 
         plugin_id = self._id_for_table_path(curpath)
-        self.plugin_sidebar_update(plugin_id)
+        self._plugin_sidebar_update(plugin_id)
 
-    def plugin_sidebar_update(self, plugin_id: str) -> None:
+    def _plugin_sidebar_update(self, plugin_id: str) -> None:
         about = Gtk.VBox()
         about.set_property("spacing", 15)
         about.set_property("border-width", 5)
@@ -539,8 +516,8 @@ class PreferencesWindowController(pretty.OutputMixin):
             return
 
         _new_label(
-            f'<b><big>{GLib.markup_escape_text(info["localized_name"])}</big></b>',
             about,
+            f'<b><big>{GLib.markup_escape_text(info["localized_name"])}</big></b>',
         )
         ver, description, author = plugins.get_plugin_attributes(
             plugin_id,
@@ -559,13 +536,16 @@ class PreferencesWindowController(pretty.OutputMixin):
             (_("Author"), author),
         ):
             if val:
-                _new_label(("<b>", field, "</b>"), infobox)
-                _new_label(GLib.markup_escape_text(val), infobox)
+                _new_label(infobox, f"<b>{field}</b>")
+                _new_label(infobox, GLib.markup_escape_text(val))
 
         if ver:
             _new_label(
-                ("<b>", _("Version"), ":</b> ", GLib.markup_escape_text(ver)),
                 infobox,
+                "<b>",
+                _("Version"),
+                ":</b> ",
+                GLib.markup_escape_text(ver),
             )
 
         about.pack_start(infobox, False, True, 0)
@@ -574,16 +554,14 @@ class PreferencesWindowController(pretty.OutputMixin):
         if (exc_info := plugins.get_plugin_error(plugin_id)) is not None:
             errstr = _format_exc_info(exc_info)
             _new_label(
-                (
-                    "<b>",
-                    _("Plugin could not be read due to an error:"),
-                    "</b>\n\n",
-                    GLib.markup_escape_text(errstr),
-                ),
                 about,
+                "<b>",
+                _("Plugin could not be read due to an error:"),
+                "</b>\n\n",
+                GLib.markup_escape_text(errstr),
             )
         elif not plugins.is_plugin_loaded(plugin_id):
-            _new_label(("(", _("disabled"), ")"), about, False)
+            _new_label(about, "(", _("disabled"), ")", selectable=False)
 
         about.pack_start(
             self._make_plugin_info_widget(plugin_id), False, True, 0
@@ -615,11 +593,12 @@ class PreferencesWindowController(pretty.OutputMixin):
         small_icon_size = setctl.get_config_int("Appearance", "icon_small_size")
 
         def make_objects_frame(objs, title):
-            frame_label = Gtk.Label()
-            frame_label.set_markup(f"<b>{GLib.markup_escape_text(title)}</b>")
-            frame_label.set_alignment(0, 0)  # pylint: disable=no-member
             objvbox = Gtk.VBox()
-            objvbox.pack_start(frame_label, False, True, 0)
+            _new_label(
+                objvbox,
+                f"<b>{GLib.markup_escape_text(title)}</b>",
+                selectable=False,
+            )
             objvbox.set_property("spacing", 3)
             for item in objs:
                 plugin_type = plugins.get_plugin_attribute(plugin_id, item)
@@ -637,11 +616,11 @@ class PreferencesWindowController(pretty.OutputMixin):
                 if desc := GLib.markup_escape_text(obj.get_description() or ""):
                     name_label = f"{name_label}\n<small>{desc}</small>"
 
-                _new_label(name_label, hbox)
+                _new_label(hbox, name_label)
 
                 objvbox.pack_start(hbox, True, True, 0)
                 # Display information for application content-sources.
-                if not kobject_should_show(obj):
+                if not _kobject_should_show(obj):
                     continue
 
                 try:
@@ -744,7 +723,7 @@ class PreferencesWindowController(pretty.OutputMixin):
             return None
 
         vbox = Gtk.VBox()
-        _new_label(f"<b>{_('Configuration')}</b>", vbox)
+        _new_label(vbox, f"<b>{_('Configuration')}</b>", selectable=False)
         # vbox.set_property("spacing", 5)
 
         for setting in plugin_settings:
@@ -767,9 +746,7 @@ class PreferencesWindowController(pretty.OutputMixin):
                 continue
 
             if typ is not bool:
-                label_wid = wrapped_label(label, maxwid=200)
-                label_wid.set_xalign(0.0)
-                hbox.pack_start(label_wid, False, True, 0)
+                _new_label(hbox, label, selectable=False)
 
             if issubclass(typ, str):
                 self._make_plugin_sett_widget_str(
@@ -957,7 +934,7 @@ class PreferencesWindowController(pretty.OutputMixin):
             self.gkeybind_store.set_value(pathit, 1, label)
 
     def on_button_reset_keys_clicked(self, button: Gtk.Button) -> None:
-        if self.ask_user_for_reset_keybinding():
+        if self._ask_user_for_reset_keybinding():
             setctl = settings.get_settings_controller()
             setctl.reset_keybindings()
             self._show_keybindings(setctl)
@@ -970,7 +947,7 @@ class PreferencesWindowController(pretty.OutputMixin):
                 keybindings.bind_key(keystr, target)
 
     def on_button_reset_gkeys_clicked(self, button: Gtk.Button) -> None:
-        if self.ask_user_for_reset_keybinding():
+        if self._ask_user_for_reset_keybinding():
             setctl = settings.get_settings_controller()
             setctl.reset_accelerators()
             self._show_gkeybindings(setctl)
@@ -1095,15 +1072,15 @@ class PreferencesWindowController(pretty.OutputMixin):
         self.preferences_notebook.set_current_page(_PLUGIN_LIST_PAGE)
         self.window.present_with_time(timestamp)
 
-    def hide(self) -> None:
+    def _hide(self) -> None:
         assert self.window
         self.window.hide()
 
     def _close_window(self, *ignored: ty.Any) -> bool:
-        self.hide()
+        self._hide()
         return True
 
-    def ask_user_for_reset_keybinding(self) -> bool:
+    def _ask_user_for_reset_keybinding(self) -> bool:
         dlg = Gtk.MessageDialog(
             self.window, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION
         )
@@ -1192,7 +1169,7 @@ class SourceListController:
             if not plugin_id or setctl.get_plugin_is_hidden(plugin_id):
                 continue
 
-            if not kobject_should_show(src):
+            if not _kobject_should_show(src):
                 continue
 
             gicon = src.get_icon()
@@ -1216,7 +1193,7 @@ class SourceListController:
         self.store.set_value(pathit, 2, is_toplevel)
 
 
-def supports_app_indicator() -> bool:
+def _supports_app_indicator() -> bool:
     try:
         gi.require_version("AppIndicator3", "0.1")
     except ValueError:
