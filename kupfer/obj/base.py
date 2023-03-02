@@ -24,12 +24,10 @@ if not hasattr(builtins, "_"):
     builtins._ = _ = str  # type: ignore
 
 
-_builtin_modules = frozenset(
-    [
-        "kupfer.obj.objects",
-        "kupfer.obj.base",
-        "kupfer.obj.sources",
-    ]
+_builtin_modules = (
+    "kupfer.obj.objects",
+    "kupfer.obj.base",
+    "kupfer.obj.sources",
 )
 
 
@@ -38,9 +36,9 @@ def no_sort_func(x, _key=None):
 
 
 class _BuiltinObject(type):
-    def __new__(cls, name, bases, data):
+    def __new__(mcs, name, bases, data):
         data["_is_builtin"] = data["__module__"] in _builtin_modules
-        return type.__new__(cls, name, bases, data)
+        return type.__new__(mcs, name, bases, data)
 
 
 class KupferObject(metaclass=_BuiltinObject):
@@ -556,6 +554,7 @@ class TextSource(KupferObject):
         return self.placeholder or _("Text")
 
 
+# pylint: disable=too-few-public-methods
 class ActionGenerator:
     """A "source" for actions
 

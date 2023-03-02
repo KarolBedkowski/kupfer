@@ -94,8 +94,7 @@ class RunnableLeaf(Leaf):
         return ""
 
     def get_gicon(self) -> GdkPixbuf.Pixbuf | None:
-        iname = self.get_icon_name()
-        if iname:
+        if iname := self.get_icon_name():
             return icons.get_gicon_with_fallbacks(None, (iname,))
 
         return icons.ComposedIcon("kupfer-object", "kupfer-execute")
