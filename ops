@@ -1,1 +1,1 @@
-{"author":{"id":"786b3200543b99fffe784539984150e793b3cb1fd2e66881b13310ced1c8764c"},"ops":[{"type":1,"timestamp":1677747936,"nonce":"BW/glHH+eKjnqVBix+23QXm/DPs=","title":"regexp email","message":"kupfer/obj/contacts.py:77:1: W0511: FIXME: Find a more robust (less strict?) approach than regex (fixme)","files":null}]}
+{"author":{"id":"786b3200543b99fffe784539984150e793b3cb1fd2e66881b13310ced1c8764c"},"ops":[{"type":4,"timestamp":1677831054,"nonce":"+QWHyOtv7dqN6Fg9TpUt/FGRDVE=","status":2}]}
