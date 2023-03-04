@@ -71,7 +71,7 @@ class KupferObject(metaclass=_BuiltinObject):
         if not name:
             name = self.__class__.__name__
 
-        self.name: str = kupferstring.tounicode(name)  # type: ignore
+        self.name: str = name  # kupferstring.tounicode(name)  # type: ignore
         folded_name = kupferstring.tofolded(self.name)
         self.kupfer_add_alias(folded_name)
 
