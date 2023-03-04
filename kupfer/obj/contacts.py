@@ -9,7 +9,6 @@ for specific slots to be filled.
 """
 from __future__ import annotations
 
-import re
 import typing as ty
 
 from gi.repository import GdkPixbuf

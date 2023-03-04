@@ -25,7 +25,7 @@ from .exceptions import (
     OperationError,
 )
 from .representation import TextRepresentation
-from .helplib import FilesystemWatchMixin, PicklingHelperMixin
+from .helplib import FilesystemWatchMixin
 
 if ty.TYPE_CHECKING:
     _ = str

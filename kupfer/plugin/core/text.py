@@ -82,15 +82,6 @@ class PathTextSource(TextSource, pretty.OutputMixin):
         yield FileLeaf
 
 
-def try_unquote_url(url: str) -> str:
-    """Try to turn an URL-escaped string into a Unicode string
-
-    Where we assume UTF-8 encoding; and return the original url if
-    any step fails.
-    """
-    return urllib.parse.unquote(url)
-
-
 class OpenTextUrl(OpenUrl):
     rank_adjust = 1
 
@@ -115,17 +106,24 @@ class URLTextSource(TextSource):
         return 75
 
     def get_text_items(self, text):
+        # FIXME: more strict checking?
+
         # Only detect "perfect" URLs
         text = text.strip()
-        components = list(urllib.parse.urlparse(text))
-        domain = "".join(components[1:])
+        components = urllib.parse.urlparse(text)
 
         # If urlparse parses a scheme (http://), it's an URL
-        if len(domain.split()) <= 1 and components[0]:
-            url = text
-            name = ("".join(components[1:3])).strip("/")
-            name = try_unquote_url(name) or url
-            yield UrlLeaf(url, name=name)
+        if not components.scheme or not components.netloc:
+            return
+
+        # check for any whitespaces; quick and dirty
+        if len(text.split(None, 1)) != 1:
+            return
+
+        name = f"{components.netloc}{components.path}".strip("/")
+        # Try to turn an URL-escaped string into a Unicode string
+        name = urllib.parse.unquote(url) or text
+        yield UrlLeaf(text, name=name)
 
     def provides(self):
         yield UrlLeaf
