@@ -11,6 +11,7 @@ __version__ = "2023.01"
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
 
 import typing as ty
+import time
 
 import dbus
 
@@ -38,8 +39,8 @@ _SETT_IFACE_NAME = "org.freedesktop.NetworkManager.Settings"
 
 def _create_dbus_connection(iface, obj, service, /, sbus=None):
     """Create dbus connection to NetworkManager"""
-    sbus = sbus or dbus.SystemBus()
     try:
+        sbus = sbus or dbus.SystemBus()
         if dobj := sbus.get_object(service, obj):
             return dbus.Interface(dobj, iface)
 
@@ -158,8 +159,13 @@ class Disconnect(Action):
         try:
             interface = _create_dbus_connection_device(leaf.object)
             interface.Disconnect()
-        except:
+            time.sleep(1)
+        except Exception:
             pretty.print_exc(__name__)
+
+        # return leaf with updated status
+        leaf.status()
+        return leaf
 
     def get_icon_name(self):
         return "disconnect"
@@ -169,6 +175,9 @@ class Disconnect(Action):
 
     def valid_for_item(self, leaf):
         return leaf.status() == 100
+
+    def has_result(self):
+        return True
 
 
 class Connect(Action):
@@ -180,8 +189,12 @@ class Connect(Action):
         try:
             interface = _create_dbus_connection_nm()
             interface.ActivateConnection(iobj.object, leaf.object, "/")
-        except:
+            time.sleep(1)
+        except Exception:
             pretty.print_exc(__name__)
+
+        leaf.status()
+        return leaf
 
     def get_description(self):
         return _("Activate connection")
@@ -200,6 +213,9 @@ class Connect(Action):
 
     def valid_for_item(self, leaf):
         return leaf.status() != 100
+
+    def has_result(self):
+        return True
 
 
 def _get_info_recursive(item, level=0):
@@ -314,13 +330,10 @@ class ConnectionsSource(Source):
 
 
 class DevicesSource(Source):
-    source_use_cache = False
-
     def __init__(self, name=None):
         Source.__init__(self, name or __kupfer_name__)
 
     def initialize(self):
-        # TODO: source is for now not-cached
         bus = dbus.SystemBus()
         weaklib.dbus_signal_connect_weakly(
             bus,
