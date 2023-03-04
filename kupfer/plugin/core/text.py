@@ -9,7 +9,7 @@ import urllib.request
 import socket
 
 from kupfer import utils
-from kupfer.support import pretty
+from kupfer.support import pretty, system
 from kupfer.support.validators import is_url
 from kupfer.obj import FileLeaf, OpenUrl, TextLeaf, TextSource, UrlLeaf
 
@@ -49,35 +49,18 @@ class PathTextSource(TextSource, pretty.OutputMixin):
 
     def __init__(self):
         TextSource.__init__(self, name="Filesystem Text Matches")
-        self._hostname: str | None = None
 
     def get_rank(self):
         return 80
 
-    def _get_hostname(self) -> str:
-        if self._hostname is None:
-            try:
-                self._hostname = socket.gethostname()
-            except Exception:
-                self._hostname = ""
-                self.output_exc()
-
-        assert self._hostname
-        return self._hostname
-
     def _is_local_file_url(self, url):
         # Recognize file:/// or file://localhost/ or file://<local_hostname>/ URLs
-        if url.startswith("file:"):
-            hostname = self._get_hostname()
-            for prefix in (
-                "file:///",
-                "file://localhost/",
-                f"file://{hostname}/",
-            ):
-                if url.startswith(prefix):
-                    return True
-
-        return False
+        hostname = system.get_hostname()
+        return (
+            url.startswith("file:///")
+            or url.startswith("file://localhost/")
+            or url.startswith(f"file://{hostname}/")
+        )
 
     def get_text_items(self, text):
         # Find directories or files
