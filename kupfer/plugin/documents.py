@@ -22,15 +22,7 @@ import xdg.BaseDirectory as base
 from gi.repository import Gio, Gtk
 
 from kupfer import icons, launch, plugin_support
-from kupfer.obj import (
-    Action,
-    AppLeaf,
-    FileLeaf,
-    Leaf,
-    Source,
-    SourceLeaf,
-    UrlLeaf,
-)
+from kupfer.obj import Action, AppLeaf, FileLeaf, Source, SourceLeaf, UrlLeaf
 from kupfer.support import weaklib
 
 __kupfer_settings__ = plugin_support.PluginSettings(
@@ -81,10 +73,9 @@ def _file_path(uri: str) -> Gio.File | None:
 @functools.lru_cache(maxsize=1)
 def _get(max_days):
     manager = Gtk.RecentManager.get_default()
-    items = manager.get_items()
     item_leaves = []
     check_doc_exist = __kupfer_settings__["check_doc_exist"]
-    for item in items:
+    for item in manager.get_items():
         if item.get_age() > max_days >= 0:
             continue
 
@@ -99,10 +90,7 @@ def _get(max_days):
 
         uri = item.get_uri()
         if file_path := _file_path(uri):
-            apps = item.get_applications()
-            apps_name = [
-                _first_word(item.get_application_info(a)[0]) for a in apps
-            ] + [a.lower() for a in apps]
+            apps_name = tuple(_get_app_id(item))
             item_leaves.append((file_path, item.get_modified(), apps_name))
 
     # sort by modified date
@@ -110,8 +98,17 @@ def _get(max_days):
     return item_leaves
 
 
-def _first_word(instr: str) -> str:
-    return instr.split(None, 1)[0]
+def _get_app_id(item: Gtk.RecentInfo) -> ty.Iterator[str]:
+    """Get applications id for given RecentInfo @item"""
+    # some duplicates are expected but we can live with this
+    for app in item.get_applications():
+        # get app_id from application info
+        instr = item.get_application_info(app)[0]
+        app = app.lower()
+        yield app
+        # get first word as app id
+        if (aid := instr.split(None, 1)[0]) != app:
+            yield aid
 
 
 def _get_items(
@@ -127,6 +124,10 @@ def _get_items(
                 continue
 
             ext = path.splitext(file_path)[1].lower()
+            # check is any of app_id is in separate_apps dict, then check
+            # extension of file - if is on list and matched application
+            # is not @for_app_names list - skip file.
+            # this allow to filter files for applications by file extension
             if any(
                 sort_table.get(ext) not in for_app_names
                 for app_id, sort_table in SEPARATE_APPS.items()
@@ -146,9 +147,7 @@ class RecentsSource(Source):
         manager = Gtk.RecentManager.get_default()
         weaklib.gobject_connect_weakly(manager, "changed", self._recent_changed)
 
-    def _recent_changed(self, *args):
-        # FIXME: We don't get single item updates, might this be
-        # too many updates?
+    def _recent_changed(self, _rmgr: Gtk.RecentManager) -> None:
         _get.cache_clear()
         self.mark_for_update()
 
@@ -267,14 +266,14 @@ class PlacesSource(Source):
     def _get_places(self, fileloc):
         with open(fileloc, encoding="UTF-8") as fin:
             for line in fin:
-                if not line.strip():
+                line = line.strip()
+                if not line:
                     continue
 
-                items = line.split(None, 1)
-                uri = items[0]
+                uri, *rest = line.split(None, 1)
                 gfile = Gio.File.new_for_uri(uri)
-                if len(items) > 1:
-                    title = items[1].strip()
+                if rest:
+                    title = rest[0]
                 else:
                     disp = gfile.get_parse_name()
                     title = path.basename(disp)
