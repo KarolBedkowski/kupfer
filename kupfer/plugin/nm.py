@@ -160,8 +160,6 @@ class Disconnect(Action):
         except Exception:
             pretty.print_exc(__name__)
 
-        bus.close()
-
         # return leaf with updated status
         leaf.status()
         return leaf
@@ -193,8 +191,6 @@ class Connect(Action):
             time.sleep(1)
         except Exception:
             pretty.print_exc(__name__)
-
-        bus.close()
 
         leaf.status()
         return leaf
@@ -267,8 +263,6 @@ class ShowInfo(Action):
         else:
             props_info = "\n".join(_get_info_recursive(props))
 
-        bus.close()
-
         msg = f"DEVICE\n{props_info}\n------------\n\nCONNECTION\n{conn_info}"
         uiutils.show_text_result(msg, title=_("Connection details"), ctx=ctx)
 
@@ -299,7 +293,8 @@ class ConnectionsSource(Source):
         self.device = device_path
         self.interface = interface
 
-    def _get_items(self, sbus):
+    def get_items(self):
+        sbus = dbus.SystemBus()
         dconn = _create_dbus_connection(
             _PROPS_IFACE, self.device, _NM_SERVICE, sbus=sbus
         )
@@ -333,12 +328,6 @@ class ConnectionsSource(Source):
 
             yield Connection.from_setting(conn, settings_connection)
 
-    def get_items(self):
-        sbus = dbus.SystemBus()
-        connections = list(self._get_items(sbus))
-        sbus.close()
-        return connections
-
 
 class DevicesSource(Source):
     def __init__(self, name=None):
@@ -368,7 +357,8 @@ class DevicesSource(Source):
     def _on_nm_updated(self, *args):
         self.mark_for_update()
 
-    def _get_items(self, sbus):
+    def get_items(self):
+        sbus = dbus.SystemBus()
         if interface := _create_dbus_connection_nm(sbus=sbus):
             for dev in interface.GetAllDevices():
                 if conn := _create_dbus_connection(
@@ -381,12 +371,6 @@ class DevicesSource(Source):
                         bool(conn.Get(_DEVICE_IFACE, "Managed")),
                         int(conn.Get(_DEVICE_IFACE, "DeviceType")),
                     )
-
-    def get_items(self):
-        sbus = dbus.SystemBus()
-        devices = list(self._get_items(sbus))
-        sbus.close()
-        return devices
 
     def provides(self):
         yield Device
@@ -419,8 +403,6 @@ class ToggleWireless(Action):
         sbus = dbus.SystemBus()
         if msg := self._activate(sbus):
             uiutils.show_notification("Kupfer", msg)
-
-        sbus.close()
 
     def get_description(self):
         return "Toggle wireless by NetworkManager"
