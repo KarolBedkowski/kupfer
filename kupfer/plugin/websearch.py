@@ -20,7 +20,7 @@ import urllib.parse
 from pathlib import Path
 from xml.etree import ElementTree
 
-from kupfer import config, utils, plugin_support
+from kupfer import config, plugin_support, utils
 from kupfer.objects import Action, Leaf, Source, TextLeaf
 from kupfer.plugin._firefox_support import get_firefox_home_file
 
@@ -153,55 +153,46 @@ def gettagname(tag):
     return tag.rsplit("}", 1)[-1]
 
 
-def _get_plugin_dirs() -> ty.Iterator[str]:
+def _get_plugin_dirs() -> ty.Iterator[Path]:
+    """Get all posible plugins path (may not exists)"""
     # accept in kupfer data dirs
-    yield from config.get_data_dirs("searchplugins")
+    yield from map(Path, config.get_data_dirs("searchplugins"))
 
     # firefox in home directory
-    ffx_home = get_firefox_home_file("searchplugins")
-    if ffx_home and ffx_home.is_dir():
-        yield str(ffx_home)
+    if ffx_home := get_firefox_home_file("searchplugins"):
+        yield ffx_home
 
-    yield from config.get_data_dirs("searchplugins", package="firefox")
-    yield from config.get_data_dirs("searchplugins", package="iceweasel")
+    yield from map(
+        Path, config.get_data_dirs("searchplugins", package="firefox")
+    )
+    yield from map(
+        Path, config.get_data_dirs("searchplugins", package="iceweasel")
+    )
 
-    addon_dir = Path("/usr/lib/firefox-addons/searchplugins")
-    cur_lang, _ignored = locale.getlocale(locale.LC_MESSAGES)
     suffixes = ["en-US"]
-    if cur_lang:
+    if cur_lang := locale.getlocale(locale.LC_MESSAGES)[0]:
         suffixes = [cur_lang.replace("_", "-"), cur_lang[:2]] + suffixes
 
+    addon_dir = Path("/usr/lib/firefox-addons/searchplugins")
     for suffix in suffixes:
         if (addon_lang_dir := addon_dir.joinpath(suffix)).exists():
-            yield str(addon_lang_dir)
+            yield addon_lang_dir
             break
 
     # debian iceweasel
-    if Path("/etc/iceweasel/searchplugins/common").is_dir():
-        yield "/etc/iceweasel/searchplugins/common"
+    yield Path("/etc/iceweasel/searchplugins/common")
 
     for suffix in suffixes:
-        addon_path = Path("/etc/iceweasel/searchplugins/locale", suffix)
-        if addon_path.is_dir():
-            yield str(addon_path)
+        yield Path("/etc/iceweasel/searchplugins/locale", suffix)
 
     # try to find all versions of firefox
     for prefix in ("/usr/lib", "/usr/share"):
         for dirname in os.listdir(prefix):
             if dirname.startswith("firefox") or dirname.startswith("iceweasel"):
-                addon_dir = Path(prefix, dirname, "searchplugins")
-                if addon_dir.is_dir():
-                    yield str(addon_dir)
-
-                addon_dir = Path(
-                    prefix,
-                    dirname,
-                    "distribution",
-                    "searchplugins",
-                    "common",
+                yield Path(prefix, dirname, "searchplugins")
+                yield Path(
+                    prefix, dirname, "distribution", "searchplugins", "common"
                 )
-                if addon_dir.is_dir():
-                    yield str(addon_dir)
 
 
 _OS_VITAL_KEYS = {"Url", "ShortName"}
@@ -248,35 +239,32 @@ class OpenSearchSource(Source):
     def __init__(self):
         Source.__init__(self, _("Search Engines"))
 
-    def _parse_opensearch(self, path):
+    def _parse_opensearch(self, path: str) -> dict[str, ty.Any] | None:
         try:
             etree = ElementTree.parse(path)
-            return _parse_etree(etree, name=path)
+            return _parse_etree(etree, name=path)  # type:ignore
         except Exception as exc:
             self.output_debug(f"{type(exc).__name__}: {exc}")
 
         return None
 
-    def get_items(self):
-        plugin_dirs = list(_get_plugin_dirs())
-        self.output_debug(
-            "Found following searchplugins directories", sep="\n", *plugin_dirs
-        )
-
+    def get_items(self) -> ty.Iterator[SearchEngine]:
         # files are unique by filename to allow override
         visited_files = set()
-        for pdir in plugin_dirs:
-            if not os.path.isdir(pdir):
+        for pdir in _get_plugin_dirs():
+            if not pdir.is_dir():
                 continue
+
+            self.output_debug("Processing searchplugins dir", pdir)
 
             for fname in os.listdir(pdir):
                 if fname in visited_files:
                     continue
 
                 visited_files.add(fname)
-                fpath = os.path.join(pdir, fname)
-                if not os.path.isdir(fpath):
-                    if search := self._parse_opensearch(fpath):
+                fpath = pdir.joinpath(fname)
+                if not fpath.is_dir():
+                    if search := self._parse_opensearch(str(fpath)):
                         yield SearchEngine(search, search["ShortName"])
 
         # add user search engines
