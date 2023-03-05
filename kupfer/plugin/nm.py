@@ -299,8 +299,7 @@ class ConnectionsSource(Source):
         self.device = device_path
         self.interface = interface
 
-    def get_items(self):
-        sbus = dbus.SystemBus()
+    def _get_items(self, sbus):
         dconn = _create_dbus_connection(
             _PROPS_IFACE, self.device, _NM_SERVICE, sbus=sbus
         )
@@ -334,7 +333,11 @@ class ConnectionsSource(Source):
 
             yield Connection.from_setting(conn, settings_connection)
 
+    def get_items(self):
+        sbus = dbus.SystemBus()
+        connections = list(self._get_items(sbus))
         sbus.close()
+        return connections
 
 
 class DevicesSource(Source):
@@ -365,8 +368,7 @@ class DevicesSource(Source):
     def _on_nm_updated(self, *args):
         self.mark_for_update()
 
-    def get_items(self):
-        sbus = dbus.SystemBus()
+    def _get_items(self, sbus):
         if interface := _create_dbus_connection_nm(sbus=sbus):
             for dev in interface.GetAllDevices():
                 if conn := _create_dbus_connection(
@@ -379,7 +381,12 @@ class DevicesSource(Source):
                         bool(conn.Get(_DEVICE_IFACE, "Managed")),
                         int(conn.Get(_DEVICE_IFACE, "DeviceType")),
                     )
+
+    def get_items(self):
+        sbus = dbus.SystemBus()
+        devices = list(self._get_items(sbus))
         sbus.close()
+        return devices
 
     def provides(self):
         yield Device
