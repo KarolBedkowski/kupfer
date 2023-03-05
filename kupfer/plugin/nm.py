@@ -5,7 +5,7 @@ from __future__ import annotations
 
 __kupfer_name__ = _("NetworkManager")
 __kupfer_sources__ = ("DevicesSource",)
-__kupfer_actions__ = ("ToggleWirelessInfo",)
+__kupfer_actions__ = ("ToggleWireless",)
 __description__ = _("Manage NetworkManager connections")
 __version__ = "2023.01"
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
@@ -388,7 +388,7 @@ class DevicesSource(Source):
         return "network-wired"
 
 
-class ToggleWirelessInfo(Action):
+class ToggleWireless(Action):
     def __init__(self):
         Action.__init__(self, "Toggle wireless")
 
@@ -424,5 +424,5 @@ class ToggleWirelessInfo(Action):
     def item_types(self):
         yield Leaf
 
-    def valid_object(self, obj, for_item=None):
-        return obj is DevicesSource
+    def valid_for_item(self, leaf: Leaf) -> bool:
+        return leaf.object and isinstance(leaf.object, DevicesSource)
