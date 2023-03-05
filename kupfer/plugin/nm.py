@@ -5,17 +5,17 @@ from __future__ import annotations
 
 __kupfer_name__ = _("NetworkManager")
 __kupfer_sources__ = ("DevicesSource",)
-__kupfer_actions__ = ()
+__kupfer_actions__ = ("ToggleWirelessInfo",)
 __description__ = _("Manage NetworkManager connections")
 __version__ = "2023.01"
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
 
-import typing as ty
 import time
+import typing as ty
 
 import dbus
 
-from kupfer import plugin_support
+from kupfer import icons, plugin_support
 from kupfer.obj import Action, Leaf, NotAvailableError, Source
 from kupfer.support import pretty, weaklib
 from kupfer.ui import uiutils
@@ -25,16 +25,16 @@ plugin_support.check_dbus_connection()
 if ty.TYPE_CHECKING:
     _ = str
 
-_SERVICE_NAME = "org.freedesktop.NetworkManager"
-_OBJECT_NAME = "/org/freedesktop/NetworkManager"
-_IFACE_NAME = "org.freedesktop.NetworkManager"
+_NM_SERVICE = "org.freedesktop.NetworkManager"
+_NM_OBJECT = "/org/freedesktop/NetworkManager"
+_NM_IFACE = "org.freedesktop.NetworkManager"
 
-_DEV_IFACE_NAME = "org.freedesktop.NetworkManager.Device"
-_PROPS_IFACE_NAME = "org.freedesktop.DBus.Properties"
-_CONNSETT_IFACE_NAME = "org.freedesktop.NetworkManager.Settings.Connection"
+_DEVICE_IFACE = "org.freedesktop.NetworkManager.Device"
+_PROPS_IFACE = "org.freedesktop.DBus.Properties"
+_CONNECTION_IFACE = "org.freedesktop.NetworkManager.Settings.Connection"
 
-_SETT_OBJ_NAME = "/org/freedesktop/NetworkManager/Settings"
-_SETT_IFACE_NAME = "org.freedesktop.NetworkManager.Settings"
+_SETTINGS_OBJECT = "/org/freedesktop/NetworkManager/Settings"
+_SETTINGS_IFACE = "org.freedesktop.NetworkManager.Settings"
 
 
 def _create_dbus_connection(iface, obj, service, /, sbus=None):
@@ -52,14 +52,12 @@ def _create_dbus_connection(iface, obj, service, /, sbus=None):
 
 def _create_dbus_connection_nm(sbus=None):
     return _create_dbus_connection(
-        _IFACE_NAME, _OBJECT_NAME, _SERVICE_NAME, sbus=sbus
+        _NM_IFACE, _NM_OBJECT, _NM_SERVICE, sbus=sbus
     )
 
 
 def _create_dbus_connection_device(obj, /, sbus=None):
-    return _create_dbus_connection(
-        _DEV_IFACE_NAME, obj, _SERVICE_NAME, sbus=sbus
-    )
+    return _create_dbus_connection(_DEVICE_IFACE, obj, _NM_SERVICE, sbus=sbus)
 
 
 _NM_DEVICE_STATE = {
@@ -144,10 +142,8 @@ class Device(Leaf):
         yield ShowInfo()
 
     def status(self) -> int:
-        conn = _create_dbus_connection(
-            _PROPS_IFACE_NAME, self.object, _SERVICE_NAME
-        )
-        self._status = int(conn.Get(_DEV_IFACE_NAME, "State"))
+        conn = _create_dbus_connection(_PROPS_IFACE, self.object, _NM_SERVICE)
+        self._status = int(conn.Get(_DEVICE_IFACE, "State"))
         return self._status
 
 
@@ -156,12 +152,15 @@ class Disconnect(Action):
         Action.__init__(self, _("Disconnect"))
 
     def activate(self, leaf, iobj=None, ctx=None):
+        bus = dbus.SystemBus()
         try:
-            interface = _create_dbus_connection_device(leaf.object)
+            interface = _create_dbus_connection_device(leaf.object, sbus=bus)
             interface.Disconnect()
             time.sleep(1)
         except Exception:
             pretty.print_exc(__name__)
+
+        bus.close()
 
         # return leaf with updated status
         leaf.status()
@@ -186,12 +185,16 @@ class Connect(Action):
 
     def activate(self, leaf, iobj=None, ctx=None):
         assert iobj
+
+        bus = dbus.SystemBus()
         try:
-            interface = _create_dbus_connection_nm()
+            interface = _create_dbus_connection_nm(sbus=bus)
             interface.ActivateConnection(iobj.object, leaf.object, "/")
             time.sleep(1)
         except Exception:
             pretty.print_exc(__name__)
+
+        bus.close()
 
         leaf.status()
         return leaf
@@ -245,8 +248,9 @@ class ShowInfo(Action):
         assert ctx
         conn_info = ""
         props_info = ""
+        bus = dbus.SystemBus()
         try:
-            interface = _create_dbus_connection_device(leaf.object)
+            interface = _create_dbus_connection_device(leaf.object, sbus=bus)
             info = interface.GetAppliedConnection(0)
         except Exception as err:
             conn_info = f"Error: {err}"
@@ -255,13 +259,15 @@ class ShowInfo(Action):
 
         try:
             interface = _create_dbus_connection(
-                _PROPS_IFACE_NAME, leaf.object, _SERVICE_NAME
+                _PROPS_IFACE, leaf.object, _NM_SERVICE, sbus=bus
             )
-            props = interface.GetAll(_DEV_IFACE_NAME)
+            props = interface.GetAll(_DEVICE_IFACE)
         except Exception as err:
             props_info = f"Error: {err}"
         else:
             props_info = "\n".join(_get_info_recursive(props))
+
+        bus.close()
 
         msg = f"DEVICE\n{props_info}\n------------\n\nCONNECTION\n{conn_info}"
         uiutils.show_text_result(msg, title=_("Connection details"), ctx=ctx)
@@ -296,18 +302,18 @@ class ConnectionsSource(Source):
     def get_items(self):
         sbus = dbus.SystemBus()
         dconn = _create_dbus_connection(
-            _PROPS_IFACE_NAME, self.device, _SERVICE_NAME, sbus=sbus
+            _PROPS_IFACE, self.device, _NM_SERVICE, sbus=sbus
         )
         if not dconn:
             return
 
         # get available connection for device
         need_check_conn = False
-        connections = dconn.Get(_DEV_IFACE_NAME, "AvailableConnections")
+        connections = dconn.Get(_DEVICE_IFACE, "AvailableConnections")
         if not connections:
             # no connections for given device, check all
             dconn = _create_dbus_connection(
-                _SETT_IFACE_NAME, _SETT_OBJ_NAME, _SERVICE_NAME, sbus=sbus
+                _SETTINGS_IFACE, _SETTINGS_OBJECT, _NM_SERVICE, sbus=sbus
             )
             if not dconn:
                 return
@@ -317,7 +323,7 @@ class ConnectionsSource(Source):
 
         for conn in connections:
             cset = _create_dbus_connection(
-                _CONNSETT_IFACE_NAME, conn, _SERVICE_NAME, sbus=sbus
+                _CONNECTION_IFACE, conn, _NM_SERVICE, sbus=sbus
             )
             settings = cset.GetSettings()
             settings_connection = settings.get("connection")
@@ -327,6 +333,8 @@ class ConnectionsSource(Source):
                     continue
 
             yield Connection.from_setting(conn, settings_connection)
+
+        sbus.close()
 
 
 class DevicesSource(Source):
@@ -339,19 +347,19 @@ class DevicesSource(Source):
             bus,
             "StateChanged",
             self._on_nm_updated,
-            dbus_interface=_IFACE_NAME,
+            dbus_interface=_NM_IFACE,
         )
         weaklib.dbus_signal_connect_weakly(
             bus,
             "DeviceAdded",
             self._on_nm_updated,
-            dbus_interface=_IFACE_NAME,
+            dbus_interface=_NM_IFACE,
         )
         weaklib.dbus_signal_connect_weakly(
             bus,
             "DeviceRemoved",
             self._on_nm_updated,
-            dbus_interface=_IFACE_NAME,
+            dbus_interface=_NM_IFACE,
         )
 
     def _on_nm_updated(self, *args):
@@ -362,18 +370,59 @@ class DevicesSource(Source):
         if interface := _create_dbus_connection_nm(sbus=sbus):
             for dev in interface.GetAllDevices():
                 if conn := _create_dbus_connection(
-                    _PROPS_IFACE_NAME, dev, _SERVICE_NAME, sbus=sbus
+                    _PROPS_IFACE, dev, _NM_SERVICE, sbus=sbus
                 ):
                     yield Device(
                         str(dev),
-                        str(conn.Get(_DEV_IFACE_NAME, "Interface")),
-                        int(conn.Get(_DEV_IFACE_NAME, "State")),
-                        bool(conn.Get(_DEV_IFACE_NAME, "Managed")),
-                        int(conn.Get(_DEV_IFACE_NAME, "DeviceType")),
+                        str(conn.Get(_DEVICE_IFACE, "Interface")),
+                        int(conn.Get(_DEVICE_IFACE, "State")),
+                        bool(conn.Get(_DEVICE_IFACE, "Managed")),
+                        int(conn.Get(_DEVICE_IFACE, "DeviceType")),
                     )
+        sbus.close()
 
     def provides(self):
         yield Device
 
     def get_icon_name(self):
         return "network-wired"
+
+
+class ToggleWirelessInfo(Action):
+    def __init__(self):
+        Action.__init__(self, "Toggle wireless")
+
+    def _activate(self, sbus: dbus.Bus) -> str | None:
+        if interface := _create_dbus_connection(
+            _PROPS_IFACE, _NM_OBJECT, _NM_SERVICE, sbus=sbus
+        ):
+            if not bool(interface.Get(_NM_IFACE, "WirelessHardwareEnabled")):
+                return _("Hardware wireless disabled")
+
+            state = not bool(interface.Get(_NM_IFACE, "WirelessEnabled"))
+            interface.Set(_NM_IFACE, "WirelessEnabled", state)
+            if state:
+                return _("Wireless enabled")
+
+            return _("Wireless disabled")
+
+        return None
+
+    def activate(self, leaf, iobj=None, ctx=None):
+        sbus = dbus.SystemBus()
+        if msg := self._activate(sbus):
+            uiutils.show_notification("Kupfer", msg)
+
+        sbus.close()
+
+    def get_description(self):
+        return "Toggle wireless by NetworkManager"
+
+    def get_gicon(self):
+        return icons.ComposedIcon("network-wireless", "emblem-system")
+
+    def item_types(self):
+        yield Leaf
+
+    def valid_object(self, obj, for_item=None):
+        return obj is DevicesSource
