@@ -60,6 +60,9 @@ def _do_search_engine(terms, search_url, encoding="UTF-8"):
 
 
 def _get_custom_engine_name(url: str) -> str | None:
+    if not url:
+        return None
+
     components = urllib.parse.urlparse(url)
     if netloc := components.netloc:
         return (
@@ -142,17 +145,6 @@ class SearchEngine(Leaf):
         return "text-html"
 
 
-def coroutine(func):
-    """Coroutine decorator: Start the coroutine"""
-
-    def startcr(*ar, **kw):
-        cr = func(*ar, **kw)
-        next(cr)
-        return cr
-
-    return startcr
-
-
 class OpenSearchParseError(Exception):
     pass
 
@@ -231,13 +223,13 @@ def _parse_etree(etree, name=None):
         if tagname == "Url":
             if child.get("type") == "text/html" and child.get("template"):
                 text = child.get("template")
-                params = {
-                    ch.get("name"): ch.get("value")
+                params = tuple(
+                    (ch.get("name"), ch.get("value"))
                     for ch in child
                     if gettagname(ch.tag) == "Param"
-                }
+                )
                 if params:
-                    text += _noescape_urlencode(list(params.items()))
+                    text += _noescape_urlencode(params)
             else:
                 continue
 
@@ -256,16 +248,14 @@ class OpenSearchSource(Source):
     def __init__(self):
         Source.__init__(self, _("Search Engines"))
 
-    @coroutine
-    def _parse_opensearch(self, target):
-        """This is a coroutine to parse OpenSearch files"""
-        while True:
-            try:
-                path = yield
-                etree = ElementTree.parse(path)
-                target.send(_parse_etree(etree, name=path))
-            except Exception as exc:
-                self.output_debug(f"{type(exc).__name__}: {exc}")
+    def _parse_opensearch(self, path):
+        try:
+            etree = ElementTree.parse(path)
+            return _parse_etree(etree, name=path)
+        except Exception as exc:
+            self.output_debug(f"{type(exc).__name__}: {exc}")
+
+        return None
 
     def get_items(self):
         plugin_dirs = list(_get_plugin_dirs())
@@ -273,38 +263,27 @@ class OpenSearchSource(Source):
             "Found following searchplugins directories", sep="\n", *plugin_dirs
         )
 
-        @coroutine
-        def collect(seq):
-            """Collect items in list @seq"""
-            while True:
-                seq.append((yield))
-
-        searches: list[dict[str, ty.Any]] = []
-        collector = collect(searches)
-        parser = self._parse_opensearch(collector)
         # files are unique by filename to allow override
         visited_files = set()
         for pdir in plugin_dirs:
-            try:
-                for fname in os.listdir(pdir):
-                    if fname in visited_files:
-                        continue
+            if not os.path.isdir(pdir):
+                continue
 
-                    fpath = os.path.join(pdir, fname)
-                    if not os.path.isdir(fpath):
-                        parser.send(fpath)
-                        visited_files.add(fname)
+            for fname in os.listdir(pdir):
+                if fname in visited_files:
+                    continue
 
-            except OSError as exc:
-                self.output_error(exc)
-
-        yield from (SearchEngine(s, s["ShortName"]) for s in searches)
+                visited_files.add(fname)
+                fpath = os.path.join(pdir, fname)
+                if not os.path.isdir(fpath):
+                    if search := self._parse_opensearch(fpath):
+                        yield SearchEngine(search, search["ShortName"])
 
         # add user search engines
         if custom_ses := __kupfer_settings__["extra_engines"]:
             for url in custom_ses.split(";"):
                 url = url.strip()
-                if name := _get_custom_engine_name(url):
+                if url and (name := _get_custom_engine_name(url)):
                     yield SearchEngine({"Url": url}, name)
 
     def should_sort_lexically(self):
