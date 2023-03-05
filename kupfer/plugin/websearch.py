@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __kupfer_name__ = _("Search the Web")
 __kupfer_sources__ = ("OpenSearchSource",)
 __kupfer_text_sources__ = ()
@@ -5,7 +7,9 @@ __kupfer_actions__ = (
     "SearchFor",
     "SearchWithEngine",
 )
-__description__ = _("Search the web with OpenSearch search engines")
+__description__ = _(
+    "Search the web with OpenSearch and user defined search engines"
+)
 __version__ = "2020-04-19"
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
@@ -16,9 +20,20 @@ import urllib.parse
 from pathlib import Path
 from xml.etree import ElementTree
 
-from kupfer import config, utils
+from kupfer import config, utils, plugin_support
 from kupfer.objects import Action, Leaf, Source, TextLeaf
 from kupfer.plugin._firefox_support import get_firefox_home_file
+
+__kupfer_settings__ = plugin_support.PluginSettings(
+    {
+        "key": "extra_engines",
+        "label": _(
+            "User search engines (URLs separated by ';'. Use '%s' for search term"
+        ),
+        "type": str,
+        "value": "https://www.qwant.com/?q=%s;https://search.brave.com/search?q=%s",
+    },
+)
 
 
 def _noescape_urlencode(items):
@@ -35,8 +50,26 @@ def _urlencode(word):
 
 def _do_search_engine(terms, search_url, encoding="UTF-8"):
     """Show an url searching for @search_url with @terms"""
-    query_url = search_url.replace("{searchTerms}", _urlencode(terms))
+    terms = _urlencode(terms)
+    if "{searchTerms}" in search_url:
+        query_url = search_url.replace("{searchTerms}", terms)
+    else:
+        query_url = search_url.replace("%s", terms)
+
     utils.show_url(query_url)
+
+
+def _get_custom_engine_name(url: str) -> str | None:
+    components = urllib.parse.urlparse(url)
+    if netloc := components.netloc:
+        return (
+            netloc.removeprefix("www.")
+            .removesuffix(".com")
+            .replace(".", " ")
+            .capitalize()
+        )
+
+    return None
 
 
 class SearchWithEngine(Action):
@@ -266,6 +299,13 @@ class OpenSearchSource(Source):
                 self.output_error(exc)
 
         yield from (SearchEngine(s, s["ShortName"]) for s in searches)
+
+        # add user search engines
+        if custom_ses := __kupfer_settings__["extra_engines"]:
+            for url in custom_ses.split(";"):
+                url = url.strip()
+                if name := _get_custom_engine_name(url):
+                    yield SearchEngine({"Url": url}, name)
 
     def should_sort_lexically(self):
         return True
