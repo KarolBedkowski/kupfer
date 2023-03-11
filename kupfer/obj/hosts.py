@@ -14,7 +14,6 @@ __author__ = (
     "Karol Będkowski <karol.bedkowsk+gh@gmail.com>"
 )
 
-# TODO: enum
 HOST_NAME_KEY = "HOST_NAME"
 HOST_ADDRESS_KEY = "HOST_ADDRESS"
 HOST_SERVICE_NAME_KEY = "HOST_SERVICE_NAME"
