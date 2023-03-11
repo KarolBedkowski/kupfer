@@ -29,7 +29,6 @@ __kupfer_settings__ = plugin_support.PluginSettings(
         "value": ".tar.gz",
         "alternatives": (
             ".7z",
-            ".rar",
             ".tar",
             ".tar.gz",
             ".tar.bz2",
@@ -43,26 +42,48 @@ if ty.TYPE_CHECKING:
     _ = str
 
 _EXTENSIONS_SET = (
-    ".rar",
     ".7z",
-    ".zip",
-    ".gz",
-    ".tgz",
-    ".tar",
-    ".lzma",
-    ".bz2",
-    ".tbz2",
-    ".tzo",
-    ".lzo",
-    ".xz",
-    ".ar",
-    ".cbz",
     ".Z",
-    ".taz",
-    ".lz",
+    ".ace",
+    ".alz",
+    ".ar",
+    ".arj",
     ".bz",
-    ".tbz",
+    ".bz2",
+    ".cab",
+    ".cbr",
+    ".cbz",
+    ".cpio",
+    ".deb",
+    ".dmg",
+    ".ear",
+    ".gz",
+    ".iso",
+    ".jar",
+    ".lha",
+    ".lz",
     ".lzh",
+    ".lzma",
+    ".lzo",
+    ".rar",
+    ".rpm",
+    ".sit",
+    ".snap",
+    ".sqsh",
+    ".tar",
+    ".taz",
+    ".tbz",
+    ".tbz2",
+    ".tgz",
+    ".tlrz",
+    ".tlz",
+    ".tzo",
+    ".tzst",
+    ".war",
+    ".xz",
+    ".zip",
+    ".zoo",
+    ".zst",
 )
 
 
@@ -77,11 +98,20 @@ class UnpackHere(Action):
         )
 
     def valid_for_item(self, leaf):
-        _tail, ext = os.path.splitext(leaf.object)
+        fname, ext = os.path.splitext(leaf.object)
         # FIXME: Make this detection smarter
         # check for standard extension or a multi-part rar extension
         ext = ext.lower()
-        return ext in _EXTENSIONS_SET or re.search(r".r\d+$", ext) is not None
+        if ext in _EXTENSIONS_SET:
+            return True
+
+        # for multi-part archives must exists also file without number, ie:
+        # Filename.rar Filename.r00 Filename.r01 etc
+        # not sure we can allow decompress no-first archive
+        if re.search(r".r\d+$", ext) is not None:
+            return os_path.isfile(f"{fname}.rar")
+
+        return False
 
     def item_types(self):
         yield FileLeaf
