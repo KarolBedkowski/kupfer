@@ -18,32 +18,23 @@ import typing as ty
 from kupfer import utils
 from kupfer.objects import Action, Leaf, Source
 
-_STATUS = {
-    "Attached": _("Attached"),
-    "Detached": _("Detached"),
-}
-
 
 class TmuxSession(Leaf):
     """Represented object is the session_id as string"""
 
     def __init__(
-        self, sid: str, name: str, windows: str, attached: str, created: str
+        self, sid: str, name: str, attached: str, created: str
     ) -> None:
         super().__init__(sid, name)
-        self._windows = windows
-        self._status = _STATUS.get(attached) or attached
-        self._created = str(datetime.datetime.fromtimestamp(int(created)))
+        self._attached = attached != "0"
+        self._created = datetime.datetime.fromtimestamp(int(created))
 
     def get_actions(self):
         yield Attach()
 
     def get_description(self) -> str:
-        return _(
-            "%(status)s session, %(windows)s windows, created %(time)s"
-        ) % {
-            "status": self._status,
-            "windows": self._windows,
+        return _("%(status)s tmux session, created %(time)s") % {
+            "status": _("Attached") if self._attached else _("Detached"),
             "time": self._created,
         }
 
@@ -54,7 +45,7 @@ class TmuxSession(Leaf):
 def tmux_sessions(session_id: str | None = None) -> ty.Iterator[list[str]]:
     cmd = (
         "tmux list-sessions -F "
-        "'#{session_id}\t#{session_name}\t#{session_windows}\t"
+        "'#{session_id}\t#{session_name}\t"
         "#{session_attached}\t#{session_created}'"
     )
     if session_id is not None:
@@ -69,7 +60,7 @@ def tmux_sessions(session_id: str | None = None) -> ty.Iterator[list[str]]:
 class TmuxSessionsSource(Source):
     """Source for tmux sessions"""
 
-    source_use_cache = True
+    source_use_cache = False
 
     def __init__(self):
         super().__init__(_("tmux Sessions"))
