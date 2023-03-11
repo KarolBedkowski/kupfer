@@ -15,7 +15,7 @@ from gi.repository.Gio import (
 from gi.repository.GLib import GError
 
 from kupfer.core import settings
-from kupfer.support import datatools, kupferstring, pretty, scheduler
+from kupfer.support import datatools, pretty, scheduler
 
 ICON_CACHE: dict[int, datatools.LruCache[str, GdkPixbuf.Pixbuf]] = {}
 # number of elements in icon lru cache (per icon size)
@@ -360,7 +360,9 @@ def _get_icon_for_standard_gicon(
         names = gicon.get_names()
         return get_icon_for_name(names[0], icon_size, names)
 
-    pretty.print_debug(__name__, "get_icon_for_gicon, could not load", gicon)
+    pretty.print_debug(
+        __name__, "_get_icon_for_standard_gicon, could not load", gicon
+    )
     return None
 
 

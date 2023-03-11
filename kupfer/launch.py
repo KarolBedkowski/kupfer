@@ -24,8 +24,9 @@ except ImportError as e:
 
 from kupfer import config, desktop_launch, terminal
 
-## NOTE: SpawnError  *should* be imported from this module
-from kupfer.desktop_launch import SpawnError  # pylint: disable=unused-import
+## NOTE: SpawnError  *should* be imported from this module TODO: check
+# pylint: disable=unused-import
+from kupfer.desktop_launch import SpawnError  # noqa: F401
 from kupfer.support import pretty, scheduler
 from kupfer.ui import uievents
 

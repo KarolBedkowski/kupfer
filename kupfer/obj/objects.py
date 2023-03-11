@@ -13,7 +13,6 @@ import zlib
 from gi.repository import GdkPixbuf
 
 from kupfer import icons
-from kupfer.support import kupferstring
 
 from .base import Action, Leaf, Source
 from .files import OpenUrl

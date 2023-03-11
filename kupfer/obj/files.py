@@ -15,7 +15,7 @@ from gi.repository import GdkPixbuf, Gio, GLib
 
 from kupfer import icons, launch, utils
 from kupfer.desktop_launch import SpawnError
-from kupfer.support import kupferstring, pretty
+from kupfer.support import pretty
 from kupfer.version import DESKTOP_ID
 
 from .base import Action, Leaf, Source

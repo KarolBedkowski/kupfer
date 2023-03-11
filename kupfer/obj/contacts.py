@@ -21,8 +21,8 @@ from .grouping import GroupingLeaf, Slots
 
 __author__ = (
     "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>, "
-    "Karol Będkowski <karol.bedkowsk+gh@gmail.com>",
-    "Adi Sieker <adi@sieker.info>",
+    "Karol Będkowski <karol.bedkowsk+gh@gmail.com>, "
+    "Adi Sieker <adi@sieker.info>"
 )
 
 EMAIL_KEY = "EMAIL"

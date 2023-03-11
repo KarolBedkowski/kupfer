@@ -75,6 +75,7 @@ class PeriodicRescanner(pretty.OutputMixin):
             oldtime = self._latest_rescan_time.get(source, 0)
             if (time.time() - oldtime) > self._min_rescan_interval:
                 self._timer.set(self._period, self._periodic_rescan_helper)
+                self.output_debug(f"scanning {source}")
                 self._start_source_rescan(source)
                 return
 

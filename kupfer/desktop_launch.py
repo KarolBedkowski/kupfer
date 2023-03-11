@@ -3,20 +3,17 @@ from __future__ import annotations
 import os
 import typing as ty
 from contextlib import suppress
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 
 import xdg.DesktopEntry
 import xdg.Exceptions
 from gi.repository import Gdk, Gio, GLib, Gtk
 
 from kupfer import terminal
-from kupfer.support import (
-    desktop_parse,
-    kupferstring,
-    pretty,
-    itertools as kitertools,
-)
+from kupfer.support import desktop_parse
+from kupfer.support import itertools as kitertools
+from kupfer.support import pretty
 
 __all__ = ["launch_app_info", "spawn_app", "spawn_app_id"]
 

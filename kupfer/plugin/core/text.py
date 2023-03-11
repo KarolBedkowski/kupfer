@@ -6,7 +6,6 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
-import socket
 
 from kupfer import utils
 from kupfer.support import pretty, system
@@ -122,7 +121,7 @@ class URLTextSource(TextSource):
 
         name = f"{components.netloc}{components.path}".strip("/")
         # Try to turn an URL-escaped string into a Unicode string
-        name = urllib.parse.unquote(url) or text
+        name = urllib.parse.unquote(name) or text
         yield UrlLeaf(text, name=name)
 
     def provides(self):

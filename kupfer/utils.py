@@ -17,7 +17,7 @@ from gi.repository import Gdk, Gio, GLib, Gtk
 
 from kupfer import desktop_launch, launch, terminal
 from kupfer.desktop_launch import SpawnError
-from kupfer.support import desktop_parse, kupferstring, pretty
+from kupfer.support import desktop_parse, pretty
 
 FilterFunc = ty.Callable[[str], bool]
 

@@ -1,9 +1,9 @@
-from __future__ import annotations
-
 """
 This plugin for simplicity use cli interface instead of api, so we don't need
 additional modules.
 """
+
+from __future__ import annotations
 
 __kupfer_name__ = _("tmux / tmuxp")
 __kupfer_sources__ = ("TmuxSessionsSource", "TmuxpSessionsSource")
