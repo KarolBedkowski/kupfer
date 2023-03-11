@@ -190,6 +190,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
         finally:
             self._nest_level -= 1
 
+    @property
     def _is_nested(self) -> bool:
         return bool(self._nest_level)
 
@@ -230,7 +231,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
         """Error when executing action - show notification to the user.
         Nested error are ignored."""
 
-        if self._is_nested():
+        if self._is_nested:
             return None
 
         _etype, value, _tb = exc_info
@@ -364,7 +365,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
 
         # Delegated command execution was requested: we pass
         # through the result of the action to the parent execution context
-        if delegate and self._is_nested():
+        if delegate and self._is_nested:
             self._delegate = True
 
         return self._return_result(res, ret, ui_ctx)
@@ -375,7 +376,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
         ret: ty.Any,
         ui_ctx: GUIEnvironmentContext | None,
     ) -> tuple[ExecResult, ty.Any]:
-        if not self._is_nested():
+        if not self._is_nested:
             self._append_result(res, ret)
             self.emit("command-result", res, ret, ui_ctx)
 
@@ -388,9 +389,6 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
             tuple[ExecResult, ActionResult] | ty.Iterable[ActionResult] | None
         ],
     ) -> tuple[ExecResult, ActionResult] | ActionResult:
-        self.output_debug(
-            "Combining", repr(action), retvals, f"delegate={self._delegate}"
-        )
         """
         When delegate is False `retvals` is list of `ActionResult` and function
         return  `ActionResult`.
@@ -399,11 +397,13 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
         and function return (ExecResult, ActionResult)
 
         """
+        self.output_debug(
+            "Combining", repr(action), retvals, f"delegate={self._delegate}"
+        )
 
         retvals_not_empty = filter(None, retvals)
 
         if not self._delegate:
-            # TODO: this probably was totally broken; rewritten, check
             values: list[ActionResult] = []
             res = ExecResult.NONE
             ret: ActionResult
@@ -427,8 +427,8 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
                 res = res_type
 
         # register tasks
-        tasks = resmap.pop(ExecResult.ASYNC, [])
-        self._make_retvalue(ExecResult.ASYNC, tasks)
+        if tasks := resmap.pop(ExecResult.ASYNC, None):
+            self._make_retvalue(ExecResult.ASYNC, tasks)
 
         if len(resmap) == 1:
             # Return the only of the Source or Object case
@@ -562,11 +562,13 @@ def _activate_action_multiple_multiplied(
     action: Action,
     iobjs: ty.Iterable[Leaf | None],
     ctx: ExecutionToken | None,
-) -> ty.Any:
+) -> tuple[ExecResult, ActionResult] | ActionResult | None:
     """
     Multiple dispatch by "mulitplied" invocation of the simple activation
 
-    Return an iterable of the return values.
+    When action is delegated return (ExecResult, ActionResult), otherwise
+    return ActionResult
+
     """
     rets = [
         _activate_action_single(leaf, action, item, ctx)
