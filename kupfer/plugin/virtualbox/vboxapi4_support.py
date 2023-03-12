@@ -10,7 +10,8 @@ __version__ = "2018-10-21"
 import vboxapi
 
 from kupfer.support import pretty
-from kupfer.plugin.virtualbox import constants as vbox_const
+
+from . import constants as vbox_const
 
 # check api
 try:

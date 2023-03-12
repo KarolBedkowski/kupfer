@@ -28,7 +28,7 @@ __author__ = "Leonardo Masuero <leom255255@gmail.com>"
 from contextlib import suppress
 
 from kupfer import utils
-from kupfer.objects import Action, TextLeaf
+from kupfer.obj import Action, TextLeaf
 
 
 class WhatsApp(Action):

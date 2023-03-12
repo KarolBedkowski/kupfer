@@ -14,14 +14,8 @@ from collections import defaultdict
 from pathlib import Path
 
 from kupfer import config
-from kupfer.obj import (
-    Action,
-    ActionGenerator,
-    AnySource,
-    Leaf,
-    Source,
-    TextSource,
-)
+from kupfer.obj import Action, AnySource, Leaf, Source, TextSource
+from kupfer.obj.base import ActionGenerator
 from kupfer.obj.sources import MultiSource, SourcesSource
 from kupfer.support import conspickle, pretty, scheduler
 

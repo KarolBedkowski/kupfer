@@ -14,8 +14,7 @@ import typing as ty
 from brotab.api import MultipleMediatorsAPI
 from brotab.main import create_clients
 
-from kupfer.obj.objects import UrlLeaf
-from kupfer.objects import Action, Leaf, Source
+from kupfer.obj import Action, Leaf, Source, UrlLeaf
 
 if ty.TYPE_CHECKING:
     _ = str

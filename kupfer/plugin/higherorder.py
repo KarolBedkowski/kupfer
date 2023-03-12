@@ -9,8 +9,8 @@ __version__ = "2010-01-11"
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 from kupfer.core import commandexec
+from kupfer.obj import Action, Leaf
 from kupfer.obj.compose import ComposedLeaf, MultipleLeaf
-from kupfer.objects import Action, Leaf
 from kupfer.support import pretty
 
 

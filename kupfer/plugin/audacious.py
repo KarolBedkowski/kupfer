@@ -14,8 +14,14 @@ import typing as ty
 import dbus
 
 from kupfer import icons, plugin_support, utils
-from kupfer.obj import Action, Leaf, RunnableLeaf, Source, SourceLeaf
-from kupfer.obj.exceptions import NotAvailableError
+from kupfer.obj import (
+    Action,
+    Leaf,
+    NotAvailableError,
+    RunnableLeaf,
+    Source,
+    SourceLeaf,
+)
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer.support import kupferstring, pretty, weaklib
 from kupfer.ui import uiutils

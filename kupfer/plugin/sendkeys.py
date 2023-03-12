@@ -13,7 +13,7 @@ from contextlib import suppress
 from gi.repository import Gdk, Gtk
 
 from kupfer import interface, utils
-from kupfer.objects import Action, Leaf, OperationError, TextLeaf
+from kupfer.obj import Action, Leaf, OperationError, TextLeaf
 
 # delay for first keypress and all following
 _INIT_DELAY = "usleep 300000"

@@ -12,7 +12,7 @@ import typing as ty
 from contextlib import suppress
 
 from kupfer import utils, version
-from kupfer.objects import Action, TextLeaf
+from kupfer.obj import Action, TextLeaf
 from kupfer.support import pretty
 from kupfer.ui import uiutils
 

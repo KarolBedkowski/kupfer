@@ -22,7 +22,7 @@ import typing as ty
 import urllib.parse
 
 from kupfer import icons, plugin_support, utils
-from kupfer.objects import Action, Leaf, Source, TextLeaf
+from kupfer.obj import Action, Leaf, Source, TextLeaf
 from kupfer.support import kupferstring, task
 from kupfer.ui import uiutils
 

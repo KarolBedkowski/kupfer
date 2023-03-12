@@ -5,8 +5,8 @@ __version__ = "2017.1"
 __author__ = ""
 
 from kupfer import utils
+from kupfer.obj import Action, TextLeaf, UrlLeaf
 from kupfer.obj.contacts import ContactLeaf, email_from_leaf
-from kupfer.objects import Action, TextLeaf, UrlLeaf
 
 
 class NewMailAction(Action):

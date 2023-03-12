@@ -5,7 +5,7 @@ __version__ = "2017.1"
 __author__ = ""
 
 from kupfer import utils
-from kupfer.objects import Action, OperationError, TextLeaf
+from kupfer.obj import Action, OperationError, TextLeaf
 
 
 class LookUp(Action):

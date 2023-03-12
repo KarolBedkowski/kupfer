@@ -9,7 +9,7 @@ import os
 import signal
 
 from kupfer import plugin_support, utils
-from kupfer.objects import Action, Leaf, Source
+from kupfer.obj import Action, Leaf, Source
 from kupfer.support import scheduler
 
 __kupfer_settings__ = plugin_support.PluginSettings(

@@ -16,7 +16,7 @@ import os
 import typing as ty
 
 from kupfer import utils
-from kupfer.objects import Action, Leaf, Source
+from kupfer.obj import Action, Leaf, Source
 
 
 class TmuxSession(Leaf):

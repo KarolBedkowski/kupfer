@@ -12,17 +12,17 @@ __description__ = "Core actions and items"
 __version__ = ""
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
-from contextlib import suppress
 import typing as ty
+from contextlib import suppress
 
 from gi.repository import Gdk, Gtk
 
 from kupfer import interface, objects
+from kupfer.obj import Action, Leaf
+from kupfer.obj.exceptions import InvalidLeafError
 from kupfer.obj.sources import MultiSource
-from kupfer.objects import Action, InvalidLeafError, Leaf
-from kupfer.support import pretty, task
-
 from kupfer.plugin.core import commands, contents, internal, text
+from kupfer.support import pretty, task
 
 if ty.TYPE_CHECKING:
     _ = str

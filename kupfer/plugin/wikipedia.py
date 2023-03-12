@@ -12,7 +12,7 @@ __author__ = "US"
 import urllib.parse
 
 from kupfer import plugin_support, utils
-from kupfer.objects import Action, TextLeaf, Leaf, Source
+from kupfer.obj import Action, Leaf, Source, TextLeaf
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {

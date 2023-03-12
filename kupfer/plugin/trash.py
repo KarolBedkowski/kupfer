@@ -14,11 +14,11 @@ from kupfer.obj import (
     Action,
     FileLeaf,
     Leaf,
-    Open,
     OperationError,
     Source,
     SourceLeaf,
 )
+from kupfer.obj.fileactions import Open
 from kupfer.support import pretty
 
 _TRASH_URI = "trash://"

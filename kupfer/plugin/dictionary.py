@@ -5,8 +5,8 @@ __version__ = ""
 __author__ = "Ulrik"
 
 from kupfer import plugin_support, utils
-from kupfer.objects import Action, OperationError, TextLeaf
 from kupfer.desktop_launch import SpawnError
+from kupfer.obj import Action, OperationError, TextLeaf
 
 dictionaries = {
     "gnome-dictionary": ["gnome-dictionary", "--look-up="],

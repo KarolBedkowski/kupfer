@@ -7,7 +7,8 @@ __author__ = ""
 from gi.repository import Gio, GLib
 
 from kupfer import utils
-from kupfer.obj import Action, FileLeaf, Open, OpenTerminal, Source
+from kupfer.obj import Action, FileLeaf, OpenTerminal, Source
+from kupfer.obj.fileactions import Open
 from kupfer.ui import uiutils
 
 _VOLUME_ICON_NAME = "drive-removable-media"

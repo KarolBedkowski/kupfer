@@ -23,6 +23,9 @@ of object and indirect object.
 With multiple command execution (and delegation), we must then process and
 merge multiple return values.
 
+This file is a part of the program kupfer, which is
+released under GNU General Public License v3 (or any later version),
+see the main program file, and COPYING for details.
 
 TODO: delegation, run, combine_action_result_multiple need rethink / rebuild.
 It's work quite well but is too complicated.
@@ -35,15 +38,20 @@ import contextlib
 import itertools
 import sys
 import typing as ty
-from functools import partial
 from enum import IntEnum
+from functools import partial
 
 from gi.repository import GObject
 
-from kupfer.obj.base import Action, KupferObject, Leaf, Source
+from kupfer.obj import (
+    Action,
+    KupferObject,
+    Leaf,
+    OperationError,
+    Source,
+    SourceLeaf,
+)
 from kupfer.obj.compose import MultipleLeaf
-from kupfer.obj.exceptions import OperationError
-from kupfer.obj.objects import SourceLeaf
 from kupfer.obj.sources import MultiSource
 from kupfer.support import pretty, task
 from kupfer.support.types import ExecInfo
@@ -51,6 +59,14 @@ from kupfer.ui import uiutils
 from kupfer.ui.uievents import GUIEnvironmentContext
 
 from ._helpers import get_leaf_members, is_multiple_leaf
+
+__all__ = (
+    "ExecResult",
+    "ActionExecutionError",
+    "ExecutionToken",
+    "ActionExecutionContext",
+    "default_action_execution_context",
+)
 
 
 class ExecResult(IntEnum):

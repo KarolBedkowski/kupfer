@@ -9,8 +9,8 @@ import pwd
 from pathlib import Path
 
 from kupfer import utils
+from kupfer.obj import Action, Leaf, Source
 from kupfer.obj.helplib import FilesystemWatchMixin
-from kupfer.objects import Action, Leaf, Source
 
 
 def screen_sessions_infos():

@@ -8,10 +8,8 @@ from kupfer.obj.base import KupferObject
 
 # NOTE: TextRepresentation moved into obj.representation
 # pylint: disable=unused-import
-from kupfer.obj.representation import (
-    TextRepresentation,  # noqa: F401
-    UriListRepresentation,  # noqa: F401
-)
+from kupfer.obj.representation import TextRepresentation  # noqa: F401
+from kupfer.obj.representation import UriListRepresentation  # noqa: F401
 
 
 def get_text_representation(obj: ty.Any) -> str | None:

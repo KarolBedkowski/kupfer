@@ -8,7 +8,7 @@ __author__ = "Peter Stuifzand <peter@p83.nl>"
 import pinboard
 
 from kupfer import plugin_support
-from kupfer.objects import Source, UrlLeaf
+from kupfer.obj import Source, UrlLeaf
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {

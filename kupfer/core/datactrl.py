@@ -17,16 +17,15 @@ from gi.repository import GLib, GObject
 
 from kupfer.obj import (
     Action,
-    ActionGenerator,
     AnySource,
-    DirectorySource,
-    FileSource,
     KupferObject,
     Leaf,
     Source,
     TextSource,
     compose,
 )
+from kupfer.obj.base import ActionGenerator
+from kupfer.obj.filesrc import DirectorySource, FileSource
 from kupfer.support import pretty, scheduler
 from kupfer.support.types import ExecInfo
 from kupfer.ui.uievents import GUIEnvironmentContext
@@ -416,9 +415,8 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self.output_debug("Skipping late search", match, context)
         return True
 
-    def select(self, pane: PaneSel, item: KupferObject | None) -> None:
-        """Select @item in @pane to self-update
-        relevant places"""
+    def select(self, pane: PaneSel, item: Leaf | None) -> None:
+        """Select @item in @pane to self-update relevant places"""
         # If already selected, do nothing
         panectl = self._get_panectl(pane)
         if item == panectl.get_selection():

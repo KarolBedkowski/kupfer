@@ -10,6 +10,7 @@ import codecs
 import os
 
 from kupfer import icons, utils
+from kupfer.obj import Action
 from kupfer.obj.grouping import ToplevelGroupingSource
 from kupfer.obj.helplib import FilesystemWatchMixin
 from kupfer.obj.hosts import (
@@ -18,7 +19,6 @@ from kupfer.obj.hosts import (
     HOST_SERVICE_NAME_KEY,
     HostLeaf,
 )
-from kupfer.objects import Action
 
 
 class SSHLeaf(HostLeaf):
