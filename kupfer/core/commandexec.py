@@ -22,6 +22,10 @@ of object and indirect object.
 
 With multiple command execution (and delegation), we must then process and
 merge multiple return values.
+
+
+TODO: delegation, run, combine_action_result_multiple need rethink / rebuild.
+It's work quite well but is too complicated.
 """
 
 from __future__ import annotations
@@ -351,15 +355,18 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
         # Delegated command execution was previously requested: we take
         # the result of the nested execution context
         if self._delegate:
+            assert not ret or isinstance(ret, tuple)
             # K: added; ret can be None
             # K: res was 0 (no value)
-            res, ret = ret if ret else (ExecResult.ZERO, None)
+            res, ret = ret if ret else (ExecResult.ZERO, None)  # type: ignore
             return self._return_result(res, ret, ui_ctx)
 
+        assert not ret or isinstance(ret, (Source, Leaf, task.Task))
         res = parse_action_result(action, ret)
         if res == ExecResult.ASYNC:
             # Register the task then "clear" the result
             self.output_debug("Registering async task", ret)
+            assert isinstance(ret, task.Task)
             self._task_runner.add_task(ret)
             res, ret = ExecResult.NONE, None
 
@@ -385,9 +392,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
     def combine_action_result_multiple(
         self,
         action: Action,
-        retvals: ty.Iterable[
-            tuple[ExecResult, ActionResult] | ty.Iterable[ActionResult] | None
-        ],
+        retvals: list[tuple[ExecResult, ActionResult] | ActionResult],
     ) -> tuple[ExecResult, ActionResult] | ActionResult:
         """
         When delegate is False `retvals` is list of `ActionResult` and function
@@ -506,12 +511,36 @@ GObject.signal_new(
 default_action_execution_context = ActionExecutionContext.instance
 
 
+# pylint: disable=too-few-public-methods
+class ActionActivateFunc(ty.Protocol):
+    def __call__(
+        self,
+        obj: Leaf,
+        iobj: Leaf | None = None,
+        ctx: ExecutionToken | None = None,
+        /,
+    ) -> ActionResult:
+        pass
+
+
+# pylint: disable=too-few-public-methods
+class ActionActivateMultipleFunc(ty.Protocol):
+    def __call__(
+        self,
+        obj: ty.Iterable[Leaf],
+        iobj: ty.Iterable[Leaf | None] | None = None,
+        ctx: ExecutionToken | None = None,
+        /,
+    ) -> ActionResult:
+        pass
+
+
 def activate_action(
     context: ExecutionToken | None,
     obj: Leaf,
     action: Action,
     iobj: Leaf | None,
-) -> ty.Any:
+) -> tuple[ExecResult, ActionResult] | ActionResult:
     """Activate @action in simplest manner"""
 
     if not action.wants_context():
@@ -525,8 +554,8 @@ def activate_action(
 
 def _activate_action_single(
     obj: Leaf, action: Action, iobj: Leaf | None, ctx: ExecutionToken | None
-) -> ty.Any:
-    func = action.activate
+) -> tuple[ExecResult, ActionResult] | ActionResult:
+    func: ActionActivateFunc = action.activate
     if ctx:
         # set context to action.activate call
         func = partial(func, ctx=ctx)
@@ -539,14 +568,14 @@ def _activate_action_single(
 
 def _activate_action_multiple(
     obj: Leaf, action: Action, iobj: Leaf | None, ctx: ExecutionToken | None
-) -> ty.Any:
+) -> tuple[ExecResult, ActionResult] | ActionResult | None:
     objs = get_leaf_members(obj)
 
     if not hasattr(action, "activate_multiple"):
         iobjs = (None,) if iobj is None else get_leaf_members(iobj)
         return _activate_action_multiple_multiplied(objs, action, iobjs, ctx)
 
-    func = action.activate_multiple  # type: ignore
+    func: ActionActivateMultipleFunc = action.activate_multiple  # type: ignore
     if ctx:
         func = partial(func, ctx=ctx)
 
@@ -581,9 +610,11 @@ def _activate_action_multiple_multiplied(
     return ret
 
 
-def parse_action_result(action: Action, ret: ty.Any) -> ExecResult:
+def parse_action_result(action: Action, ret: ActionResult) -> ExecResult:
     """Return result type for @action and return value @ret"""
-    if not ret or (hasattr(ret, "is_valid") and not ret.is_valid()):
+    if not ret or (
+        hasattr(ret, "is_valid") and not ret.is_valid()  # type:ignore
+    ):
         return ExecResult.NONE
 
     # handle actions returning "new contexts"
