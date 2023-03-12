@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import typing as ty
 
-from kupfer.obj import Action, Leaf, Source, KupferObject
+from kupfer.obj import Action, KupferObject, Leaf, Source
 
-from .sources import SourceController
 from ._helpers import get_leaf_members
+from .sources import SourceController
 
 
 def action_valid_for_item(action: Action, leaf: Leaf) -> bool:

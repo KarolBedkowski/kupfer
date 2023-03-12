@@ -32,7 +32,6 @@ Compatibility: Python 3
 """
 import typing as ty
 
-
 FormatCleanCB = ty.Callable[[str], str]
 FormatMatchCB = ty.Callable[[str], str]
 

@@ -30,6 +30,12 @@ from kupfer.desktop_launch import SpawnError  # noqa: F401
 from kupfer.support import pretty, scheduler
 from kupfer.ui import uievents
 
+__all__ = (
+    "SpawnError",
+    "launch_application",
+    "get_applications_matcher_service",
+)
+
 _DEFAULT_ASSOCIATIONS = {
     "evince": "Document Viewer",
     "file-roller": "File Roller",

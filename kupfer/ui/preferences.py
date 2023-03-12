@@ -15,8 +15,9 @@ from xdg import Exceptions as xdg_e
 
 from kupfer import config, icons, plugin_support, utils, version
 from kupfer.core import plugins, relevance, settings, sources
-from kupfer.obj.base import KupferObject
-from kupfer.support import kupferstring, pretty, scheduler, types as kty
+from kupfer.obj import KupferObject
+from kupfer.support import kupferstring, pretty, scheduler
+from kupfer.support import types as kty
 
 from . import accelerators, getkey_dialog, keybindings, kupferhelp
 from .credentials_dialog import ask_user_credentials

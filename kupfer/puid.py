@@ -10,6 +10,8 @@ data model user-level object.
 We unpickle SerializedObjects in an especially conservative way: new
 module loading is always refused; this way, we avoid loading parts of
 the program that we didn't wish to activate.
+
+TODO: move to core?
 """
 
 from __future__ import annotations
@@ -20,17 +22,17 @@ import typing as ty
 
 from kupfer.core import actioncompat, qfurl
 from kupfer.core.sources import get_source_controller
-from kupfer.obj.base import Action, AnySource, Leaf, Source
+from kupfer.obj import Action, AnySource, Leaf, Source
 from kupfer.support import conspickle, pretty
 
-__all__ = [
+__all__ = (
     "SerializedObject",
     "SERIALIZABLE_ATTRIBUTE",
     "resolve_unique_id",
     "resolve_action_id",
     "get_unique_id",
     "is_reference",
-]
+)
 
 
 SERIALIZABLE_ATTRIBUTE = "serializable"

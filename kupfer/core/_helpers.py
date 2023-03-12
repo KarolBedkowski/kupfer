@@ -1,12 +1,15 @@
 #! /usr/bin/env python3
-# Distributed under terms of the GPLv3 license.
-
 """
-Helper functions - common code for core module
+Helper functions - common code for core module.
+
+This file is a part of the program kupfer, which is
+released under GNU General Public License v3 (or any later version),
+see the main program file, and COPYING for details.
 """
 from __future__ import annotations
 
 import typing as ty
+
 from kupfer.obj import Leaf
 
 

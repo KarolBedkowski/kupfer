@@ -15,15 +15,15 @@ from enum import IntEnum
 
 from gi.repository import GLib, GObject
 
-from kupfer.obj import (
+from kupfer.obj.base import (
     Action,
     AnySource,
     KupferObject,
     Leaf,
     Source,
     TextSource,
-    compose,
 )
+from kupfer.obj import compose
 from kupfer.obj.base import ActionGenerator
 from kupfer.obj.filesrc import DirectorySource, FileSource
 from kupfer.support import pretty, scheduler

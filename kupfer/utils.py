@@ -4,6 +4,7 @@ import functools
 import itertools
 import locale
 import os
+import re
 import signal
 import sys
 import tempfile
@@ -11,7 +12,6 @@ import typing as ty
 from contextlib import suppress
 from os import path as os_path
 from pathlib import Path
-import re
 
 from gi.repository import Gdk, Gio, GLib, Gtk
 

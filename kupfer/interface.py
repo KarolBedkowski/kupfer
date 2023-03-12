@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as ty
 
-from gi.repository import Gdk, Gtk
+from gi.repository import Gtk
 
 from kupfer.obj.base import KupferObject
 
@@ -10,6 +10,8 @@ from kupfer.obj.base import KupferObject
 # pylint: disable=unused-import
 from kupfer.obj.representation import TextRepresentation  # noqa: F401
 from kupfer.obj.representation import UriListRepresentation  # noqa: F401
+
+__all__ = ("TextRepresentation", "UriListRepresentation")
 
 
 def get_text_representation(obj: ty.Any) -> str | None:

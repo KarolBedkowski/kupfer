@@ -13,17 +13,17 @@ __description__ = _(
 __version__ = "2017.1"
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
-import typing as ty
 import subprocess
+import typing as ty
 from contextlib import suppress
 
 # since "path" is a very generic name, you often forget..
 from os import path as os_path
 
 from kupfer import runtimehelper, utils
+from kupfer.desktop_launch import SpawnError
 from kupfer.obj import Action, FileLeaf, OperationError, TextLeaf
 from kupfer.support import pretty
-from kupfer.desktop_launch import SpawnError
 
 if ty.TYPE_CHECKING:
     _ = str

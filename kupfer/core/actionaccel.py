@@ -1,3 +1,10 @@
+"""
+Accelerators configuration.
+
+This file is a part of the program kupfer, which is
+released under GNU General Public License v3 (or any later version),
+see the main program file, and COPYING for details.
+"""
 from __future__ import annotations
 
 import json
@@ -8,6 +15,8 @@ from kupfer.support import pretty
 
 _repr_key = repr
 
+
+__all__ = ("AccelConfig",)
 
 # AcceleratorValidator check is given accelerator is valid
 AcceleratorValidator = ty.Callable[[str], bool]

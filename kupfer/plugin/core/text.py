@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import typing as ty
-
 import os
+import typing as ty
 import urllib.error
 import urllib.parse
 import urllib.request
 
 from kupfer import utils
+from kupfer.obj import FileLeaf, OpenUrl, TextLeaf, TextSource, UrlLeaf
 from kupfer.support import pretty, system
 from kupfer.support.validators import is_url
-from kupfer.obj import FileLeaf, OpenUrl, TextLeaf, TextSource, UrlLeaf
 
 __kupfer_name__ = "Free-text Queries"
 __kupfer_sources__ = ()

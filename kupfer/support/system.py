@@ -5,8 +5,8 @@
 System related functions
 """
 
-import socket
 import functools
+import socket
 
 from . import pretty
 

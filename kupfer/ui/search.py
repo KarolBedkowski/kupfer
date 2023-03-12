@@ -12,7 +12,7 @@ import kupfer.environment
 from kupfer import icons
 from kupfer.core import actionaccel, learn, relevance, settings
 from kupfer.core.search import Rankable
-from kupfer.obj.base import Action, AnySource, KupferObject, Leaf
+from kupfer.obj import Action, AnySource, KupferObject, Leaf
 from kupfer.support import pretty
 
 from .support import escape_markup_str, text_direction_is_ltr

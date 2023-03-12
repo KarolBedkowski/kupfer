@@ -22,7 +22,6 @@ from . import actioncompat, search
 from .search import Rankable
 from .sources import get_source_controller
 
-
 T = ty.TypeVar("T")
 ItemCheckFunc = ty.Callable[[ty.Iterable[T]], ty.Iterable[T]]
 

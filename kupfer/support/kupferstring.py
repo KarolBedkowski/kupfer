@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import locale
 import typing as ty
-from unicodedata import category, normalize
 from functools import cache
+from unicodedata import category, normalize
 
 
 def _folditems():
