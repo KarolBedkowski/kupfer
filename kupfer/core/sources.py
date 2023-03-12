@@ -553,23 +553,25 @@ class SourceController(pretty.OutputMixin):
     def get_contents_for_leaf(
         self, leaf: Leaf, types: ty.Optional[ty.Tuple[ty.Any, ...]] = None
     ) -> ty.Iterator[AnySource]:
-        """Iterator of content sources for @leaf,
-        providing @types (or None for all)"""
+        """Iterator of content sources for @leaf, providing @types
+        (or None for all)"""
         for typ, val in self._content_decorators.items():
             if not isinstance(leaf, typ):
                 continue
 
-            for content in list(val):
+            for content in val:
                 with pluginload.exception_guard(
                     content, self._remove_source, content, is_decorator=True
                 ):
                     dsrc = content.decorate_item(leaf)  # type: ignore
 
-                if dsrc:
-                    if types and not self.good_source_for_types(dsrc, types):
-                        continue
+                if not dsrc:
+                    continue
 
-                    yield self.get_canonical_source(dsrc)
+                if types and not self.good_source_for_types(dsrc, types):
+                    continue
+
+                yield self.get_canonical_source(dsrc)
 
     def get_actions_for_leaf(self, leaf: Leaf) -> ty.Iterator[Action]:
         for typ, val in self.action_decorators.items():
@@ -582,15 +584,21 @@ class SourceController(pretty.OutputMixin):
     def decorate_object(
         self, obj: Leaf, action: ty.Optional[Action] = None
     ) -> None:
+        """If `obj` may have content (Source) and currently there is no assigned
+        content - get sources for `obj` and optional `action` and add it into obj.
+        Multiple sources are packed into SourcesSource.
+        WARN: obj is updated in packet
+        """
         if hasattr(obj, "has_content") and not obj.has_content():
             types = tuple(action.object_types()) if action else ()
-            contents = list(self.get_contents_for_leaf(obj, types))
-            if len(contents) > 1:
-                obj.add_content(
-                    SourcesSource(contents, name=str(obj), use_reprs=False)  # type: ignore
-                )
-            else:
+            contents = tuple(self.get_contents_for_leaf(obj, types))
+            if len(contents) <= 1:
                 obj.add_content(contents[0] if contents else None)
+                return
+
+            obj.add_content(
+                SourcesSource(contents, name=str(obj), use_reprs=False)  # type: ignore
+            )
 
     def finalize(self) -> None:
         "Finalize all sources, equivalent to deactivating all sources"

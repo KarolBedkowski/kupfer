@@ -6,6 +6,7 @@ Support function for iterators
 
 from __future__ import annotations
 
+import itertools
 import typing as ty
 
 
@@ -35,3 +36,20 @@ def two_part_mapper(instr: str, repfunc: ty.Callable[[str], str | None]) -> str:
         yield instr[-1]
 
     return "".join(_inner())
+
+
+T = ty.TypeVar("T")
+
+
+def peekfirst(
+    seq: ty.Iterable[T],
+) -> tuple[T | None, ty.Iterable[T]]:
+    """This function will return (firstitem, iter) where firstitem is the first
+    item of `seq` or None if empty, and iter an equivalent copy of `seq`
+    """
+    seq = iter(seq)
+    for itm in seq:
+        old_iter = itertools.chain((itm,), seq)
+        return (itm, old_iter)
+
+    return (None, seq)

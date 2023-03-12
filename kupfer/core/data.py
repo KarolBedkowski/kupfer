@@ -16,14 +16,16 @@ from kupfer.obj.base import (
     TextSource,
 )
 from kupfer.support import datatools, pretty
+from kupfer.support.itertools import peekfirst
 
 from . import actioncompat, search
 from .search import Rankable
 from .sources import get_source_controller
 
-ItemCheckFunc = ty.Callable[
-    [ty.Iterable[KupferObject]], ty.Iterable[KupferObject]
-]
+
+T = ty.TypeVar("T")
+
+ItemCheckFunc = ty.Callable[[ty.Iterable[T]], ty.Iterable[T]]
 DecoratorFunc = ty.Callable[[ty.Iterable[Rankable]], ty.Iterable[Rankable]]
 
 
@@ -32,28 +34,14 @@ def _identity(x: ty.Any) -> ty.Any:
 
 
 def _dress_leaves(
-    seq: ty.Iterable[Rankable], action: ty.Optional[Action]
+    seq: ty.Iterable[Rankable], action: Action | None
 ) -> ty.Iterable[Rankable]:
     """yield items of @seq "dressed" by the source controller"""
     sctr = get_source_controller()
+    decorate_object = sctr.decorate_object
     for itm in seq:
-        sctr.decorate_object(itm.object, action=action)  # type:ignore
+        decorate_object(itm.object, action=action)  # type:ignore
         yield itm
-
-
-def _peekfirst(
-    seq: ty.Iterable[Rankable],
-) -> tuple[ty.Optional[Rankable], ty.Iterable[Rankable]]:
-    """This function will return (firstitem, iter)
-    where firstitem is the first item of @seq or None if empty,
-    and iter an equivalent copy of @seq
-    """
-    seq = iter(seq)
-    for itm in seq:
-        old_iter = itertools.chain((itm,), seq)
-        return (itm, old_iter)
-
-    return (None, seq)
 
 
 def _as_set_iter(seq: ty.Iterable[Rankable]) -> ty.Iterable[Rankable]:
@@ -88,7 +76,7 @@ class Searcher:
         sources_: ty.Iterable[Source | TextSource | ty.Iterable[KupferObject]],
         key: str,
         score: bool = True,
-        item_check: ItemCheckFunc | None = None,
+        item_check: ItemCheckFunc[ty.Any] | None = None,
         decorator: DecoratorFunc | None = None,
     ) -> tuple[Rankable | None, ty.Iterable[Rankable]]:
         """
@@ -161,7 +149,7 @@ class Searcher:
         # Check if the items are valid as the search
         # results are accessed through the iterators
         unique_matches = _as_set_iter(matches)
-        match, match_iter = _peekfirst(decorator(_valid_check(unique_matches)))
+        match, match_iter = peekfirst(decorator(_valid_check(unique_matches)))
         pretty.timing_step(__name__, start_time, "ranked")
         return match, match_iter
 
@@ -170,7 +158,7 @@ class Searcher:
         objects: ty.Iterable[KupferObject],
         key: str,
         leaf: Leaf | None,
-        item_check: ItemCheckFunc | None = None,
+        item_check: ItemCheckFunc[KupferObject] | None = None,
         decorator: DecoratorFunc | None = None,
     ) -> tuple[Rankable | None, ty.Iterable[Rankable]]:
         """
@@ -196,7 +184,7 @@ class Searcher:
             matches, key=operator.attrgetter("rank"), reverse=True
         )
 
-        match, match_iter = _peekfirst(decorator(sorted_matches))
+        match, match_iter = peekfirst(decorator(sorted_matches))
         return match, match_iter
 
 
@@ -408,7 +396,7 @@ class PrimaryActionPane(Pane):
         self._action_valid_cache: dict[int, bool] = {}
         self.set_item(None)
 
-    def select(self, item: KupferObject | None) -> None:
+    def select(self, item: Leaf | None) -> None:
         assert not item or isinstance(
             item, base.Action
         ), "Selection in action pane is not an Action!"
