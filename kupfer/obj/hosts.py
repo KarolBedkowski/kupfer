@@ -7,7 +7,7 @@ Main definition and *constructor* classes.
 
 import typing as ty
 
-from kupfer.obj.grouping import GroupingLeaf, Slots
+from .grouping import GroupingLeaf, Slots
 
 __author__ = (
     "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>, "

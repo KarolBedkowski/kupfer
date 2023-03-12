@@ -9,7 +9,8 @@ import weakref
 from collections import defaultdict
 
 from kupfer import utils
-from kupfer.objects import Leaf, Source
+
+from .base import Leaf, Source
 
 __author__ = (
     "Karol Będkowski <karol.bedkowsk+gh@gmail.com>, "

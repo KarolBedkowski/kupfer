@@ -15,7 +15,7 @@ from gi.repository import GdkPixbuf
 from kupfer import icons
 
 from .base import Action, Leaf, Source
-from .files import OpenUrl
+from .fileactions import OpenUrl
 from .representation import TextRepresentation
 
 if ty.TYPE_CHECKING:
