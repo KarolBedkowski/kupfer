@@ -1,8 +1,10 @@
 #! /usr/bin/env python3
-# Distributed under terms of the GPLv3 license.
-
 """
 File - related sources
+
+This file is a part of the program kupfer, which is
+released under GNU General Public License v3 (or any later version),
+see the main program file, and COPYING for details.
 """
 
 from __future__ import annotations
@@ -20,6 +22,12 @@ from . import apps, files
 from .base import Leaf, Source
 from .exceptions import InvalidDataError
 from .helplib import FilesystemWatchMixin
+
+__all__ = (
+    "construct_file_leaf",
+    "DirectorySource",
+    "FileSource",
+)
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -54,6 +62,7 @@ class DirectorySource(Source, FilesystemWatchMixin):
         self._show_hidden = show_hidden
         self._toplevel = toplevel
         self.monitor: ty.Any = None
+        self._user_home = os.path.expanduser("~")
 
     def __repr__(self) -> str:
         return (
@@ -76,16 +85,16 @@ class DirectorySource(Source, FilesystemWatchMixin):
 
     def get_items(self) -> ty.Iterator[Leaf]:
         try:
-            files: ty.Iterable[str] = os.listdir(self._directory)
+            dirfiles: ty.Iterable[str] = os.listdir(self._directory)
         except OSError as exc:
             self.output_error(exc)
         else:
             if not self._show_hidden:
-                files = (f for f in files if f[0] != ".")
+                dirfiles = (f for f in dirfiles if f[0] != ".")
 
             yield from (
                 construct_file_leaf(path.join(self._directory, fname))
-                for fname in files
+                for fname in dirfiles
             )
 
     def should_sort_lexically(self) -> bool:
@@ -114,26 +123,17 @@ class DirectorySource(Source, FilesystemWatchMixin):
 
     def get_leaf_repr(self) -> ty.Optional[Leaf]:
         alias = None
-        if os.path.isdir(self._directory) and os.path.samefile(
-            self._directory, os.path.expanduser("~")
+        directory = self._directory
+        if os.path.isdir(directory) and os.path.samefile(
+            directory, self._user_home
         ):
             alias = _("Home Folder")
 
-        return files.FileLeaf(self._directory, alias=alias)
+        return files.FileLeaf(directory, alias=alias)
 
     def provides(self) -> ty.Iterable[ty.Type[Leaf]]:
         yield files.FileLeaf
         yield apps.AppLeaf
-
-
-def _representable_fname(fname: str) -> bool:
-    "Return False if fname contains surrogate escapes"
-    # all string are utf so this is unnecessary
-    try:
-        fname.encode("utf-8")
-        return True
-    except UnicodeEncodeError:
-        return False
 
 
 class FileSource(Source):
@@ -157,10 +157,10 @@ class FileSource(Source):
 
     def get_items(self) -> ty.Iterable[Leaf]:
         for directory in self.dirlist:
-            files = utils.get_dirlist(
+            dirfiles = utils.get_dirlist(
                 directory, max_depth=self.depth, exclude=self._exclude_file
             )
-            yield from map(construct_file_leaf, files)
+            yield from map(construct_file_leaf, dirfiles)
 
     def should_sort_lexically(self) -> bool:
         return True

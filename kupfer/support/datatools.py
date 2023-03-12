@@ -148,6 +148,14 @@ class LruCache(ty.Generic[K, V]):
         return self._data.items()
 
 
+def as_list(seq: ty.Iterable[T]) -> ty.Collection[T]:
+    """Return a list out of @seq, or seq if it is a list"""
+    if isinstance(seq, (list, tuple)):
+        return seq
+
+    return list(seq)
+
+
 if __name__ == "__main__":
     import doctest
 

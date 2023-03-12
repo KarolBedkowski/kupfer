@@ -2,6 +2,10 @@
 
 """
 File-related objects
+
+This file is a part of the program kupfer, which is
+released under GNU General Public License v3 (or any later version),
+see the main program file, and COPYING for details.
 """
 from __future__ import annotations
 
@@ -14,10 +18,12 @@ from gi.repository import GdkPixbuf, Gio, GLib
 from kupfer import icons, utils
 from kupfer.support import pretty
 
-from . import fileactions, filesrc
+from . import actions, fileactions, filesrc
 from .base import Action, Leaf, Source
 from .exceptions import InvalidDataError
 from .representation import TextRepresentation
+
+__all__ = ("FileLeaf",)
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -125,12 +131,12 @@ class FileLeaf(Leaf, TextRepresentation):
         yield fileactions.GetParent()
 
         if self.is_dir():
-            yield fileactions.OpenTerminal()
+            yield actions.OpenTerminal()
 
         elif self.is_valid():
             if self._is_good_executable():
-                yield fileactions.Execute()
-                yield fileactions.Execute(in_terminal=True)
+                yield actions.Execute()
+                yield actions.Execute(in_terminal=True)
 
     def has_content(self) -> bool:
         return self.is_dir() or Leaf.has_content(self)

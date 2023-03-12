@@ -25,6 +25,23 @@ __author__ = (
     "Adi Sieker <adi@sieker.info>"
 )
 
+__all__ = (
+    "email_from_leaf",
+    "AIMContact",
+    "AddressContact",
+    "ContactLeaf",
+    "EmailContact",
+    "GoogleTalkContact",
+    "ICQContact",
+    "IMContact",
+    "JabberContact",
+    "MSNContact",
+    "PhoneContact",
+    "QQContact",
+    "SkypeContact",
+    "YahooContact",
+)
+
 EMAIL_KEY = "EMAIL"
 NAME_KEY = "NAME"
 PHONE_KEY = "PHONE"

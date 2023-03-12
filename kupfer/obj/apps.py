@@ -1,3 +1,10 @@
+"""
+Application - related objects (leaves, sources)
+
+This file is a part of the program kupfer, which is
+released under GNU General Public License v3 (or any later version),
+see the main program file, and COPYING for details.
+"""
 from __future__ import annotations
 
 import os
@@ -14,13 +21,21 @@ from .base import Action, Leaf, Source
 from .exceptions import InvalidDataError, OperationError
 from .helplib import FilesystemWatchMixin, PicklingHelperMixin
 
+__all__ = (
+    "AppLeafContentMixin",
+    "ApplicationSource",
+    "AppLeaf",
+    "Launch",
+    "LaunchAgain",
+    "CloseAll",
+)
+
 if ty.TYPE_CHECKING:
     _ = str
 
 
 class AppLeafContentMixin:
-    """
-    Mixin for Source that correspond one-to-one with a AppLeaf
+    """Mixin for Source that correspond one-to-one with a AppLeaf.
 
     This Mixin sees to that the Source is set as content for the application
     with id 'cls.appleaf_content_id', which may also be a sequence of ids.

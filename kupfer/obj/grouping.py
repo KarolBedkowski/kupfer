@@ -1,5 +1,9 @@
 """
 Classes used to provide grouping leaves mechanism.
+
+This file is a part of the program kupfer, which is
+released under GNU General Public License v3 (or any later version),
+see the main program file, and COPYING for details.
 """
 import copy
 import itertools
@@ -18,7 +22,13 @@ __author__ = (
 )
 
 
-Slots = ty.Optional[ty.Dict[str, ty.Any]]
+__all__ = (
+    "GroupingLeaf",
+    "GroupingSource",
+    "ToplevelGroupingSource",
+)
+
+Slots = ty.Optional[dict[str, ty.Any]]
 
 
 class GroupingLeaf(Leaf):
@@ -71,12 +81,12 @@ class GroupingLeaf(Leaf):
         return any(bool(leaf.object.get(key)) for leaf in self.links)
 
 
-_Groups = ty.Dict[ty.Tuple[str, ty.Any], ty.Set[GroupingLeaf]]
-_NonGroupLeaves = ty.List[Leaf]
+_Groups = dict[tuple[str, ty.Any], set[GroupingLeaf]]
+_NonGroupLeaves = list[Leaf]
 
 
 class GroupingSource(Source):
-    def __init__(self, name: str, sources: ty.List[Source]) -> None:
+    def __init__(self, name: str, sources: list[Source]) -> None:
         Source.__init__(self, name)
         self.sources = sources
 
@@ -84,7 +94,7 @@ class GroupingSource(Source):
         self, force_update: bool
     ) -> tuple[_Groups, _NonGroupLeaves]:
         groups: _Groups = defaultdict(set)
-        non_group_leaves: ty.List[Leaf] = []
+        non_group_leaves: list[Leaf] = []
 
         for src in self.sources:
             leaves = Source.get_leaves(src, force_update)
@@ -160,7 +170,7 @@ class GroupingSource(Source):
         return Source.repr_key(self)
 
     @classmethod
-    def _make_group_leader(cls, leaves: ty.Set[GroupingLeaf]) -> Leaf:
+    def _make_group_leader(cls, leaves: set[GroupingLeaf]) -> Leaf:
         if len(leaves) == 1:
             (leaf,) = leaves
             return leaf
@@ -182,7 +192,7 @@ class ToplevelGroupingSource(GroupingSource):
     of the catalog.
     """
 
-    _sources: ty.Dict[str, weakref.WeakKeyDictionary[Source, int]] = {}
+    _sources: dict[str, weakref.WeakKeyDictionary[Source, int]] = {}
 
     def __init__(self, name: str, category: str) -> None:
         GroupingSource.__init__(self, name, [self])
