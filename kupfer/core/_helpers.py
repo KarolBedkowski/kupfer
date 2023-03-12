@@ -2,7 +2,7 @@
 # Distributed under terms of the GPLv3 license.
 
 """
-Helper functions
+Helper functions - common code for core module
 """
 from __future__ import annotations
 

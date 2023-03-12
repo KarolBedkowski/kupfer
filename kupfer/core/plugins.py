@@ -51,11 +51,12 @@ def get_plugin_ids() -> ty.Iterator[str]:
     """Enumerate possible plugin ids;
     return a sequence of possible plugin ids, not guaranteed to be plugins"""
 
-    def is_plugname(plug):
-        return plug != "__init__" and not plug.endswith("_support")
-
     for _importer, modname, _ispkg in pkgutil.iter_modules(kplugin.__path__):
-        if is_plugname(modname):
+        if (
+            modname != "__init__"
+            and not modname.endswith("_support")
+            and not modname.startswith("_")
+        ):
             yield modname
 
 
@@ -143,15 +144,16 @@ class LoadingError(ImportError):
     pass
 
 
-def _truncate_source(text: str, find_attributes: ty.Iterable[str]) -> str:
+def _truncate_source(
+    text: str, find_attributes: ty.Iterable[str]
+) -> ty.Iterator[str]:
     found_info_attributes = set(find_attributes)
-    lines = []
     for line in text.splitlines():
         # skip import from __future__ that must be in first line
         if line.startswith("from __future__ import "):
             continue
 
-        lines.append(line)
+        yield line
         if not line.strip():
             continue
 
@@ -169,8 +171,6 @@ def _truncate_source(text: str, find_attributes: ty.Iterable[str]) -> str:
 
         if not found_info_attributes:
             break
-
-    return "\n".join(lines)
 
 
 def _import_plugin_fake(
@@ -199,7 +199,7 @@ def _import_plugin_fake(
             filename = f"<{modpath}>"
 
     env = {"__name__": modpath, "__file__": filename, "__builtins__": {"_": _}}
-    code = _truncate_source(code, _INFO_ATTRIBUTES)
+    code = "\n".join(_truncate_source(code, _INFO_ATTRIBUTES))
     try:
         # pylint: disable=eval-used
         eval(compile(code, filename, "exec"), env)
@@ -327,6 +327,7 @@ def get_plugin_attributes(
     for attr in attrs:
         if isinstance(attr, PluginAttr):
             attr = attr.value
+
         try:
             obj = getattr(plugin, str(attr))
         except AttributeError as exc:
@@ -344,8 +345,8 @@ def get_plugin_attribute(
 ) -> tuple[ty.Any, ...] | ty.Any | None:
     """Get single plugin attribute"""
     attrs = tuple(get_plugin_attributes(plugin_name, (attr,)))
-    if attrs and attrs[0]:
-        return attrs[0]
+    if attrs and (val := attrs[0]):
+        return val
 
     return None
 
@@ -426,7 +427,9 @@ def initialize_plugin(plugin_name: str) -> None:
         initialize(plugin_name)  # type: ignore
 
     if finalize := get_plugin_attribute(plugin_name, PluginAttr.FINALIZE):
-        register_plugin_unimport_hook(plugin_name, finalize, plugin_name)  # type: ignore
+        register_plugin_unimport_hook(
+            plugin_name, finalize, plugin_name  # type: ignore
+        )
 
 
 def unimport_plugin(plugin_name: str) -> None:
@@ -438,6 +441,7 @@ def unimport_plugin(plugin_name: str) -> None:
         try:
             for callback, args in reversed(_PLUGIN_HOOKS[plugin_name]):
                 callback(*args)
+
         except Exception:
             pretty.print_error(__name__, "Error finalizing", plugin_name)
             pretty.print_exc(__name__)

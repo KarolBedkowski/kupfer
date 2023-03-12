@@ -24,8 +24,8 @@ from .sources import get_source_controller
 
 
 T = ty.TypeVar("T")
-
 ItemCheckFunc = ty.Callable[[ty.Iterable[T]], ty.Iterable[T]]
+
 DecoratorFunc = ty.Callable[[ty.Iterable[Rankable]], ty.Iterable[Rankable]]
 
 
@@ -76,7 +76,7 @@ class Searcher:
         sources_: ty.Iterable[Source | TextSource | ty.Iterable[KupferObject]],
         key: str,
         score: bool = True,
-        item_check: ItemCheckFunc[ty.Any] | None = None,
+        item_check: ItemCheckFunc[KupferObject] | None = None,
         decorator: DecoratorFunc | None = None,
     ) -> tuple[Rankable | None, ty.Iterable[Rankable]]:
         """
@@ -432,12 +432,14 @@ class PrimaryActionPane(Pane):
 
         def valid_decorator(seq):
             """Check if actions are valid before access"""
+            assert leaf
+
             for obj in seq:
                 action = obj.object
                 action_hash = hash(action)
                 valid = cache.get(action_hash)
                 if valid is None:
-                    valid = actioncompat.action_valid_for_item(action, leaf)  # type: ignore
+                    valid = actioncompat.action_valid_for_item(action, leaf)
                     cache[action_hash] = valid
 
                 if valid:
