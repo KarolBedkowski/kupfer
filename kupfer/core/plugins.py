@@ -32,15 +32,15 @@ class PluginAttr(Enum):
     FINALIZE = "finalize_plugin"
 
 
-_INFO_ATTRIBUTES = [
+_INFO_ATTRIBUTES = (
     "__kupfer_name__",
     "__version__",
     "__description__",
     "__author__",
-]
+)
 
 _PLUGIN_ICON_FILE = "icon-list"
-_PLUGIN_HOOKS: ty.Dict[str, list[tuple[ty.Callable[..., None], ty.Any]]] = {}
+_PLUGIN_HOOKS: dict[str, list[tuple[ty.Callable[..., None], ty.Any]]] = {}
 
 
 class NotEnabledError(Exception):
@@ -74,10 +74,10 @@ class FakePlugin:
 
 PluginModule = ty.Union[types.ModuleType, FakePlugin]
 # imported plugins, none=not existing
-_IMPORTED_PLUGINS: ty.Dict[str, PluginModule | None] = {}
+_IMPORTED_PLUGINS: dict[str, PluginModule | None] = {}
 
 
-def get_plugin_info() -> ty.Iterator[ty.Dict[str, ty.Any]]:
+def get_plugin_info() -> ty.Iterator[dict[str, ty.Any]]:
     """Generator, yields dictionaries of plugin descriptions
 
     with at least the fields:
@@ -129,7 +129,7 @@ def get_plugin_desc() -> str:
     maxlen = 78
     left_margin = 2 + idlen + 1 + verlen + 1
 
-    def format_desc(rec: ty.Dict[str, ty.Any]) -> str:
+    def format_desc(rec: dict[str, ty.Any]) -> str:
         # Wrap the description and align continued lines
         wrapped = textwrap.wrap(rec["description"], maxlen - left_margin)
         description = ("\n" + " " * left_margin).join(wrapped)
@@ -264,7 +264,7 @@ def _import_plugin_true(name: str) -> PluginModule | None:
 
 def _staged_import(
     name: str,
-    import_hook: ty.Callable[[ty.Tuple[str, ...]], PluginModule | None],
+    import_hook: ty.Callable[[tuple[str, ...]], PluginModule | None],
 ) -> PluginModule | None | ty.Any:
     "Import plugin @name using @import_hook"
     # FIXME: ty.Any because typeguard
@@ -300,14 +300,14 @@ def _import_plugin_any(name: str) -> ty.Any:
     return _staged_import(name, _import_hook_fake)
 
 
-def _plugin_path(name: str) -> ty.Tuple[str, ...]:
+def _plugin_path(name: str) -> tuple[str, ...]:
     return ("kupfer", "plugin", name)
 
 
 # Plugin Attributes
 def get_plugin_attributes(
     plugin_name: str,
-    attrs: ty.Tuple[str | PluginAttr, ...],
+    attrs: tuple[str | PluginAttr, ...],
     warn: bool = False,
 ) -> ty.Iterator[ty.Any]:
     """Generator of the attributes named @attrs
@@ -382,7 +382,7 @@ def is_plugin_loaded(plugin_name: str) -> bool:
     return False
 
 
-def _loader_hook(modpath: ty.Tuple[str, ...]) -> ty.Any:
+def _loader_hook(modpath: tuple[str, ...]) -> ty.Any:
     modname = ".".join(modpath)
     loader = pkgutil.find_loader(modname)
     if not loader:

@@ -38,7 +38,7 @@ def strint(value: ty.Any, default: int = 0) -> int:
         return default
 
 
-def _override_encoding(name: str) -> ty.Optional[str]:
+def _override_encoding(name: str) -> str | None:
     """
     Return a new encoding name if we want to override it, else return None.
 
@@ -319,8 +319,8 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
         return False
 
     def get_from_defaults(
-        self, section: str, option: ty.Optional[str] = None
-    ) -> ty.Union[ty.Tuple[str, ty.Any], ty.Any, None]:
+        self, section: str, option: str | None = None
+    ) -> ty.Union[tuple[str, ty.Any], ty.Any, None]:
         """Load values from default configuration file.
         If @option is None, return all section items as (key, value)"""
         if self._defaults_path is None:
@@ -569,7 +569,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
     ## for example the category "terminal"
     def get_valid_alternative_ids(
         self, category_key: str
-    ) -> ty.Iterator[ty.Tuple[str, str]]:
+    ) -> ty.Iterator[tuple[str, str]]:
         """
         Get a list of (id_, name) tuples for the given @category_key
         """
