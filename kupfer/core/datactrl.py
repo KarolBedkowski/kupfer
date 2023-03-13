@@ -15,28 +15,28 @@ from enum import IntEnum
 
 from gi.repository import GLib, GObject
 
+from kupfer.obj import compose
 from kupfer.obj.base import (
     Action,
+    ActionGenerator,
     AnySource,
     KupferObject,
     Leaf,
     Source,
     TextSource,
 )
-from kupfer.obj import compose
-from kupfer.obj.base import ActionGenerator
 from kupfer.obj.filesrc import DirectorySource, FileSource
 from kupfer.support import pretty, scheduler
 from kupfer.support.types import ExecInfo
 from kupfer.ui.uievents import GUIEnvironmentContext
 
 from . import commandexec, execfile, learn, pluginload, qfurl, search, settings
-from .data import (
+from .panes import (
     LeafPane,
     Pane,
     PrimaryActionPane,
+    SearchContext,
     SecondaryObjectPane,
-    WrapContext,
 )
 from .search import Rankable
 from .sources import get_source_controller
@@ -126,7 +126,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self, plugin_id: str, actions: list[Action]
     ) -> None:
         # Keep a mapping: Decorated Leaf Type -> List of actions
-        decorate_types: ty.Dict[ty.Any, list[Action]] = defaultdict(list)
+        decorate_types: defaultdict[ty.Any, list[Action]] = defaultdict(list)
         for action in actions:
             for appl_type in action.item_types():
                 decorate_types[appl_type].append(action)
@@ -243,7 +243,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
                 sources_ = self._load_plugin(item)
                 self._insert_sources(item, sources_, initialize=False)
 
-    def _load_plugin(self, plugin_id: str) -> ty.Set[Source]:
+    def _load_plugin(self, plugin_id: str) -> set[Source]:
         """
         Load @plugin_id, register all its Actions, Content and TextSources.
         Return its sources.
@@ -343,7 +343,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self._source_pane.reset()
         self._action_pane.reset()
 
-    def soft_reset(self, pane: PaneSel) -> ty.Optional[AnySource]:
+    def soft_reset(self, pane: PaneSel) -> AnySource | None:
         if pane == PaneSel.ACTION:
             return None
 
@@ -404,7 +404,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         panectl: Pane,
         match: Rankable | None,
         match_iter: ty.Iterable[Rankable],
-        wrapcontext: WrapContext,
+        wrapcontext: SearchContext,
         pane: PaneSel,
     ) -> bool:
         search_id, context = wrapcontext
