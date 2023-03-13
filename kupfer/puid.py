@@ -27,7 +27,6 @@ from kupfer.support import conspickle, pretty
 
 __all__ = (
     "SerializedObject",
-    "SERIALIZABLE_ATTRIBUTE",
     "resolve_unique_id",
     "resolve_action_id",
     "get_unique_id",
@@ -35,13 +34,13 @@ __all__ = (
 )
 
 
-SERIALIZABLE_ATTRIBUTE = "serializable"
+_SERIALIZABLE_ATTRIBUTE = "serializable"
 
 
 class SerializedObject:
     # treat the serializable attribute as a version number, defined on the class
     def __init__(self, obj: Leaf) -> None:
-        self.version = getattr(obj, SERIALIZABLE_ATTRIBUTE)
+        self.version = getattr(obj, _SERIALIZABLE_ATTRIBUTE)
         self.data = pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)
 
     def __hash__(self) -> int:
@@ -56,7 +55,7 @@ class SerializedObject:
 
     def reconstruct(self) -> Leaf:
         obj = conspickle.ConservativeUnpickler.loads(self.data)
-        if self.version != getattr(obj, SERIALIZABLE_ATTRIBUTE):
+        if self.version != getattr(obj, _SERIALIZABLE_ATTRIBUTE):
             raise ValueError(f"Version mismatch for reconstructed {obj}")
 
         return obj  # type: ignore
@@ -72,7 +71,7 @@ def get_unique_id(obj: ty.Any) -> PuID | None:
     if hasattr(obj, "qf_id"):
         return str(qfurl.Qfurl(obj))
 
-    if getattr(obj, SERIALIZABLE_ATTRIBUTE, None) is not None:
+    if getattr(obj, _SERIALIZABLE_ATTRIBUTE, None) is not None:
         try:
             return SerializedObject(obj)
         except pickle.PicklingError as exc:
