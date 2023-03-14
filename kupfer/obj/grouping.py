@@ -12,7 +12,7 @@ import typing as ty
 import weakref
 from collections import defaultdict
 
-from kupfer import utils
+from kupfer.support import kupferstring
 
 from .base import Leaf, Source
 
@@ -155,7 +155,7 @@ class GroupingSource(Source):
             self._make_group_leader(groups[K]) for K in keys
         )
         if self.should_sort_lexically():
-            leaves = utils.locale_sort(leaves)
+            leaves = kupferstring.locale_sort(leaves)
 
         if (mergetime := time.time() - starttime) > 0.05:
             self.output_debug(f"Warning(?): merged in {mergetime} seconds")

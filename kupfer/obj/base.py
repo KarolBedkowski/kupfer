@@ -14,7 +14,6 @@ from gi.repository import GdkPixbuf
 
 from kupfer import icons
 from kupfer.support import datatools, kupferstring, pretty
-from kupfer.utils import locale_sort
 
 __all__ = [
     "KupferObject",
@@ -445,7 +444,7 @@ class Source(KupferObject, pretty.OutputMixin):
         """
         if self.should_sort_lexically():
             # sort in locale order
-            sort_func = locale_sort
+            sort_func = kupferstring.locale_sort
         else:
             sort_func = no_sort_func
 

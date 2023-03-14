@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import functools
 import itertools
-import locale
 import os
 import re
 import signal
@@ -16,9 +14,9 @@ from pathlib import Path
 from gi.repository import Gdk, Gio, GLib, Gtk
 
 from kupfer import desktop_launch, launch
+from kupfer.core import settings
 from kupfer.desktop_launch import SpawnError
 from kupfer.support import desktop_parse, pretty
-from kupfer.core import settings
 
 FilterFunc = ty.Callable[[str], bool]
 
@@ -62,34 +60,6 @@ def get_dirlist(
 
         for directory in reversed(excl_dir):
             dirnames.remove(directory)
-
-
-_SortItem = ty.TypeVar("_SortItem")
-
-
-def locale_sort(
-    seq: ty.Iterable[_SortItem], key: ty.Callable[[_SortItem], ty.Any] = str
-) -> ty.List[_SortItem]:
-    """Return @seq of objects with @key function as a list sorted
-    in locale lexical order
-
-    >>> locale.setlocale(locale.LC_ALL, "C")
-    'C'
-    >>> locale_sort("abcABC")
-    ['A', 'B', 'C', 'a', 'b', 'c']
-
-    >>> locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
-    'en_US.UTF-8'
-    >>> locale_sort("abcABC")
-    ['a', 'A', 'b', 'B', 'c', 'C']
-    """
-
-    def locale_cmp(val1, val2):
-        return locale.strcoll(key(val1), key(val2))
-
-    seq = seq if isinstance(seq, list) else list(seq)
-    seq.sort(key=functools.cmp_to_key(locale_cmp))
-    return seq
 
 
 def _split_string(inp: bytes, length: int) -> ty.Iterator[bytes]:

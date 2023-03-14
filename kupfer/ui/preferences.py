@@ -250,7 +250,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         table.append_column(col)
 
         self.plugin_list_timer = scheduler.Timer()
-        self.plugin_info = utils.locale_sort(
+        self.plugin_info = kupferstring.locale_sort(
             plugins.get_plugin_info(), key=lambda rec: rec["localized_name"]
         )
 
@@ -1009,7 +1009,7 @@ class PreferencesWindowController(pretty.OutputMixin):
         setctl = settings.get_settings_controller()
         term_id = setctl.get_preferred_tool(category_key)
         # fill in the available alternatives
-        alternatives = utils.locale_sort(
+        alternatives = kupferstring.locale_sort(
             setctl.get_valid_alternative_ids(category_key), key=lambda t: t[1]
         )
         term_iter = None
