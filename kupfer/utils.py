@@ -583,27 +583,6 @@ def parse_time_interval(tstr: str) -> int:
     return total
 
 
-_UNPRINTABLE = (
-    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0e\x0f"
-    "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a"
-    "\x1b\x1c\x1d\x1e\x1f\x7f"
-)
-
-
-def is_valid_file_path(path: str | None) -> bool:
-    """Not perfect path validation"""
-    if not path:
-        return False
-
-    if len(path) > 256:
-        return False
-
-    if re.match(r"^[a-z]+://", path) or path.startswith("//"):
-        return False
-
-    return not any(c in _UNPRINTABLE for c in path)
-
-
 if __name__ == "__main__":
     import doctest
 

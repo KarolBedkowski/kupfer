@@ -24,7 +24,7 @@ from pathlib import Path
 
 from kupfer import utils
 from kupfer.obj import Action, FileLeaf, TextLeaf, helplib
-from kupfer.support import kupferstring
+from kupfer.support import kupferstring, validators
 
 
 class AppendTo(Action):
@@ -110,7 +110,7 @@ class WriteTo(Action):
 
         # we accept TextLeaf if it look like path
         path_str = str(iobj.object)
-        if not utils.is_valid_file_path(path_str):
+        if not validators.is_valid_file_path(path_str):
             return False
 
         path = Path(path_str)
