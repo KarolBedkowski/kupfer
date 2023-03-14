@@ -22,7 +22,8 @@ except ImportError as e:
     pretty.print_info(__name__, "Disabling window tracking:", e)
     Wnck = None
 
-from kupfer import config, desktop_launch, terminal
+from kupfer import config, desktop_launch
+from kupfer.core import settings
 
 ## NOTE: SpawnError  *should* be imported from this module TODO: check
 # pylint: disable=unused-import
@@ -94,7 +95,7 @@ def launch_application(
     if track:
         # An launch callback closure for the @app_id
         def app_launch_callback(argv, pid, _notify_id, _files, _timestamp):
-            if not terminal.is_known_terminal_executable(argv[0]):
+            if not settings.is_known_terminal_executable(argv[0]):
                 svc.launched_application(app_id, pid)
 
         launch_callback = app_launch_callback

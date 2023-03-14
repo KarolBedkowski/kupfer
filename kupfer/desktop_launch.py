@@ -10,7 +10,7 @@ import xdg.DesktopEntry
 import xdg.Exceptions
 from gi.repository import Gdk, Gio, GLib, Gtk
 
-from kupfer import terminal
+from kupfer.core import settings
 from kupfer.support import desktop_parse
 from kupfer.support import itertools as kitertools
 from kupfer.support import pretty
@@ -344,12 +344,11 @@ def launch_app_info(
         in_terminal = desktop_info["Terminal"]  # type: ignore
 
     if in_terminal:
-        term = terminal.get_configured_terminal()
+        term = settings.get_configured_terminal()
         notify = notify or bool(term["startup_notify"])
 
     for argv, files in launch_records:
         if in_terminal:
-            term = terminal.get_configured_terminal()
             targv = list(term["argv"])
             if exearg := term["exearg"]:
                 targv.append(exearg)

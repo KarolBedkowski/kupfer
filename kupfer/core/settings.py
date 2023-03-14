@@ -585,7 +585,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
     def get_all_alternatives(self, category_key: str) -> ty.Any:
         return self._alternatives[category_key]
 
-    def get_preferred_alternative(self, category_key: str) -> ty.Any:
+    def get_preferred_alternative(self, category_key: str) -> dict[str, ty.Any]:
         """
         Get preferred alternative dict for @category_key
         """
@@ -595,7 +595,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
         if not alt:
             self.output_debug("Warning, no configuration for", category_key)
 
-        return alt or next(iter(alternatives.values()), None)
+        return alt or next(iter(alternatives.values()), None)  # type: ignore
 
     def update_alternatives(
         self,
@@ -663,3 +663,19 @@ class ExtendedSetting:
         @Return value that should be stored in Kupfer config for
         plugin/key (string)"""
         return None
+
+
+def is_known_terminal_executable(exearg: str) -> bool:
+    """Check is `exearg` is know terminal executable"""
+    setctl = get_settings_controller()
+    for _id, term in setctl.get_all_alternatives("terminal").items():
+        if exearg == term["argv"][0]:
+            return True
+
+    return False
+
+
+def get_configured_terminal() -> dict[str, ty.Any]:
+    """Return the configured Terminal object"""
+    setctl = get_settings_controller()
+    return setctl.get_preferred_alternative("terminal")

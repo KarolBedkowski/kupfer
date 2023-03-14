@@ -15,9 +15,10 @@ from pathlib import Path
 
 from gi.repository import Gdk, Gio, GLib, Gtk
 
-from kupfer import desktop_launch, launch, terminal
+from kupfer import desktop_launch, launch
 from kupfer.desktop_launch import SpawnError
 from kupfer.support import desktop_parse, pretty
+from kupfer.core import settings
 
 FilterFunc = ty.Callable[[str], bool]
 
@@ -229,7 +230,7 @@ def spawn_terminal(
     workdir: ty.Optional[str] = None, screen: ty.Optional[str] = None
 ) -> bool:
     "Raises SpawnError"
-    term = terminal.get_configured_terminal()
+    term = settings.get_configured_terminal()
     notify = term["startup_notify"]
     app_id = term["desktopid"]
     argv = term["argv"]
@@ -240,7 +241,7 @@ def spawn_in_terminal(
     argv: list[str], workdir: ty.Optional[str] = None
 ) -> bool:
     "Raises SpawnError"
-    term = terminal.get_configured_terminal()
+    term = settings.get_configured_terminal()
     notify = term["startup_notify"]
     _argv = list(term["argv"])
     if term["exearg"]:
