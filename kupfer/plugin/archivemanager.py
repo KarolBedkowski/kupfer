@@ -17,9 +17,10 @@ import typing as ty
 # since "path" is a very generic name, you often forget..
 from os import path as os_path
 
-from kupfer import plugin_support, runtimehelper, utils, launch
+from kupfer import launch, plugin_support, runtimehelper
 from kupfer.core.commandexec import ActionExecutionContext
 from kupfer.obj import Action, FileLeaf
+from kupfer.support import fileutils
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {
@@ -156,7 +157,7 @@ def _make_archive_in(
     filepaths: ty.Iterable[str],
 ) -> str:
     archive_type = __kupfer_settings__["archive_type"]
-    archive_path = utils.get_destpath_in_directory(
+    archive_path = fileutils.get_destpath_in_directory(
         dirpath, basename, archive_type
     )
     cmd = ["file-roller", f"--add-to={archive_path}"]
@@ -198,7 +199,7 @@ class CreateArchiveIn(Action):
         yield FileLeaf
 
     def valid_object(self, obj, for_item=None):
-        return utils.is_directory_writable(obj.object)
+        return fileutils.is_directory_writable(obj.object)
 
     def get_description(self):
         return _("Create a compressed archive from folder")

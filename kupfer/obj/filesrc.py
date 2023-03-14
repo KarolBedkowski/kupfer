@@ -16,7 +16,8 @@ from os import path
 
 from gi.repository import GdkPixbuf, Gio, GLib
 
-from kupfer import icons, utils
+from kupfer import icons
+from kupfer.support import fileutils
 
 from . import apps, files
 from .base import Leaf, Source
@@ -157,7 +158,7 @@ class FileSource(Source):
 
     def get_items(self) -> ty.Iterable[Leaf]:
         for directory in self.dirlist:
-            dirfiles = utils.get_dirlist(
+            dirfiles = fileutils.get_dirlist(
                 directory, max_depth=self.depth, exclude=self._exclude_file
             )
             yield from map(construct_file_leaf, dirfiles)

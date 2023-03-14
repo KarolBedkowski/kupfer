@@ -20,9 +20,9 @@ from contextlib import suppress
 # since "path" is a very generic name, you often forget..
 from os import path as os_path
 
-from kupfer import runtimehelper, utils, launch
+from kupfer import launch, runtimehelper
 from kupfer.obj import Action, FileLeaf, OperationError, TextLeaf
-from kupfer.support import pretty
+from kupfer.support import fileutils, pretty
 
 if ty.TYPE_CHECKING:
     _ = str
@@ -54,7 +54,7 @@ class Scale(Action):
         dirname = os_path.dirname(fpath)
         head, ext = os_path.splitext(os_path.basename(fpath))
         filename = f"{head}_{size}{ext}"
-        dpath = utils.get_destpath_in_directory(dirname, filename)
+        dpath = fileutils.get_destpath_in_directory(dirname, filename)
         argv = ["convert", "-scale", str(size), fpath, dpath]
         runtimehelper.register_async_file_result(ctx, dpath)
         _spawn_operation_err(argv)
@@ -113,7 +113,7 @@ class RotateBase(Action):
         dirname = os_path.dirname(fpath)
         head, ext = os_path.splitext(os_path.basename(fpath))
         filename = f"{head}_{self.rotation}{ext}"
-        dpath = utils.get_destpath_in_directory(dirname, filename)
+        dpath = fileutils.get_destpath_in_directory(dirname, filename)
         argv = [
             "jpegtran",
             "-copy",

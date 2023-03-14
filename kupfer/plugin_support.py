@@ -4,9 +4,8 @@ import typing as ty
 
 from gi.repository import GObject
 
-from kupfer import utils
 from kupfer.core import plugins, settings
-from kupfer.support import pretty
+from kupfer.support import fileutils, pretty
 
 __all__ = [
     "UserNamePassword",
@@ -217,7 +216,7 @@ def _is_valid_terminal(term_dict: dict[str, ty.Any]) -> bool:
         return False
 
     exe = term_dict["argv"][0]
-    return bool(utils.lookup_exec_path(exe))
+    return bool(fileutils.lookup_exec_path(exe))
 
 
 _AVAILABLE_ALTERNATIVES: dict[str, dict[str, ty.Any]] = {

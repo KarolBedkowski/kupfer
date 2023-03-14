@@ -24,7 +24,7 @@ from pathlib import Path
 
 from kupfer import utils
 from kupfer.obj import Action, FileLeaf, TextLeaf, helplib
-from kupfer.support import kupferstring, validators
+from kupfer.support import fileutils, kupferstring, validators
 
 
 class AppendTo(Action):
@@ -73,9 +73,9 @@ class WriteTo(Action):
         assert iobj
 
         if isinstance(iobj, TextLeaf):
-            outfile, outpath = utils.get_destfile(iobj.object)
+            outfile, outpath = fileutils.get_destfile(iobj.object)
         elif isinstance(iobj, FileLeaf):
-            outfile, outpath = utils.get_destfile_in_directory(
+            outfile, outpath = fileutils.get_destfile_in_directory(
                 iobj.object, _("Empty File")
             )
         else:
@@ -119,7 +119,7 @@ class WriteTo(Action):
             return False
 
         # but parent dir must exists and be writable
-        return utils.is_directory_writable(path.parent)
+        return fileutils.is_directory_writable(path.parent)
 
     def get_description(self):
         return _("Write the text to a new file in specified directory")
