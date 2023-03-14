@@ -13,8 +13,8 @@ from gettext import ngettext
 
 from gi.repository import GdkPixbuf
 
-from kupfer import icons, puid, utils
-from kupfer.support import datatools, pretty, scheduler
+from kupfer import icons, puid
+from kupfer.support import datatools, pretty, scheduler, textutils
 
 from . import actions, exceptions, objects
 from .base import Action, Leaf, Source
@@ -38,7 +38,7 @@ class TimedPerform(actions.Perform):
         self, leaf: ty.Any, iobj: ty.Any = None, ctx: ty.Any = None
     ) -> None:
         # make a timer that will fire when Kupfer exits
-        interval = utils.parse_time_interval(iobj.object)
+        interval = textutils.parse_time_interval(iobj.object)
         pretty.print_debug(__name__, f"Run {leaf} in {interval} seconds")
         timer = scheduler.Timer(True)
         if leaf.wants_context():
@@ -55,7 +55,7 @@ class TimedPerform(actions.Perform):
     def valid_object(
         self, iobj: Leaf, for_item: ty.Optional[Leaf] = None
     ) -> bool:
-        return utils.parse_time_interval(iobj.object) > 0
+        return textutils.parse_time_interval(iobj.object) > 0
 
     def get_description(self) -> str:
         return _("Perform command after a specified time interval")
