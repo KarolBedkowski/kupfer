@@ -4,7 +4,7 @@ import operator
 import typing as ty
 
 from kupfer.obj.base import KupferObject, Leaf, Source, TextSource
-from kupfer.support import datatools, pretty
+from kupfer.support import itertools, pretty
 from kupfer.support.itertools import peekfirst
 
 from . import search
@@ -22,7 +22,7 @@ def _identity(x: ty.Any) -> ty.Any:
 
 def _as_set_iter(seq: ty.Iterable[Rankable]) -> ty.Iterable[Rankable]:
     key = operator.attrgetter("object")
-    return datatools.unique_iterator(seq, key=key)
+    return itertools.unique_iterator(seq, key=key)
 
 
 def _valid_check(seq: ty.Iterable[Rankable]) -> ty.Iterable[Rankable]:

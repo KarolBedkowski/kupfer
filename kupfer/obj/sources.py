@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import typing as ty
 
-from kupfer.support import datatools
+from kupfer.support import itertools
 
 from .base import Leaf, Source
 from .objects import SourceLeaf
@@ -72,7 +72,7 @@ class MultiSource(Source):
         return True
 
     def get_items(self) -> ty.Iterable[Leaf]:
-        uniq_srcs = datatools.unique_iterator(
+        uniq_srcs = itertools.unique_iterator(
             S.toplevel_source() for S in self.sources
         )
         for src in uniq_srcs:

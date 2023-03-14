@@ -13,7 +13,7 @@ import typing as ty
 from gi.repository import GdkPixbuf
 
 from kupfer import icons
-from kupfer.support import datatools, kupferstring, pretty
+from kupfer.support import itertools, kupferstring, pretty
 
 __all__ = [
     "KupferObject",
@@ -456,12 +456,12 @@ class Source(KupferObject, pretty.OutputMixin):
 
         if self.cached_items is None or force_update:
             if force_update:
-                self.cached_items = datatools.as_list(
+                self.cached_items = itertools.as_list(
                     sort_func(self.get_items_forced())
                 )
                 self.output_debug(f"Loaded {len(self.cached_items)} items")
             else:
-                self.cached_items = datatools.SavedIterable(
+                self.cached_items = itertools.SavedIterable(
                     sort_func(self.get_items())
                 )
                 self.output_debug("Loaded items")

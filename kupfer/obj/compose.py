@@ -14,7 +14,7 @@ from gettext import ngettext
 from gi.repository import GdkPixbuf
 
 from kupfer import icons, puid
-from kupfer.support import datatools, pretty, scheduler, textutils
+from kupfer.support import itertools, pretty, scheduler, textutils
 
 from . import actions, exceptions, objects
 from .base import Action, Leaf, Source
@@ -129,7 +129,7 @@ class MultipleLeaf(Leaf):
 
     def __init__(self, obj: ty.Any, name: ty.Optional[str] = None) -> None:
         # modifying the list of objects is strictly forbidden
-        robj = list(datatools.unique_iterator(obj))
+        robj = list(itertools.unique_iterator(obj))
         Leaf.__init__(self, robj, name or _("Multiple Objects"))
 
     def get_multiple_leaf_representation(self) -> ty.Iterable[Leaf]:
