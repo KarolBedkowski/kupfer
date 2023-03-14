@@ -17,7 +17,7 @@ import typing as ty
 # since "path" is a very generic name, you often forget..
 from os import path as os_path
 
-from kupfer import plugin_support, runtimehelper, utils
+from kupfer import plugin_support, runtimehelper, utils, launch
 from kupfer.core.commandexec import ActionExecutionContext
 from kupfer.obj import Action, FileLeaf
 
@@ -92,7 +92,7 @@ class UnpackHere(Action):
         Action.__init__(self, _("Extract Here"))
 
     def activate(self, leaf, iobj=None, ctx=None):
-        utils.spawn_async_notify_as(
+        launch.spawn_async_notify_as(
             "file-roller.desktop",
             ["file-roller", "--extract-here", leaf.object],
         )
@@ -126,7 +126,7 @@ class UnpackHere(Action):
 def _make_archive(filepaths: ty.Iterable[str]) -> None:
     cmd = ["file-roller", "--add"]
     cmd.extend(filepaths)
-    utils.spawn_async_notify_as("file-roller.desktop", cmd)
+    launch.spawn_async_notify_as("file-roller.desktop", cmd)
 
 
 class CreateArchive(Action):
@@ -162,7 +162,7 @@ def _make_archive_in(
     cmd = ["file-roller", f"--add-to={archive_path}"]
     cmd.extend(filepaths)
     runtimehelper.register_async_file_result(ctx, archive_path)
-    utils.spawn_async_notify_as("file-roller.desktop", cmd)
+    launch.spawn_async_notify_as("file-roller.desktop", cmd)
     return archive_path
 
 

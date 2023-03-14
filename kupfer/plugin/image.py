@@ -20,8 +20,7 @@ from contextlib import suppress
 # since "path" is a very generic name, you often forget..
 from os import path as os_path
 
-from kupfer import runtimehelper, utils
-from kupfer.desktop_launch import SpawnError
+from kupfer import runtimehelper, utils, launch
 from kupfer.obj import Action, FileLeaf, OperationError, TextLeaf
 from kupfer.support import pretty
 
@@ -33,8 +32,8 @@ if ty.TYPE_CHECKING:
 
 def _spawn_operation_err(argv):
     try:
-        utils.spawn_async_raise(argv)
-    except SpawnError as exc:
+        launch.spawn_async_raise(argv)
+    except launch.SpawnError as exc:
         raise OperationError(exc.args[0].message) from exc
 
 
@@ -162,7 +161,7 @@ class Autorotate(Action):
     def activate(self, leaf, iobj=None, ctx=None):
         fpath = leaf.object
         argv = ["jhead", "-autorot", fpath]
-        utils.spawn_async(argv)
+        launch.spawn_async(argv)
 
     def item_types(self):
         yield FileLeaf

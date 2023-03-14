@@ -17,7 +17,7 @@ __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
 
 import libvirt
 
-from kupfer import plugin_support, utils
+from kupfer import launch, plugin_support
 from kupfer.obj import Action, Leaf, Source
 from kupfer.obj.apps import AppLeafContentMixin
 
@@ -163,7 +163,7 @@ class OpenConsoleAction(Action):
     def activate(self, leaf, iobj=None, ctx=None):
         conn = __kupfer_settings__["connection"] or "qemu:///system"
         domain = leaf.object
-        utils.spawn_async(
+        launch.spawn_async(
             [
                 "virt-manager",
                 "--connect",

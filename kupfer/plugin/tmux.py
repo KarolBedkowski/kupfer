@@ -15,7 +15,7 @@ import datetime
 import os
 import typing as ty
 
-from kupfer import utils
+from kupfer import launch
 from kupfer.obj import Action, Leaf, Source
 
 
@@ -87,7 +87,7 @@ class Attach(Action):
     def activate(self, leaf, iobj=None, ctx=None):
         sid = leaf.object
         action_argv = ["tmux", "attach-session", "-t", sid, "-d"]
-        utils.spawn_in_terminal(action_argv)
+        launch.spawn_in_terminal(action_argv)
 
 
 class TmuxpSession(Leaf):
@@ -111,7 +111,7 @@ class StartTmuxpSession(Action):
 
     def activate(self, leaf, iobj=None, ctx=None):
         action_argv = ["tmuxp", "load", leaf.object]
-        utils.spawn_in_terminal(action_argv)
+        launch.spawn_in_terminal(action_argv)
 
 
 class TmuxpSessionsSource(Source):

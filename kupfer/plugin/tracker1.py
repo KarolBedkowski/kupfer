@@ -21,7 +21,7 @@ from xml.etree.ElementTree import ElementTree
 import dbus
 from gi.repository import Gio
 
-from kupfer import plugin_support, utils
+from kupfer import launch, plugin_support
 from kupfer.obj import (
     Action,
     FileLeaf,
@@ -51,8 +51,8 @@ class TrackerSearch(Action):
 
     def activate(self, leaf, iobj=None, ctx=None):
         try:
-            utils.spawn_async_raise([TRACKER_GUI_SEARCH, leaf.object])
-        except utils.SpawnError as exc:
+            launch.spawn_async_raise([TRACKER_GUI_SEARCH, leaf.object])
+        except launch.SpawnError as exc:
             raise OperationError(exc) from exc
 
     def get_description(self):

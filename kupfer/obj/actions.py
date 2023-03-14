@@ -8,7 +8,7 @@ see the main program file, and COPYING for details.
 """
 import typing as ty
 
-from kupfer import utils
+from kupfer import launch, utils
 from kupfer.desktop_launch import SpawnError
 
 from .base import Action
@@ -32,7 +32,7 @@ class OpenTerminal(Action):
     def activate(self, leaf, iobj=None, ctx=None):
         assert ctx
         try:
-            utils.spawn_terminal(leaf.object, ctx.environment.get_screen())
+            launch.spawn_terminal(leaf.object, ctx.environment.get_screen())
         except SpawnError as exc:
             raise OperationError(exc) from exc
 
@@ -63,9 +63,9 @@ class Execute(Action):
         else:
             argv = utils.argv_for_commandline(leaf.object)
         if self.in_terminal:
-            utils.spawn_in_terminal(argv)
+            launch.spawn_in_terminal(argv)
         else:
-            utils.spawn_async(argv)
+            launch.spawn_async(argv)
 
     def get_description(self) -> ty.Optional[str]:
         if self.in_terminal:

@@ -28,7 +28,7 @@ from hashlib import md5
 import dbus
 from gi.repository import Gio
 
-from kupfer import config, icons, plugin_support, utils
+from kupfer import config, icons, launch, plugin_support
 from kupfer.obj import (
     Action,
     FileLeaf,
@@ -130,8 +130,8 @@ def _get_all_songs_via_dbus():
 
 def spawn_async(argv):
     try:
-        utils.spawn_async_raise(argv)
-    except utils.SpawnError as exc:
+        launch.spawn_async_raise(argv)
+    except launch.SpawnError as exc:
         raise OperationError(exc) from exc
 
 

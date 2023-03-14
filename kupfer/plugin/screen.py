@@ -8,7 +8,7 @@ import os
 import pwd
 from pathlib import Path
 
-from kupfer import utils
+from kupfer import launch
 from kupfer.obj import Action, Leaf, Source
 from kupfer.obj.helplib import FilesystemWatchMixin
 
@@ -119,4 +119,4 @@ class AttachScreen(Action):
     def activate(self, leaf, iobj=None, ctx=None):
         pid = leaf.object
         action_argv = ["screen", "-x", "-R", str(pid)]
-        utils.spawn_in_terminal(action_argv)
+        launch.spawn_in_terminal(action_argv)

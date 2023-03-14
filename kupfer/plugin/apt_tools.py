@@ -21,7 +21,7 @@ import subprocess
 import typing as ty
 import urllib.parse
 
-from kupfer import icons, plugin_support, utils
+from kupfer import icons, launch, plugin_support, utils
 from kupfer.obj import Action, Leaf, Source, TextLeaf
 from kupfer.support import kupferstring, task
 from kupfer.ui import uiutils
@@ -51,23 +51,23 @@ class InfoTask(task.Task):
     def start(self, finish_callback):
         self._finish_callback = finish_callback
         timeout = 60
-        utils.AsyncCommand(
+        launch.AsyncCommand(
             ["apt", "show", self.text], self._aptitude_finished, timeout
         )
-        utils.AsyncCommand(
+        launch.AsyncCommand(
             ["apt-cache", "policy", self.text],
             self._aptcache_finished,
             timeout,
         )
 
     def _aptitude_finished(
-        self, acommand: utils.AsyncCommand, stdout: bytes, stderr: bytes
+        self, acommand: launch.AsyncCommand, stdout: bytes, stderr: bytes
     ) -> None:
         self.aptitude = stderr + stdout
         self._check_end()
 
     def _aptcache_finished(
-        self, acommand: utils.AsyncCommand, stdout: bytes, stderr: bytes
+        self, acommand: launch.AsyncCommand, stdout: bytes, stderr: bytes
     ) -> None:
         self.apt_cache = stderr + stdout
         self._check_end()
@@ -143,7 +143,7 @@ class InstallPackage(Action):
         program = __kupfer_settings__["installation_method"]
         pkgs = [o.object.strip() for o in objs]
         prog_argv = utils.argv_for_commandline(program)
-        utils.spawn_in_terminal(prog_argv + pkgs)
+        launch.spawn_in_terminal(prog_argv + pkgs)
 
     def item_types(self):
         yield Package

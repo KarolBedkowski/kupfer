@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import itertools
 import os
-import re
-import signal
-import sys
 import tempfile
 import typing as ty
 from contextlib import suppress
@@ -13,10 +10,8 @@ from pathlib import Path
 
 from gi.repository import Gdk, Gio, GLib, Gtk
 
-from kupfer import desktop_launch, launch
-from kupfer.core import settings
-from kupfer.desktop_launch import SpawnError
 from kupfer.support import desktop_parse, pretty
+from kupfer import launch
 
 FilterFunc = ty.Callable[[str], bool]
 
@@ -62,208 +57,6 @@ def get_dirlist(
             dirnames.remove(directory)
 
 
-def _split_string(inp: bytes, length: int) -> ty.Iterator[bytes]:
-    """Split @inp in pieces of @length
-
-    >>> list(_split_string(b"abcdefghijk", 3))
-    [b"abc", b"def", b"ghi", b"jk"]
-
-    """
-    while inp:
-        yield inp[:length]
-        inp = inp[length:]
-
-
-class AsyncCommand(pretty.OutputMixin):
-    """
-    Run a command asynchronously (using the GLib mainloop)
-
-    call @finish_callback when command terminates, or
-    when command is killed after @timeout_s seconds, whichever
-    comes first.
-
-    If @timeout_s is None, no timeout is used
-
-    If stdin is a byte string, it is supplied on the command's stdin.
-
-    If env is None, command will inherit the parent's environment.
-
-    finish_callback -> (AsyncCommand, stdout_output, stderr_output)
-
-    Attributes:
-    self.exit_status  Set after process exited
-    self.finished     bool
-
-    """
-
-    # the maximum input (bytes) we'll read in one shot (one io_callback)
-    max_input_buf = 512 * 1024
-
-    def __init__(
-        self,
-        argv: list[str],
-        finish_callback: ty.Callable[[AsyncCommand, bytes, bytes], None],
-        timeout_s: int | None,
-        stdin: ty.Optional[bytes] = None,
-        env: ty.Any = None,
-    ) -> None:
-        self.stdout: list[bytes] = []
-        self.stderr: list[bytes] = []
-        self.stdin: list[bytes] = []
-        self.timeout = False
-        self.killed = False
-        self.finished = False
-        self.finish_callback = finish_callback
-        self.exit_status: ty.Optional[int] = None
-
-        self.output_debug("AsyncCommand:", argv)
-
-        flags = GLib.SPAWN_SEARCH_PATH | GLib.SPAWN_DO_NOT_REAP_CHILD
-        kwargs = {}
-        if env is not None:
-            kwargs["envp"] = env
-
-        pid, stdin_fd, stdout_fd, stderr_fd = GLib.spawn_async(
-            argv,
-            standard_output=True,
-            standard_input=True,
-            standard_error=True,
-            flags=flags,
-            **kwargs,
-        )
-
-        if stdin:
-            self.stdin = list(_split_string(stdin, self.max_input_buf))
-            in_io_flags = GLib.IO_OUT | GLib.IO_ERR | GLib.IO_HUP | GLib.IO_NVAL
-            GLib.io_add_watch(
-                stdin_fd, in_io_flags, self._in_io_callback, self.stdin
-            )
-        else:
-            os.close(stdin_fd)
-
-        io_flags = GLib.IO_IN | GLib.IO_ERR | GLib.IO_HUP | GLib.IO_NVAL
-        GLib.io_add_watch(stdout_fd, io_flags, self._io_callback, self.stdout)
-        GLib.io_add_watch(stderr_fd, io_flags, self._io_callback, self.stderr)
-        self.pid = pid
-        GLib.child_watch_add(pid, self._child_callback)
-        if timeout_s is not None:
-            GLib.timeout_add_seconds(timeout_s, self._timeout_callback)
-
-    def _io_callback(
-        self, sourcefd: int, condition: int, databuf: list[bytes]
-    ) -> bool:
-        if condition & GLib.IO_IN:
-            databuf.append(os.read(sourcefd, self.max_input_buf))
-            return True
-
-        return False
-
-    def _in_io_callback(
-        self, sourcefd: int, condition: int, databuf: list[bytes]
-    ) -> bool:
-        """write to child's stdin"""
-        if condition & GLib.IO_OUT:
-            if not databuf:
-                os.close(sourcefd)
-                return False
-
-            data = databuf.pop(0)
-            written = os.write(sourcefd, data)
-            if written < len(data):
-                databuf.insert(0, data[written:])
-
-            return True
-
-        return False
-
-    def _child_callback(self, pid: int, condition: int) -> None:
-        # @condition is the &status field of waitpid(2) (C library)
-        self.exit_status = os.WEXITSTATUS(condition)
-        self.finished = True
-        self.finish_callback(self, b"".join(self.stdout), b"".join(self.stderr))
-
-    def _timeout_callback(self) -> None:
-        "send term signal on timeout"
-        if not self.finished:
-            self.timeout = True
-            os.kill(self.pid, signal.SIGTERM)
-            GLib.timeout_add_seconds(2, self._kill_callback)
-
-    def _kill_callback(self) -> None:
-        "Last resort, send kill signal"
-        if not self.finished:
-            self.killed = True
-            os.kill(self.pid, signal.SIGKILL)
-
-
-def spawn_terminal(
-    workdir: ty.Optional[str] = None, screen: ty.Optional[str] = None
-) -> bool:
-    "Raises SpawnError"
-    term = settings.get_configured_terminal()
-    notify = term["startup_notify"]
-    app_id = term["desktopid"]
-    argv = term["argv"]
-    return desktop_launch.spawn_app_id(app_id, argv, workdir, notify, screen)
-
-
-def spawn_in_terminal(
-    argv: list[str], workdir: ty.Optional[str] = None
-) -> bool:
-    "Raises SpawnError"
-    term = settings.get_configured_terminal()
-    notify = term["startup_notify"]
-    _argv = list(term["argv"])
-    if term["exearg"]:
-        _argv.append(term["exearg"])
-
-    _argv.extend(argv)
-    return desktop_launch.spawn_app_id(
-        term["desktopid"], _argv, workdir, notify
-    )
-
-
-def spawn_async_notify_as(app_id: str, argv: list[str]) -> bool:
-    """
-    Spawn argument list @argv and startup-notify as
-    if application @app_id is starting (if possible)
-
-    raises SpawnError
-    """
-    return desktop_launch.spawn_app_id(app_id, argv, None, True)
-
-
-def spawn_async(argv: ty.Collection[str], in_dir: str = ".") -> bool:
-    """
-    Silently spawn @argv in the background
-
-    Returns False on failure
-    """
-    try:
-        return spawn_async_raise(argv, in_dir)
-    except SpawnError as exc:
-        pretty.print_debug(__name__, "spawn_async", argv, exc)
-        return False
-
-
-def spawn_async_raise(argv: ty.Collection[str], workdir: str = ".") -> bool:
-    """
-    A version of spawn_async that raises on error.
-
-    raises SpawnError
-    """
-    pretty.print_debug(__name__, "spawn_async", argv, workdir)
-    try:
-        res = GLib.spawn_async(
-            argv, working_directory=workdir, flags=GLib.SPAWN_SEARCH_PATH
-        )
-        return bool(res)
-    except GLib.GError as exc:
-        raise SpawnError(exc.message) from exc  # pylint: disable=no-member
-
-    return False
-
-
 def argv_for_commandline(cli: str) -> list[str]:
     return desktop_parse.parse_argv(cli)
 
@@ -292,94 +85,6 @@ def show_url(url: str) -> bool:
     return False
 
 
-def _on_child_exit(
-    pid: int, condition: int, user_data: tuple[ty.Any, bool]
-) -> None:
-    # @condition is the &status field of waitpid(2) (C library)
-    argv, respawn = user_data
-    if respawn:
-        is_signal = os.WIFSIGNALED(condition)
-        if is_signal and respawn:
-
-            def callback(*args):
-                spawn_child(*args)
-                return False
-
-            GLib.timeout_add_seconds(10, callback, argv, respawn)
-
-
-def _try_register_pr_pdeathsig() -> None:
-    """
-    Register pr_set_pdeathsig (linux-only) for the calling process
-    which is a signal delivered when its parent dies.
-
-    This should ensure child processes die with the parent.
-    """
-    pr_set_pdeathsig = 1
-    sighup = 1
-    if sys.platform != "linux2":
-        return
-
-    with suppress(ImportError):
-        # pylint: disable=import-outside-toplevel
-        import ctypes
-
-    with suppress(AttributeError, OSError):
-        libc = ctypes.CDLL("libc.so.6")
-        libc.prctl(pr_set_pdeathsig, sighup)
-
-
-def spawn_child(
-    argv: list[str], respawn: bool = True, display: ty.Optional[str] = None
-) -> int:
-    """
-    Spawn argv in the mainloop and keeping it as a child process
-    (it will be made sure to exit with the parent).
-
-    @respawn: If True, respawn if child dies abnormally
-
-    raises utils.SpawnError
-    returns pid
-    """
-    flags = GLib.SPAWN_SEARCH_PATH | GLib.SPAWN_DO_NOT_REAP_CHILD
-    envp: list[str] = []
-    if display:
-        # environment is passed as a sequence of strings
-        envd = os.environ.copy()
-        envd["DISPLAY"] = display
-        envp = ["=".join((k, v)) for k, v in envd.items()]
-
-    try:
-        pid, *_fds = GLib.spawn_async(
-            argv,
-            envp,
-            flags=flags,
-            child_setup=_try_register_pr_pdeathsig,
-        )
-    except GLib.GError as exc:
-        raise SpawnError(str(exc)) from exc
-
-    if pid:
-        GLib.child_watch_add(pid, _on_child_exit, (argv, respawn))
-
-    return pid  # type: ignore
-
-
-def start_plugin_helper(
-    name: str, respawn: bool, display: ty.Optional[str] = None
-) -> int:
-    """
-    @respawn: If True, respawn if child dies abnormally
-
-    raises SpawnError
-    """
-    argv = [sys.executable]
-    argv.extend(sys.argv)
-    argv.append(f"--exec-helper={name}")
-    pretty.print_debug(__name__, "Spawning", argv)
-    return spawn_child(argv, respawn, display=display)
-
-
 def show_help_url(url: str) -> bool:
     """
     Try at length to display a startup notification for the help browser.
@@ -403,8 +108,8 @@ def show_help_url(url: str) -> bool:
     cmd_path = lookup_exec_path(default.get_executable())
     yelp_path = lookup_exec_path(yelp.get_executable())
     if cmd_path and yelp_path and os.path.samefile(cmd_path, yelp_path):
-        with suppress(SpawnError):
-            spawn_async_notify_as(help_viewer_id, [cmd_path, url])
+        with suppress(launch.SpawnError):
+            launch.spawn_async_notify_as(help_viewer_id, [cmd_path, url])
             return True
 
     return show_url(url)
