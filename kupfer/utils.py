@@ -268,41 +268,6 @@ def argv_for_commandline(cli: str) -> list[str]:
     return desktop_parse.parse_argv(cli)
 
 
-def launch_commandline(
-    cli: str, name: ty.Optional[str] = None, in_terminal: bool = False
-) -> bool:
-    "Raises SpawnError"
-    argv = desktop_parse.parse_argv(cli)
-    pretty.print_error(__name__, "Launch commandline is deprecated ")
-    pretty.print_debug(
-        __name__,
-        "Launch commandline (in_terminal=",
-        in_terminal,
-        "):",
-        argv,
-        sep="",
-    )
-
-    if in_terminal:
-        return spawn_in_terminal(argv)
-
-    return spawn_async(argv)
-
-
-def launch_app(
-    app_info: Gio.AppInfo,
-    files: ty.Iterable[str] = (),
-    uris: ty.Iterable[str] = (),
-    paths: ty.Iterable[str] = (),
-) -> bool:
-    "Raises SpawnError"
-
-    # With files we should use activate=False
-    return launch.launch_application(
-        app_info, files, uris, paths, activate=False
-    )
-
-
 def show_path(path: str) -> None:
     """Open local @path with default viewer"""
     # Implemented using Gtk.show_uri
