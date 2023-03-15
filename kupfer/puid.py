@@ -91,7 +91,7 @@ def is_reference(puid: ty.Any) -> bool:
 # are visiting, and nested context with the _exclusion
 # context manager
 
-_EXCLUDING: list[AnySource] = []
+_EXCLUDING: ty.Final[list[AnySource]] = []
 
 
 @contextlib.contextmanager

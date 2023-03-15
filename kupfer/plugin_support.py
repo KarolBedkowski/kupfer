@@ -219,7 +219,7 @@ def _is_valid_terminal(term_dict: dict[str, ty.Any]) -> bool:
     return bool(fileutils.lookup_exec_path(exe))
 
 
-_AVAILABLE_ALTERNATIVES: dict[str, dict[str, ty.Any]] = {
+_AVAILABLE_ALTERNATIVES: ty.Final[dict[str, dict[str, ty.Any]]] = {
     "terminal": {
         "filter": _is_valid_terminal,
         "required_keys": {

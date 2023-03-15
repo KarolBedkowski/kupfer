@@ -1,5 +1,5 @@
 """
-Support object/functions that not depend on other parts of Kupfer.
+Support object/functions that are independent from other parts of Kupfer.
 """
 
 from __future__ import annotations

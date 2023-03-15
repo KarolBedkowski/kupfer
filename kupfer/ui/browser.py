@@ -21,8 +21,8 @@ from kupfer.support import pretty, scheduler
 from kupfer.ui import about, keybindings, kupferhelp, listen, uievents
 
 from . import preferences
-from .interface import Interface
 from ._support import text_direction_is_ltr
+from .interface import Interface
 
 if ty.TYPE_CHECKING:
     _ = str
