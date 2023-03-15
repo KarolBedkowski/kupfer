@@ -17,8 +17,9 @@ from contextlib import suppress
 
 from gi.repository import Gdk, Gtk
 
-from kupfer import interface, objects
-from kupfer.obj import Action, Leaf
+from kupfer import interface
+from kupfer.obj import Action, Leaf, SourceLeaf
+from kupfer.obj.apps import AppLeaf
 from kupfer.obj.exceptions import InvalidLeafError
 from kupfer.obj.sources import MultiSource
 from kupfer.plugin.core import commands, contents, internal, text
@@ -174,8 +175,8 @@ class Rescan(Action):
         return "view-refresh"
 
     def item_types(self):
-        yield objects.AppLeaf
-        yield objects.SourceLeaf
+        yield AppLeaf
+        yield SourceLeaf
 
     def valid_for_item(self, leaf):
         if not leaf.has_content():

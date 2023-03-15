@@ -21,7 +21,7 @@ from kupfer.ui import accelerators, getkey_dialog, kupferhelp, uievents, uiutils
 
 from . import preferences
 from .search import ActionSearch, LeafSearch, Search, State
-from .support import escape_markup_str, text_direction_is_ltr
+from ._support import escape_markup_str, text_direction_is_ltr
 
 _ELLIPSIZE_MIDDLE: ty.Final = Pango.EllipsizeMode.MIDDLE
 _SLOW_INPUT_INTERVAL: ty.Final = 2

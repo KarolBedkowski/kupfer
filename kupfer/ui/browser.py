@@ -22,7 +22,7 @@ from kupfer.ui import about, keybindings, kupferhelp, listen, uievents
 
 from . import preferences
 from .interface import Interface
-from .support import text_direction_is_ltr
+from ._support import text_direction_is_ltr
 
 if ty.TYPE_CHECKING:
     _ = str

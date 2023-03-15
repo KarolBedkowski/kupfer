@@ -4,7 +4,7 @@ import typing as ty
 
 from kupfer.obj import Action, KupferObject, Leaf, Source
 
-from ._helpers import get_leaf_members
+from ._support import get_leaf_members
 from .sources import SourceController
 
 
