@@ -415,7 +415,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self.output_debug("Skipping late search", match, context)
         return True
 
-    def select(self, pane: PaneSel, item: Leaf | None) -> None:
+    def select(self, pane: PaneSel, item: KupferObject | None) -> None:
         """Select @item in @pane to self-update relevant places"""
         # If already selected, do nothing
         panectl = self._get_panectl(pane)

@@ -18,6 +18,9 @@ import typing as ty
 from kupfer import launch
 from kupfer.obj import Action, Leaf, Source
 
+if ty.TYPE_CHECKING:
+    from getttext import gettext as _
+
 
 class TmuxSession(Leaf):
     """Represented object is the session_id as string"""
@@ -33,7 +36,7 @@ class TmuxSession(Leaf):
         yield Attach()
 
     def get_description(self) -> str:
-        return _("%(status)s tmux session, created %(time)s") % {
+        return _("%(status)s tmux session, created %(time)s") % {  # type:ignore
             "status": _("Attached") if self._attached else _("Detached"),
             "time": self._created,
         }
@@ -98,7 +101,7 @@ class TmuxpSession(Leaf):
         yield StartTmuxpSession()
 
     def get_description(self) -> str:
-        return _("tmuxp saved session")
+        return _("tmuxp saved session")  # type: ignore
 
     def get_icon_name(self):
         return "gnome-window-manager"

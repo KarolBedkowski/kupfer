@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 """
-
+Show application help.
 """
 from __future__ import annotations
 

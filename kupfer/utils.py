@@ -7,7 +7,7 @@ from contextlib import suppress
 from gi.repository import Gdk, Gio, GLib, Gtk
 
 from kupfer import launch
-from kupfer.support import desktop_parse, fileutils, pretty
+from kupfer.support import desktop_parse, fileutils, pretty, system
 
 
 def argv_for_commandline(cli: str) -> list[str]:
@@ -68,10 +68,6 @@ def show_help_url(url: str) -> bool:
     return show_url(url)
 
 
-_homedir = os.path.expanduser("~/")
-_homedir_len = len(_homedir)
-
-
 def get_display_path_for_bytestring(filepath: ty.AnyStr) -> str:
     """Return a unicode path for display for bytestring @filepath
 
@@ -79,8 +75,9 @@ def get_display_path_for_bytestring(filepath: ty.AnyStr) -> str:
     format nicely (denote home by ~/ etc)
     """
     desc: str = GLib.filename_display_name(filepath)
-    if desc.startswith(_homedir) and _homedir != desc:
-        desc = f"~/{desc[_homedir_len:]}"
+    homedir = system.get_homedir()
+    if desc.startswith(homedir) and homedir != desc:
+        desc = f"~/{desc[len(homedir):]}"
 
     return desc
 

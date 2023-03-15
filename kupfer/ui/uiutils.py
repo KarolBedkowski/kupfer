@@ -61,6 +61,7 @@ def builder_get_objects_from_file(
     ui_file = config.get_data_file(fname)
     builder.add_from_file(ui_file)
 
+    # pylint: disable=too-few-public-methods
     class Namespace:
         pass
 

@@ -68,7 +68,7 @@ class PathTextSource(TextSource, pretty.OutputMixin):
                 yield leaf
 
         else:
-            prefix = os.path.expanduser("~/")
+            prefix = system.get_homedir()
             ufilepath = (
                 text if os.path.isabs(text) else os.path.join(prefix, text)
             )

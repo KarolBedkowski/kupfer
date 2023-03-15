@@ -196,7 +196,7 @@ class AppLeaf(Leaf):
                 desktop_file=self._init_path,
                 screen=ctx and ctx.environment.get_screen(),
             )
-        except launch.SpawnError as exc:  # type: ignore
+        except launch.SpawnError as exc:
             raise OperationError(exc) from exc
 
     def get_id(self) -> str:

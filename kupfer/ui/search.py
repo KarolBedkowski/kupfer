@@ -700,7 +700,7 @@ class Search(GObject.GObject, pretty.OutputMixin):  # type:ignore
         if self.get_table_visible():
             self._list_window.hide()
 
-    def _show_table(self) -> None:
+    def _show_table(self) -> None:  # pylint: disable=too-many-locals
         setctl = settings.get_settings_controller()
         list_maxheight = setctl.get_config_int("Appearance", "list_height")
         if list_maxheight < self._icon_size_small * self.LIST_MIN_MULT:

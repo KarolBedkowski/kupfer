@@ -48,16 +48,16 @@ class Pane(GObject.GObject):  # type:ignore
 
     def __init__(self):
         super().__init__()
-        self._selection: Leaf | None = None
+        self._selection: KupferObject | None = None
         self._latest_key: str | None = None
         self.outstanding_search: int = -1
         self.outstanding_search_id: int = -1
         self._searcher = Searcher()
 
-    def select(self, item: Leaf | None) -> None:
+    def select(self, item: KupferObject | None) -> None:
         self._selection = item
 
-    def get_selection(self) -> Leaf | None:
+    def get_selection(self) -> KupferObject | None:
         return self._selection
 
     def reset(self) -> None:
@@ -97,7 +97,7 @@ class LeafPane(Pane, pretty.OutputMixin):
     def __init__(self):
         super().__init__()
         # source_stack keep track on history selected sources and leaves
-        self._source_stack: list[tuple[AnySource, Leaf | None]] = []
+        self._source_stack: list[tuple[AnySource, KupferObject | None]] = []
         self._source: AnySource | None = None
         self.object_stack: list[KupferObject] = []
 
@@ -243,7 +243,7 @@ class PrimaryActionPane(Pane):
         self._action_valid_cache: dict[int, bool] = {}
         self.set_item(None)
 
-    def select(self, item: Leaf | None) -> None:
+    def select(self, item: KupferObject | None) -> None:
         assert not item or isinstance(
             item, base.Action
         ), "Selection in action pane is not an Action!"

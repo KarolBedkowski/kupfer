@@ -110,10 +110,10 @@ def make_environment(last_result=None):
 def format_result(res):
     cres = complex(res)
     parts = []
-    if cres.real:
+    if cres.real:  # pylint: disable=using-constant-test
         parts.append(f"{cres.real}")
 
-    if cres.imag:
+    if cres.imag:  # pylint: disable=using-constant-test
         parts.append(f"{complex(0, cres.imag)}")
 
     return "+".join(parts) or f"{res}"

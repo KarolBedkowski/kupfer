@@ -49,7 +49,7 @@ class SourceLeaf(Leaf):
 
     # FIXME: property vs class field
     @property
-    def fallback_icon_name(self) -> str:
+    def fallback_icon_name(self) -> str:  # type: ignore
         return self.object.fallback_icon_name  # type: ignore
 
     def get_gicon(self) -> GdkPixbuf.Pixbuf | None:

@@ -13,15 +13,15 @@ from kupfer.obj.base import KupferObject, Leaf
 from kupfer.support import conspickle, pretty
 
 _MNEMONICS_FILENAME = "mnemonics.pickle"
-_CORRELATION_KEY = "kupfer.bonus.correlation"
+_CORRELATION_KEY: ty.Final = "kupfer.bonus.correlation"
 
 ## this is a harmless default
-_DEFAULT_ACTIONS = {
+_DEFAULT_ACTIONS: ty.Final = {
     "<builtin.AppLeaf gnome-terminal>": "<builtin.LaunchAgain>",
     "<builtin.AppLeaf xfce4-terminal>": "<builtin.LaunchAgain>",
 }
 
-_FAVORITES: set[str] = set()
+_FAVORITES: ty.Final[set[str]] = set()
 
 
 class Mnemonics:

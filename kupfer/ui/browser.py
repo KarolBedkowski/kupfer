@@ -98,9 +98,9 @@ class WindowController(pretty.OutputMixin):
         self._window.add_events(  # pylint: disable=no-member
             Gdk.EventMask.BUTTON_PRESS_MASK
         )
-        screen = self._window.get_screen()
+        screen = self._window.get_screen()  # pylint: disable=no-member
         if (visual := screen.get_rgba_visual()) and screen.is_composited():
-            self._window.set_visual(visual)
+            self._window.set_visual(visual)  # pylint: disable=no-member
 
         data_controller.connect("launched-action", self._launch_callback)
         data_controller.connect("command-result", self._result_callback)

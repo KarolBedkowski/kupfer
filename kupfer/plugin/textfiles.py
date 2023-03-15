@@ -22,7 +22,6 @@ __author__ = ""
 
 from pathlib import Path
 
-from kupfer import utils
 from kupfer.obj import Action, FileLeaf, TextLeaf, helplib
 from kupfer.support import fileutils, kupferstring, validators
 
