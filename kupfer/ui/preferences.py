@@ -13,7 +13,7 @@ from xdg import BaseDirectory as base
 from xdg import DesktopEntry as desktop
 from xdg import Exceptions as xdg_e
 
-from kupfer import config, icons, plugin_support, utils, version
+from kupfer import config, icons, launch, plugin_support, version
 from kupfer.core import plugins, relevance, settings, sources
 from kupfer.obj import KupferObject
 from kupfer.support import kupferstring, pretty, scheduler
@@ -328,7 +328,7 @@ class PreferencesWindowController(pretty.OutputMixin):
 
         have.append(directory)
         directory = os.path.expanduser(directory)
-        dispname = utils.get_display_path_for_bytestring(directory)
+        dispname = launch.get_display_path_for_bytestring(directory)
         gicon = icons.get_gicon_for_file(directory)
         self.dir_store.append((directory, gicon, dispname))
 

@@ -10,7 +10,7 @@ from contextlib import suppress
 
 from gi.repository import Gio, GLib
 
-from kupfer import icons, utils
+from kupfer import icons, launch
 from kupfer.obj import (
     Action,
     FileLeaf,
@@ -157,7 +157,7 @@ class TrashFile(Leaf):
     def get_description(self):
         orig_path = self.get_orig_path()
         return (
-            utils.get_display_path_for_bytestring(orig_path)
+            launch.get_display_path_for_bytestring(orig_path)
             if orig_path
             else None
         )
@@ -294,4 +294,4 @@ class TrashSource(Source):
 
 class OpenTrash(Open):
     def activate(self, leaf, iobj=None, ctx=None):
-        utils.show_url(leaf.object)
+        launch.show_url(leaf.object)

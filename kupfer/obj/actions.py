@@ -8,7 +8,7 @@ see the main program file, and COPYING for details.
 """
 import typing as ty
 
-from kupfer import launch, utils
+from kupfer import launch, support
 from kupfer.desktop_launch import SpawnError
 
 from .base import Action
@@ -61,7 +61,7 @@ class Execute(Action):
         if self.quoted:
             argv = [leaf.object]
         else:
-            argv = utils.argv_for_commandline(leaf.object)
+            argv = support.argv_for_commandline(leaf.object)
         if self.in_terminal:
             launch.spawn_in_terminal(argv)
         else:
@@ -88,7 +88,7 @@ class OpenUrl(Action):
         self.open_url(url)
 
     def open_url(self, url: str) -> None:
-        utils.show_url(url)
+        launch.show_url(url)
 
     def get_description(self) -> str:
         return _("Open URL with default viewer")

@@ -13,7 +13,7 @@ from contextlib import suppress
 
 from gi.repository import GdkPixbuf, Gio, GLib
 
-from kupfer import launch, utils
+from kupfer import launch
 from kupfer.support import pretty
 from kupfer.version import DESKTOP_ID
 
@@ -226,7 +226,7 @@ class AppLeaf(Leaf):
         app_desc = self.object.get_description()
         ret = app_desc or self.object.get_executable()
         if self._init_path:
-            app_path = utils.get_display_path_for_bytestring(self._init_path)
+            app_path = launch.get_display_path_for_bytestring(self._init_path)
             return f"({app_path}) {ret}"
 
         return ret  # type: ignore

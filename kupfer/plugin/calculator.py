@@ -11,7 +11,7 @@ import textwrap
 import typing as ty
 from contextlib import suppress
 
-from kupfer import utils, version
+from kupfer import launch, version
 from kupfer.obj import Action, TextLeaf
 from kupfer.support import pretty
 from kupfer.ui import uiutils
@@ -31,7 +31,7 @@ class KupferSurprise(float):
     """
 
     def __call__(self, *args):
-        utils.show_url(version.WEBSITE)
+        launch.show_url(version.WEBSITE)
         raise IgnoreResultException
 
 

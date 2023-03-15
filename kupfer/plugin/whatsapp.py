@@ -27,7 +27,7 @@ __author__ = "Leonardo Masuero <leom255255@gmail.com>"
 
 from contextlib import suppress
 
-from kupfer import utils
+from kupfer import launch
 from kupfer.obj import Action, TextLeaf
 
 
@@ -38,7 +38,7 @@ class WhatsApp(Action):
     def activate(self, leaf, iobj=None, ctx=None):
         url_w = "https://web.whatsapp.com/send?phone="
         url_number = url_w + leaf.object
-        utils.show_url(url_number)
+        launch.show_url(url_number)
 
     def item_types(self):
         yield TextLeaf

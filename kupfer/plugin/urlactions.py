@@ -18,7 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from kupfer import utils
+from kupfer import launch
 from kupfer.obj import Action, FileLeaf, UrlLeaf
 from kupfer.support import fileutils, task
 
@@ -89,7 +89,7 @@ class DownloadAndOpen(Action):
         uri = leaf.object
 
         def finish_action(filename):
-            utils.show_path(filename)
+            launch.show_path(filename)
             ctx.register_late_result(FileLeaf(filename), show=False)
 
         return DownloadTask(uri, None, True, finish_action)

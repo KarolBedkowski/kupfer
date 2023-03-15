@@ -15,7 +15,7 @@ from os import path
 
 from gi.repository import GdkPixbuf, Gio, GLib
 
-from kupfer import icons, utils
+from kupfer import icons, launch
 from kupfer.support import pretty
 
 from . import actions, fileactions, filesrc
@@ -124,7 +124,7 @@ class FileLeaf(Leaf, TextRepresentation):
         return Gio.File.new_for_path(self.object)
 
     def get_description(self) -> ty.Optional[str]:
-        return utils.get_display_path_for_bytestring(self.canonical_path())
+        return launch.get_display_path_for_bytestring(self.canonical_path())
 
     def get_actions(self) -> ty.Iterable[Action]:
         yield fileactions.Open()

@@ -6,7 +6,7 @@ __author__ = ""
 
 from gi.repository import Gio, GLib
 
-from kupfer import utils
+from kupfer import launch
 from kupfer.obj import Action, FileLeaf, OpenTerminal, Source
 from kupfer.obj.fileactions import Open
 from kupfer.ui import uiutils
@@ -46,7 +46,7 @@ class Volume(FileLeaf):
     def get_description(self):
         return _(
             "Volume mounted at %s"
-        ) % utils.get_display_path_for_bytestring(self.object)
+        ) % launch.get_display_path_for_bytestring(self.object)
 
     def get_gicon(self):
         return self.volume.get_icon()

@@ -6,7 +6,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from kupfer import utils
+from kupfer import launch
 from kupfer.obj import FileLeaf, OpenUrl, TextLeaf, TextSource, UrlLeaf
 from kupfer.support import pretty, system
 from kupfer.support.validators import is_url
@@ -85,7 +85,7 @@ class OpenTextUrl(OpenUrl):
 
     def activate(self, leaf, iobj=None, ctx=None):
         if url := is_url(leaf.object):
-            utils.show_url(url)
+            launch.show_url(url)
 
     def item_types(self):
         yield TextLeaf
