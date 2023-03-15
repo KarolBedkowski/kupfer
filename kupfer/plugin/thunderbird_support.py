@@ -116,7 +116,7 @@ def _read_mork_filecontent(filename: str) -> ty.Iterable[str]:
         # check header
         if not RE_HEADER.match(header):
             pretty.print_debug(__name__, "_read_mork: header error", header)
-            return {}
+            return
 
         for line in mfile.readlines():
             # remove blank lines and comments
