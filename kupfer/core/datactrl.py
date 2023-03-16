@@ -148,7 +148,10 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
         """
         # Keep a mapping:
         # Decorated Leaf Type -> Set of content decorator types
-        decorate_item_types: dict[ty.Any, set[Source]] = defaultdict(set)
+        decorate_item_types: defaultdict[
+            ty.Type[Leaf], set[Source]
+        ] = defaultdict(set)
+
         for content in contents:
             with suppress(AttributeError):
                 applies = content.decorates_type()  # type: ignore

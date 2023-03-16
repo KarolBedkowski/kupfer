@@ -282,6 +282,10 @@ class SourceDataPickler(pretty.OutputMixin):
         return True
 
 
+## define type for Source subclass to prevent problems with mixins
+SourceSubclass = ty.TypeVar("SourceSubclass", bound=Source)
+
+
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
 class SourceController(pretty.OutputMixin):
     """Control sources; loading, pickling, rescanning
@@ -411,9 +415,8 @@ class SourceController(pretty.OutputMixin):
         return self._text_sources
 
     def add_content_decorators(
-        self, plugin_id: str, decos: dict[ty.Any, set[ty.Any]]
+        self, plugin_id: str, decos: dict[ty.Type[Leaf], set[SourceSubclass]]
     ) -> None:
-        # FIXME: can't specify set type because of mixins
         for typ, val in decos.items():
             self._content_decorators[typ].update(val)
             self._register_plugin_objects(plugin_id, *val)
