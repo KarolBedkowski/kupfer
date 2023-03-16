@@ -15,8 +15,8 @@ import typing as ty
 from gi.repository import Gdk, Gtk, Pango
 
 from kupfer import config, version
-from kupfer.support import pretty
 from kupfer.core import commandexec
+from kupfer.support import pretty
 
 from . import uievents
 

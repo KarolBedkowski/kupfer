@@ -100,7 +100,6 @@ class UnpackHere(Action):
 
     def valid_for_item(self, leaf):
         fname, ext = os.path.splitext(leaf.object)
-        # FIXME: Make this detection smarter
         # check for standard extension or a multi-part rar extension
         ext = ext.lower()
         if ext in _EXTENSIONS_SET:

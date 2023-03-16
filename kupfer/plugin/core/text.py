@@ -7,7 +7,7 @@ import urllib.parse
 import urllib.request
 
 from kupfer import launch
-from kupfer.obj import FileLeaf, OpenUrl, TextLeaf, TextSource, UrlLeaf
+from kupfer.obj import FileLeaf, Leaf, OpenUrl, TextLeaf, TextSource, UrlLeaf
 from kupfer.support import pretty, system
 from kupfer.support.validators import is_url
 
@@ -51,7 +51,7 @@ class PathTextSource(TextSource, pretty.OutputMixin):
     def get_rank(self):
         return 80
 
-    def _is_local_file_url(self, url):
+    def _is_local_file_url(self, url: str) -> bool:
         # Recognize file:/// or file://localhost/ or file://<local_hostname>/ URLs
         hostname = system.get_hostname()
         return (
@@ -60,21 +60,20 @@ class PathTextSource(TextSource, pretty.OutputMixin):
             or url.startswith(f"file://{hostname}/")
         )
 
-    def get_text_items(self, text):
+    def get_text_items(self, text: str) -> ty.Iterator[Leaf]:
         # Find directories or files
         if self._is_local_file_url(text):
             leaf = FileLeaf.from_uri(text)
             if leaf and leaf.is_valid():
                 yield leaf
 
-        else:
-            prefix = system.get_homedir()
-            ufilepath = (
-                text if os.path.isabs(text) else os.path.join(prefix, text)
-            )
-            filepath = os.path.normpath(ufilepath)
-            if os.access(filepath, os.R_OK):
-                yield FileLeaf(filepath)
+            return
+
+        prefix = system.get_homedir()
+        ufilepath = text if os.path.isabs(text) else os.path.join(prefix, text)
+        filepath = os.path.normpath(ufilepath)
+        if os.access(filepath, os.R_OK):
+            yield FileLeaf(filepath)
 
     def provides(self):
         yield FileLeaf
@@ -103,8 +102,8 @@ class URLTextSource(TextSource):
     def get_rank(self):
         return 75
 
-    def get_text_items(self, text):
-        # FIXME: more strict checking?
+    def get_text_items(self, text: str) -> ty.Iterator[Leaf]:
+        # TODO: maybe more strict checking?
 
         # Only detect "perfect" URLs
         text = text.strip()

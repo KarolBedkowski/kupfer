@@ -47,16 +47,12 @@ def iobject_source_for_action(
     where
     src: object source or None,
     use_catalog: True to use catalog in addition.
-
-    TODO: only first representation? this may ever fail?
     """
     leaf, *_rest = get_leaf_members(for_item)
-    if leaf:
-        return action.object_source(leaf), action.object_source_and_catalog(
-            leaf
-        )
+    if not leaf:
+        return None, False
 
-    return None, False
+    return action.object_source(leaf), action.object_source_and_catalog(leaf)
 
 
 FilteringFunction = ty.Callable[

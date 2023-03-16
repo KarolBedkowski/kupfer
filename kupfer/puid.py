@@ -10,8 +10,6 @@ data model user-level object.
 We unpickle SerializedObjects in an especially conservative way: new
 module loading is always refused; this way, we avoid loading parts of
 the program that we didn't wish to activate.
-
-TODO: move to core?
 """
 
 from __future__ import annotations
