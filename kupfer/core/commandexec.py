@@ -174,8 +174,6 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
 
     command-result (result_type, result)
         Emitted when a command is carried out, with its resulting value
-
-    TODO: ! check is nested execution work.
     """
 
     __gtype_name__ = "ActionExecutionContext"
@@ -346,6 +344,8 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
 
         If a command carries out another command as part of its execution,
         and wishes to delegate to it, pass True for @delegate.
+
+        TODO: separate delegate executions to simplify code
         """
         self.last_command_id = next(self._command_counter)
         self.last_executed_command = (obj, action, iobj)
