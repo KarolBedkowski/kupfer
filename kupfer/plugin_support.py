@@ -155,6 +155,7 @@ GObject.signal_new(
 _HAS_DBUS_CONNECTION = None
 
 
+# pylint: disable=too-few-public-methods
 class _DBusChecker:
     has_connection = None
 
@@ -185,7 +186,7 @@ def check_dbus_connection() -> None:
         raise ImportError(_("No D-Bus connection to desktop session"))
 
 
-# TODO: check
+# pylint: disable=too-few-public-methods
 class UserNamePassword:
     pass
 

@@ -77,6 +77,7 @@ class ScreenSessionsSource(Source, FilesystemWatchMixin):
     def __init__(self):
         super().__init__(_("Screen Sessions"))
         self.screen_dir = None
+        self.monitor_token = None
 
     def initialize(self):
         ## the screen dir might not exist when we start
@@ -110,11 +111,8 @@ class ScreenSessionsSource(Source, FilesystemWatchMixin):
 
 
 class AttachScreen(Action):
-    """ """
-
     def __init__(self):
-        name = _("Attach")
-        super().__init__(name)
+        super().__init__(name=_("Attach"))
 
     def activate(self, leaf, iobj=None, ctx=None):
         pid = leaf.object

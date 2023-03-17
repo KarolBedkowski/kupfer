@@ -11,8 +11,8 @@ __author__ = "Peter Stuifzand <peter@p83.nl>"
 
 import typing as ty
 
-from brotab.api import MultipleMediatorsAPI
-from brotab.main import create_clients
+from brotab.api import MultipleMediatorsAPI  # pylint: disable=import-error
+from brotab.main import create_clients  # pylint: disable=import-error
 
 from kupfer.obj import Action, Leaf, Source, UrlLeaf
 

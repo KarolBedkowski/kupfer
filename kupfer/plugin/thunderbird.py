@@ -1,3 +1,10 @@
+"""
+Thunderbird  plugin.
+
+Changes:
+    2012-03-15: Karol Będkowski
+        + activate_multiple for new mail action
+"""
 __kupfer_name__ = _("Thunderbird")
 __kupfer_sources__ = ("ContactsSource",)
 __kupfer_actions__ = (
@@ -16,12 +23,6 @@ from kupfer.obj.contacts import ContactLeaf, EmailContact, email_from_leaf
 from kupfer.obj.grouping import ToplevelGroupingSource
 from kupfer.obj.helplib import FilesystemWatchMixin
 from kupfer.plugin import thunderbird_support as support
-
-"""
-Changes:
-    2012-03-15: Karol Będkowski
-        + activate_multiple for new mail action
-"""
 
 
 class ComposeMail(RunnableLeaf):

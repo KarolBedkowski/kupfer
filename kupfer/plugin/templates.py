@@ -129,6 +129,7 @@ class CreateDocumentIn(
 ):
     rank_adjust = 10
 
+    # pylint: disable=super-init-not-called,non-parent-init-called
     def __init__(self):
         Action.__init__(self, _("Create Document In..."))
 

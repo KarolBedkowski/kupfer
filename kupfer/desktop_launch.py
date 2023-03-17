@@ -128,6 +128,7 @@ class _Flags:
     did_see_large_f: bool = False
 
 
+# pylint: disable=too-many-locals
 def _replace_format_specs(
     argv: list[str],
     location: str,

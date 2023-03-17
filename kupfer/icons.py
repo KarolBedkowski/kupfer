@@ -421,7 +421,7 @@ def _setup_icon_renderer(_sched: ty.Any) -> None:
 
 
 def _icon_render_change(setctl, *_arguments):
-    global _ICON_RENDERER
+    global _ICON_RENDERER  # pylint: disable=global-statement
     renderer_dict = setctl.get_preferred_alternative("icon_renderer")
     renderer = renderer_dict.get("renderer")
     if not renderer or renderer is _ICON_RENDERER:

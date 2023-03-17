@@ -160,7 +160,7 @@ class SendMessage(ContactAction):
 
     def valid_object(self, iobj, for_item=None):
         # ugly, but we don't want derived text
-        return type(iobj) == TextLeaf
+        return type(iobj) == TextLeaf  # pylint: disable=unidiomatic-typecheck
 
 
 class PidginContact(ContactLeaf):

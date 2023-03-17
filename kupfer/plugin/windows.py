@@ -298,6 +298,7 @@ class ToggleAction(WindowAction):
     @predicate: Callable for state taking the window object as only argument
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         ename,

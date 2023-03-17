@@ -270,6 +270,7 @@ class DataController(GObject.GObject, pretty.OutputMixin):  # type:ignore
     def _plugin_enabled(
         self, _setctl: ty.Any, plugin_id: str, enabled: bool | int
     ) -> None:
+        # pylint: disable=import-outside-toplevel
         from kupfer.core import plugins
 
         if enabled and not plugins.is_plugin_loaded(plugin_id):

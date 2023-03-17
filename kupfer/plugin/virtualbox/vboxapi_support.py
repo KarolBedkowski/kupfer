@@ -9,7 +9,7 @@ __version__ = "2018-09-07"
 
 from contextlib import suppress
 
-import vboxapi
+import vboxapi  # pylint: disable=import-error
 
 from kupfer.support import pretty
 
