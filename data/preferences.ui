@@ -30,7 +30,11 @@
                   <object class="GtkHBox" id="hbox2">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="spacing">6</property>
+                    <property name="margin-start">6</property>
+                    <property name="margin-end">6</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
+                    <property name="spacing">12</property>
                     <child>
                       <object class="GtkVBox" id="vbox3">
                         <property name="visible">True</property>
@@ -373,8 +377,12 @@
                   <object class="GtkVBox" id="vbox7">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-start">6</property>
+                    <property name="margin-end">6</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
                     <property name="border-width">6</property>
-                    <property name="spacing">6</property>
+                    <property name="spacing">12</property>
                     <child>
                       <object class="GtkLabel" id="label4">
                         <property name="visible">True</property>
@@ -540,35 +548,48 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkRadioButton" id="radio_actionaccelalt">
-                        <property name="label" translatable="yes">Action accelerators use Alt</property>
+                      <object class="GtkBox">
                         <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="receives-default">False</property>
-                        <property name="draw-indicator">True</property>
-                        <property name="group">radio_actionaccelalt</property>
-                        <signal name="toggled" handler="on_radio_action_accel_alt" swapped="no"/>
+                        <property name="can-focus">False</property>
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">6</property>
+                        <child>
+                          <object class="GtkRadioButton" id="radio_actionaccelalt">
+                            <property name="label" translatable="yes">Action accelerators use Alt</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">False</property>
+                            <property name="draw-indicator">True</property>
+                            <property name="group">radio_actionaccelctrl</property>
+                            <signal name="toggled" handler="on_radio_action_accel_alt" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkRadioButton" id="radio_actionaccelctrl">
+                            <property name="label" translatable="yes">Action accelerators use Ctrl</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">False</property>
+                            <property name="draw-indicator">True</property>
+                            <property name="group">radio_actionaccelalt</property>
+                            <signal name="toggled" handler="on_radio_action_accel_ctrl" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
                         <property name="position">5</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkRadioButton" id="radio_actionaccelctrl">
-                        <property name="label" translatable="yes">Action accelerators use Ctrl</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="receives-default">False</property>
-                        <property name="draw-indicator">True</property>
-                        <property name="group">radio_actionaccelalt</property>
-                        <signal name="toggled" handler="on_radio_action_accel_ctrl" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">6</property>
                       </packing>
                     </child>
                   </object>
@@ -591,7 +612,11 @@
                   <object class="GtkHBox" id="hbox1">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="spacing">6</property>
+                    <property name="margin-start">6</property>
+                    <property name="margin-end">6</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
+                    <property name="spacing">12</property>
                     <child>
                       <object class="GtkVBox" id="plugins_list_container">
                         <property name="height-request">350</property>
@@ -675,10 +700,14 @@
                   <object class="GtkTable" id="table1">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-start">6</property>
+                    <property name="margin-end">6</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
                     <property name="n-rows">2</property>
                     <property name="n-columns">2</property>
-                    <property name="column-spacing">6</property>
-                    <property name="row-spacing">6</property>
+                    <property name="column-spacing">12</property>
+                    <property name="row-spacing">12</property>
                     <child>
                       <object class="GtkVBox" id="vbox6">
                         <property name="visible">True</property>
