@@ -122,7 +122,7 @@ class TextLeaf(Leaf, TextRepresentation):
         if not name:
             name = self.get_first_text_line(text)
 
-        if len(text) == 0 or not name:
+        if not text or not name:
             name = _("(Empty Text)")
 
         assert name
