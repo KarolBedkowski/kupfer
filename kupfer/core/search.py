@@ -5,6 +5,8 @@ import typing as ty
 
 from kupfer.obj.base import Leaf, Action
 from kupfer.core import learn, relevance
+from kupfer import config
+from kupfer.support import pretty
 
 __all__ = (
     "make_rankables",
@@ -20,6 +22,21 @@ __all__ = (
 
 # RankableObject is type of object that can be put in Rankable.
 RankableObject = ty.Union[Leaf, Action]
+# function used to score string similarity
+score_func = relevance.score
+
+if method := config.get_kupfer_env("FUZZY_MATCH"):
+    try:
+        from kupfer.core import relevance_fuzzy
+
+        score_func = relevance_fuzzy.get_score_function(method)
+        pretty.print_info(__name__, "fuzzy string matching enabled")
+    except ImportError:
+        pretty.print_error(
+            __name__,
+            "fuzzy match enabled but rapidfuzz is not available; "
+            "fallabck to standard matching method",
+        )
 
 
 def make_rankables(
@@ -95,16 +112,14 @@ def add_rank_objects(
         yield obj
 
 
-def score_objects(
-    rankables: ty.Iterable[Rankable], key: str
-) -> ty.Iterator[Rankable]:
+def score_objects(rankables: ty.Iterable[Rankable], key: str) -> ty.Iterator[Rankable]:
     """
     rankables: List[Rankable]
 
     Prune rankables that score low for the key.
     """
     key = key.lower()
-    _score = relevance.score_single if len(key) == 1 else relevance.score
+    _score = relevance.score_single if len(key) == 1 else score_func
 
     for rankable in rankables:
         # Rank object
