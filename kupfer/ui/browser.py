@@ -773,7 +773,7 @@ class WindowController(pretty.OutputMixin):
             keyobj = keybindings.get_keybound_object()
             keyobj.connect(
                 "bound-key-changed",
-                lambda x, y, z: kserv1.BoundKeyChanged(y, z),
+                lambda _x, y, z: kserv1.BoundKeyChanged(y, z),
             )
             kserv1.connect("relay-keys", keyobj.relayed_keys)
 

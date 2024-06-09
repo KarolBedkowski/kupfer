@@ -5,7 +5,9 @@ import typing as ty
 from kupfer.obj import Action, KupferObject, Leaf, AnySource
 
 from kupfer.core._support import get_leaf_members
-from kupfer.core.sources import SourceController
+
+if ty.TYPE_CHECKING:
+    from kupfer.core.sources import SourceController
 
 
 __all__ = (

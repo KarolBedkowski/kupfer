@@ -15,10 +15,12 @@ from pathlib import Path
 
 from kupfer import config
 from kupfer.obj import Action, AnySource, Leaf, Source, TextSource
-from kupfer.obj.base import ActionGenerator
 from kupfer.obj.sources import MultiSource, SourcesSource
 from kupfer.support import conspickle, pretty, scheduler
 from kupfer.core import pluginload, plugins
+
+if ty.TYPE_CHECKING:
+    from kupfer.obj.base import ActionGenerator
 
 __all__ = (
     "InternalError",
@@ -178,7 +180,9 @@ class SourcePickler(pretty.OutputMixin):
 
         if obsolete_files:
             self.output_info(
-                "Removing obsolete cache files:", sep="\n", *obsolete_files
+                "Removing obsolete cache files:",
+                *obsolete_files,
+                sep="\n",
             )
             for fpath in obsolete_files:
                 # be overly careful
@@ -356,14 +360,14 @@ class SourceController(pretty.OutputMixin):
         self._rescanner = PeriodicRescanner(period=1)
         self._toplevel_sources: set[Source] = set()
         self._text_sources: set[TextSource] = set()
-        self._content_decorators: dict[
-            ty.Type[Leaf], set[ty.Type[Source]]
-        ] = defaultdict(set)
+        self._content_decorators: dict[ty.Type[Leaf], set[ty.Type[Source]]] = (
+            defaultdict(set)
+        )
         self._action_generators: list[ActionGenerator] = []
         # map any object defined in plugin to plugin id
-        self._plugin_object_map: weakref.WeakKeyDictionary[
-            ty.Any, str
-        ] = weakref.WeakKeyDictionary()
+        self._plugin_object_map: weakref.WeakKeyDictionary[ty.Any, str] = (
+            weakref.WeakKeyDictionary()
+        )
         self._loaded_successfully = False
         self._did_finalize_sources = False
         # _pre_root cache root sources
@@ -417,9 +421,7 @@ class SourceController(pretty.OutputMixin):
         pretty.print_debug(__name__, "Remove", src)
 
     def get_plugin_id_for_object(self, obj: ty.Any) -> str | None:
-        id_ = self._plugin_object_map.get(obj)
-        # self.output_debug("Object", obj, "has id", id_, id(obj))
-        return id_
+        return self._plugin_object_map.get(obj)
 
     def remove_objects_for_plugin_id(self, plugin_id: str) -> bool:
         """Remove all objects for @plugin_id

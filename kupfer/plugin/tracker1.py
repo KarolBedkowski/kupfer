@@ -2,6 +2,7 @@
 Tracker plugins are versioned by the D-Bus API version
 This is version works with Tracker1.
 """
+
 __kupfer_name__ = _("Tracker")
 __kupfer_sources__ = ()
 __kupfer_text_sources__ = ("TrackerFulltext",)

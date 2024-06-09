@@ -18,7 +18,6 @@ import shutil
 from os import path as os_path
 
 from kupfer import launch, plugin_support, runtimehelper
-from kupfer.core import commandexec
 from kupfer.obj import Action, FileLeaf, Leaf, OperationError
 from kupfer.obj.special import CommandNotAvailableLeaf
 from kupfer.support import fileutils
@@ -26,6 +25,7 @@ from kupfer.support import fileutils
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
 
+    from kupfer.core import commandexec
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {

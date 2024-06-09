@@ -54,13 +54,14 @@ from kupfer.obj import (
 from kupfer.obj.compose import MultipleLeaf
 from kupfer.obj.sources import MultiSource
 from kupfer.support import pretty, task
-from kupfer.support.types import ExecInfo
 from kupfer.ui import uiutils
-from kupfer.ui.uievents import GUIEnvironmentContext
 from kupfer.core._support import get_leaf_members, is_multiple_leaf
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from kupfer.support.types import ExecInfo
+    from kupfer.ui.uievents import GUIEnvironmentContext
 
 __all__ = (
     "ExecResult",
@@ -367,9 +368,8 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
 
         # The execution token object for the current invocation
         execution_token = self.make_execution_token(ui_ctx)
-        with self._error_conversion((obj, action, iobj)):
-            with self._nesting():
-                ret = activate_action(execution_token, obj, action, iobj)
+        with self._error_conversion((obj, action, iobj)), self._nesting():
+            ret = activate_action(execution_token, obj, action, iobj)
 
         # remember last command, but not delegated commands.
         if not delegate:
@@ -558,8 +558,7 @@ class ActionActivateFunc(ty.Protocol):
         iobj: Leaf | None = None,
         ctx: ExecutionToken | None = None,
         /,
-    ) -> ActionResult:
-        ...
+    ) -> ActionResult: ...
 
 
 # pylint: disable=too-few-public-methods
@@ -571,8 +570,7 @@ class ActionActivateMultipleFunc(ty.Protocol):
         iobj: ty.Iterable[Leaf | None] | None = None,
         ctx: ExecutionToken | None = None,
         /,
-    ) -> ActionResult:
-        ...
+    ) -> ActionResult: ...
 
 
 def activate_action(
@@ -646,8 +644,7 @@ def _activate_action_multiple_multiplied(
     ]
 
     actx = default_action_execution_context()
-    ret = actx.combine_action_result_multiple(action, rets)
-    return ret
+    return actx.combine_action_result_multiple(action, rets)
 
 
 def parse_action_result(action: Action, ret: ActionResult) -> ExecResult:

@@ -5,6 +5,7 @@ This file is a part of the program kupfer, which is
 released under GNU General Public License v3 (or any later version),
 see the main program file, and COPYING for details.
 """
+
 from __future__ import annotations
 
 import os
@@ -74,12 +75,12 @@ class FileLeaf(Leaf, TextRepresentation):
     def __hash__(self) -> int:
         return hash(str(self))
 
-    def __eq__(self, other: ty.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         try:
             return (
                 type(self) is type(other)
                 and str(self) == str(other)
-                and path.samefile(self.object, other.object)
+                and path.samefile(self.object, other.object)  # type: ignore
             )
         except OSError as exc:
             pretty.print_debug(__name__, exc)
@@ -127,10 +128,9 @@ class FileLeaf(Leaf, TextRepresentation):
         if self.is_dir():
             yield actions.OpenTerminal()
 
-        elif self.is_valid():
-            if self._is_good_executable():
-                yield actions.Execute()
-                yield actions.Execute(in_terminal=True)
+        elif self.is_valid() and self._is_good_executable():
+            yield actions.Execute()
+            yield actions.Execute(in_terminal=True)
 
     def has_content(self) -> bool:
         return self.is_dir() or Leaf.has_content(self)
@@ -188,8 +188,7 @@ class FileLeaf(Leaf, TextRepresentation):
 
         info = gfile.query_info(content_attr, Gio.FileQueryInfoFlags.NONE, None)
         content_type = info.get_attribute_string(content_attr)
-        ret = predicate(content_type, ctype)
-        return ret
+        return predicate(content_type, ctype)  # type: ignore
 
     def _is_good_executable(self):
         if not self.is_executable():

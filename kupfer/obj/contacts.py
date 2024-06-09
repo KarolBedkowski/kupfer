@@ -7,19 +7,22 @@ Constructor classes such as EmailContact are used to conveniently construct
 contacts with common traits. To *use* contacts, always use ContactLeaf, asking
 for specific slots to be filled.
 """
+
 from __future__ import annotations
 
 import typing as ty
 
-from gi.repository import GdkPixbuf
 
 from kupfer import icons
 from kupfer.support import validators
-from kupfer.obj.base import Leaf
 from kupfer.obj.grouping import GroupingLeaf, Slots
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from gi.repository import GdkPixbuf
+
+    from kupfer.obj.base import Leaf
 
 __author__ = (
     "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>, "
@@ -99,14 +102,14 @@ def email_from_leaf(leaf: Leaf) -> str | None:
     Return a false value if no valid email is found.
     """
     if isinstance(leaf, ContactLeaf):
-        return leaf[EMAIL_KEY] if EMAIL_KEY in leaf else None
+        return leaf.get(EMAIL_KEY)  # type: ignore
 
     email = _get_email_from_url(str(leaf.object))
     return email if validators.is_valid_email(email) else None
 
 
 class EmailContact(ContactLeaf):
-    grouping_slots = ContactLeaf.grouping_slots + (EMAIL_KEY,)
+    grouping_slots = (*ContactLeaf.grouping_slots, EMAIL_KEY)
 
     def __init__(self, email: str, name: str, image: ty.Any = None) -> None:
         slots = {EMAIL_KEY: email, NAME_KEY: name}
@@ -123,7 +126,7 @@ class EmailContact(ContactLeaf):
 
 
 class IMContact(ContactLeaf):
-    grouping_slots = ContactLeaf.grouping_slots + (EMAIL_KEY,)
+    grouping_slots = (*ContactLeaf.grouping_slots, EMAIL_KEY)
 
     def __init__(
         self,
@@ -154,7 +157,7 @@ class IMContact(ContactLeaf):
 class JabberContact(IMContact):
     """Minimal class for all Jabber contacts."""
 
-    grouping_slots = IMContact.grouping_slots + (JABBER_JID_KEY,)
+    grouping_slots = (*IMContact.grouping_slots, JABBER_JID_KEY)
 
     def __init__(
         self,
@@ -185,7 +188,7 @@ class JabberContact(IMContact):
 
 
 class AIMContact(IMContact):
-    grouping_slots = IMContact.grouping_slots + (AIM_KEY,)
+    grouping_slots = (*IMContact.grouping_slots, AIM_KEY)
 
     def __init__(
         self,
@@ -198,7 +201,7 @@ class AIMContact(IMContact):
 
 
 class GoogleTalkContact(IMContact):
-    grouping_slots = IMContact.grouping_slots + (GOOGLE_TALK_KEY,)
+    grouping_slots = (*IMContact.grouping_slots, GOOGLE_TALK_KEY)
 
     def __init__(
         self, id_: str, name: str, slots: Slots = None, image: ty.Any = None
@@ -209,7 +212,7 @@ class GoogleTalkContact(IMContact):
 
 
 class ICQContact(IMContact):
-    grouping_slots = IMContact.grouping_slots + (ICQ_KEY,)
+    grouping_slots = (*IMContact.grouping_slots, ICQ_KEY)
 
     def __init__(
         self, id_: str, name: str, slots: Slots = None, image: ty.Any = None
@@ -218,7 +221,7 @@ class ICQContact(IMContact):
 
 
 class MSNContact(IMContact):
-    grouping_slots = IMContact.grouping_slots + (MSN_KEY,)
+    grouping_slots = (*IMContact.grouping_slots, MSN_KEY)
 
     def __init__(
         self, id_: str, name: str, slots: Slots = None, image: ty.Any = None
@@ -227,7 +230,7 @@ class MSNContact(IMContact):
 
 
 class QQContact(IMContact):
-    grouping_slots = IMContact.grouping_slots + (QQ_KEY,)
+    grouping_slots = (*IMContact.grouping_slots, QQ_KEY)
 
     def __init__(
         self, id_: str, name: str, slots: Slots = None, image: ty.Any = None
@@ -236,7 +239,7 @@ class QQContact(IMContact):
 
 
 class YahooContact(IMContact):
-    grouping_slots = IMContact.grouping_slots + (YAHOO_KEY,)
+    grouping_slots = (*IMContact.grouping_slots, YAHOO_KEY)
 
     def __init__(
         self, id_: str, name: str, slots: Slots = None, image: ty.Any = None
@@ -245,7 +248,7 @@ class YahooContact(IMContact):
 
 
 class SkypeContact(IMContact):
-    grouping_slots = IMContact.grouping_slots + (SKYPE_KEY,)
+    grouping_slots = (*IMContact.grouping_slots, SKYPE_KEY)
 
     def __init__(
         self, id_: str, name: str, slots: Slots = None, image: ty.Any = None
@@ -254,7 +257,7 @@ class SkypeContact(IMContact):
 
 
 class PhoneContact(ContactLeaf):
-    grouping_slots = ContactLeaf.grouping_slots + (EMAIL_KEY,)
+    grouping_slots = (*ContactLeaf.grouping_slots, EMAIL_KEY)
 
     def __init__(
         self,
@@ -278,7 +281,7 @@ class PhoneContact(ContactLeaf):
 
 
 class AddressContact(ContactLeaf):
-    grouping_slots = ContactLeaf.grouping_slots + (EMAIL_KEY,)
+    grouping_slots = (*ContactLeaf.grouping_slots, EMAIL_KEY)
 
     def __init__(
         self,

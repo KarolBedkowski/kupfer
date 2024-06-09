@@ -33,7 +33,7 @@ class DebugRestart(RunnableLeaf):
 
     @classmethod
     def _exec_new_kupfer(cls, executable, argv):
-        os.execvp(executable, [executable] + argv)
+        os.execvp(executable, [executable, *argv])
 
     def run(self, ctx=None):
         Gtk.main_quit()

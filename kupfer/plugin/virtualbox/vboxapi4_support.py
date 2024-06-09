@@ -4,6 +4,7 @@ virtualbox_vboxapi_support.py
 Control VirtualBox via Python interface (vboxapi).
 Only (?) Sun VirtualBox (no OSE).
 """
+
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
 __version__ = "2018-10-21"
 
@@ -14,9 +15,9 @@ from kupfer.plugin.virtualbox import constants as vbox_const
 
 # check api
 try:
-    vboxapi.VirtualBoxReflectionInfo(None).SessionState_Locked
+    _x = vboxapi.VirtualBoxReflectionInfo(None).SessionState_Locked
 except AttributeError as exc:
-    raise ImportError() from exc
+    raise ImportError from exc
 
 
 MONITORED_DIRS = None

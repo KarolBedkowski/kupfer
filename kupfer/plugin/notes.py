@@ -21,7 +21,6 @@ import xml.sax.saxutils
 import typing as ty
 
 import dbus
-import xdg.BaseDirectory as base
 from gi.repository import GLib
 
 from kupfer import icons, plugin_support
@@ -39,6 +38,8 @@ from kupfer.support import pretty, textutils, weaklib
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
 
+    from xdg import BaseDirectory
+
 
 PROGRAM_IDS = ["gnote", "tomboy", "kzrnote"]
 __kupfer_settings__ = plugin_support.PluginSettings(
@@ -47,10 +48,7 @@ __kupfer_settings__ = plugin_support.PluginSettings(
         "label": _("Work with application"),
         "type": str,
         "value": "",
-        "alternatives": [
-            "",
-        ]
-        + PROGRAM_IDS,
+        "alternatives": ["", *PROGRAM_IDS],
     },
 )
 
@@ -457,7 +455,7 @@ class NotesSource(ApplicationSource):
         for program in PROGRAM_IDS:
             dirs.extend(
                 (
-                    os.path.join(base.xdg_data_home, program),
+                    os.path.join(BaseDirectory.xdg_data_home, program),
                     os.path.expanduser(f"~/.{program}"),
                 )
             )

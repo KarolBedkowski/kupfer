@@ -48,8 +48,7 @@ __kupfer_settings__ = plugin_support.PluginSettings(
 
 def _url_domain(text: str) -> str:
     components = list(urlparse(text))
-    domain = "".join(components[1:2])
-    return domain
+    return "".join(components[1:2])
 
 
 class Keyword(Leaf):
@@ -290,5 +289,4 @@ def _do_search_engine(
 
 def _query_url(terms: str, search_url: str) -> str:
     """Show an url searching for @search_url with @terms"""
-    query_url = search_url.replace("%s", quote(terms))
-    return query_url
+    return search_url.replace("%s", quote(terms))

@@ -13,7 +13,7 @@ import typing as ty
 from os import path
 from pathlib import Path
 
-import xdg.BaseDirectory as base
+from xdg import BaseDirectory
 from gi.repository import Gio, Gtk
 
 from kupfer import icons, launch, plugin_support
@@ -171,9 +171,10 @@ def _app_names(leaf: AppLeaf) -> tuple[str, ...]:
     if (exe := leaf.object.get_executable()) != leaf_id:
         ids.append(exe)
 
-    if app_name := svc.application_name(leaf_id):
-        if (app_name := app_name.lower()) != leaf_id:
-            ids.append(app_name)
+    if (app_name := svc.application_name(leaf_id)) and (
+        app_name := app_name.lower()
+    ) != leaf_id:
+        ids.append(app_name)
 
     ids.extend(v for k, v in ALIASES.items() if k in ids)
     # return tuple as wee need hashable object for caching
@@ -263,7 +264,7 @@ class PlacesSource(Source):
 
     def initialize(self):
         self.places_file = path.join(
-            base.xdg_config_home, "gtk-3.0", "bookmarks"
+            BaseDirectory.xdg_config_home, "gtk-3.0", "bookmarks"
         )
 
     def get_items(self):
@@ -389,7 +390,7 @@ class Toggle(Action):
             IgnoredApps.add(leaf)
         # Neat trick: We return the leaf, and that updates the decoration
         # pylint: disable=protected-access
-        leaf._content_source = None
+        leaf._content_source = None  # noqa: SLF001
         return leaf
 
     def get_description(self):

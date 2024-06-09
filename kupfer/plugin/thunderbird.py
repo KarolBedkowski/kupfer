@@ -5,6 +5,7 @@ Changes:
     2012-03-15: Karol Będkowski
         + activate_multiple for new mail action
 """
+
 __kupfer_name__ = _("Thunderbird")
 __kupfer_sources__ = ("ContactsSource",)
 __kupfer_actions__ = (
@@ -99,8 +100,8 @@ class AttachToNewMail(Action):
             return
 
         args = ["-compose", f"to='{recipients}',attachment='{attachments}'"]
-        if not launch.spawn_async(["thunderbird"] + args):
-            launch.spawn_async(["icedove"] + args)
+        if not launch.spawn_async(["thunderbird", *args]):
+            launch.spawn_async(["icedove", *args])
 
     def get_icon_name(self):
         return "mail-message-new"
@@ -130,8 +131,8 @@ class NewMailWithBody(Action):
 
     def activate(self, leaf, iobj=None, ctx=None):
         args = ["-compose", f"body='{leaf.object}'"]
-        if not launch.spawn_async(["thunderbird"] + args):
-            launch.spawn_async(["icedove"] + args)
+        if not launch.spawn_async(["thunderbird", *args]):
+            launch.spawn_async(["icedove", *args])
 
     def get_icon_name(self):
         return "mail-message-new"

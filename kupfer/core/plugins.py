@@ -11,11 +11,12 @@ from enum import Enum
 from kupfer import icons
 from kupfer import plugin as kplugin
 from kupfer.support import pretty
-from kupfer.support.types import ExecInfo
 from kupfer.core import settings
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from kupfer.support.types import ExecInfo
 
 # import kupfer.icons on demand later
 
@@ -491,9 +492,10 @@ def get_plugin_error(plugin_name: str) -> ty.Any:
     """Return None if plugin is loaded without error, else return a tuple of
     exception information."""
     try:
-        if plugin := _import_plugin(plugin_name):
-            if getattr(plugin, "is_fake_plugin", None):
-                return plugin.exc_info
+        if (plugin := _import_plugin(plugin_name)) and getattr(
+            plugin, "is_fake_plugin", None
+        ):
+            return plugin.exc_info
 
     except ImportError:
         return sys.exc_info()
@@ -511,7 +513,7 @@ def get_plugin_name(modulename: str) -> str:
             continue
 
         if module.__name__ == modulename:
-            name = getattr(module, "__kupfer_name__")
+            name = module.__kupfer_name__
             break
 
     if name:

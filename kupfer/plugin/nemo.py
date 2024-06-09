@@ -35,8 +35,7 @@ def _get_fm1():
     except dbus.DBusException as exc:
         raise OperationError(exc) from exc
 
-    iface_obj = dbus.Interface(proxy_obj, _FM_IFACE)
-    return iface_obj
+    return dbus.Interface(proxy_obj, _FM_IFACE)
 
 
 def _get_nemo():
@@ -46,8 +45,7 @@ def _get_nemo():
     except dbus.DBusException as exc:
         raise OperationError(exc) from exc
 
-    iface_obj = dbus.Interface(proxy_obj, _FO_IFACE)
-    return iface_obj
+    return dbus.Interface(proxy_obj, _FO_IFACE)
 
 
 def _dummy(*args):

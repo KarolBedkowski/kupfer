@@ -28,7 +28,7 @@ class ExtendedSetting(ty.Protocol):
     """Protocol that define non-simple configuration option"""
 
     def load(
-        self, plugin_id: str, key: str, config_value: str | float | int | None
+        self, plugin_id: str, key: str, config_value: str | float | None
     ) -> None:
         """load value for @plugin_id and @key, @config_value is value
         stored in regular Kupfer config for plugin/key"""
@@ -49,8 +49,7 @@ class ValueConverter(ty.Protocol):
     in config file (as str) into required value (int, float, etc).
     """
 
-    def __call__(self, value: str, default: ty.Any) -> PlugConfigValue:
-        ...
+    def __call__(self, value: str, default: ty.Any) -> PlugConfigValue: ...
 
 
 # PlugConfigValueType = ty.Union[type[PlugConfigValue], ValueConverter]
@@ -164,9 +163,10 @@ def _fill_confmap_fom_parser(
 
         for key in parser.options(secname):
             value = parser.get(secname, key)
-            if (sec := defaults.get(secname)) is not None:
-                if (defval := sec.get(key)) is not None:
-                    value = _parse_value(defval, value)
+            if ((sec := defaults.get(secname)) is not None) and (
+                (defval := sec.get(key)) is not None
+            ):
+                value = _parse_value(defval, value)
 
             confmap[secname][key] = value
 
@@ -228,7 +228,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
     )
     # Minimal "defaults" to define all fields
     # Read defaults defined in a defaults.cfg file
-    _defaults: dict[str, ty.Any] = {
+    _defaults: ty.Final[dict[str, ty.Any]] = {
         "Kupfer": {
             "keybinding": "",
             "magickeybinding": "",
@@ -301,14 +301,15 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
             self._defaults_path = defaults_path
             config_files.append(defaults_path)
 
-        if read_config:
-            if config_path := config.get_config_file(self.config_filename):
-                config_files.append(config_path)
+        if read_config and (
+            config_path := config.get_config_file(self.config_filename)
+        ):
+            config_files.append(config_path)
 
         for config_file in config_files:
             try:
                 parser.read(config_file, encoding=self.encoding)
-            except OSError as exc:
+            except OSError as exc:  # noqa:PERF203
                 self.output_error(
                     f"Error reading configuration file {config_file}: {exc}"
                 )
@@ -344,8 +345,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
         """General interface, but section must exist"""
         if section in self._defaults:
             key = key.lower()
-            value = self._config[section].get(key)
-            return value
+            return self._config[section].get(key)
 
         raise KeyError(f"Invalid settings section: {section}")
 
@@ -380,7 +380,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
         return self._config[section].get(key)
 
     def _set_raw_config(
-        self, section: str, key: str, value: str | bool | int | float | None
+        self, section: str, key: str, value: str | bool | float | None
     ) -> bool:
         """General interface, but will create section"""
         self.output_debug("Set", section, key, "to", value)
@@ -758,7 +758,7 @@ get_settings_controller = SettingsController.instance
 def is_known_terminal_executable(exearg: str) -> bool:
     """Check is `exearg` is know terminal executable"""
     setctl = get_settings_controller()
-    for _id, term in setctl.get_all_alternatives("terminal").items():
+    for term in setctl.get_all_alternatives("terminal").values():
         if exearg == term["argv"][0]:
             return True
 

@@ -15,10 +15,11 @@ from gi.repository import Gtk, Gio, GLib
 from kupfer import icons, launch, plugin_support
 from kupfer.core import settings, plugins
 from kupfer.obj import KupferObject, Source
-from kupfer.support import types as kty
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from kupfer.support import types as kty
 
 
 # pylint: disable=too-few-public-methods

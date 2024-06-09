@@ -71,9 +71,9 @@ class FavoritesSource(Source):
         # persist_table map Serialized object to Leaves
         self.persist_table: dict[puid.SerializedObject, Leaf] = {}
         # reference table map reference-type id to leaf
-        self.reference_table: weakref.WeakValueDictionary[
-            str, Leaf
-        ] = weakref.WeakValueDictionary()
+        self.reference_table: weakref.WeakValueDictionary[str, Leaf] = (
+            weakref.WeakValueDictionary()
+        )
         self.mark_for_update()
 
     def finalize(self) -> None:

@@ -262,9 +262,10 @@ class ClipboardSource(Source):
             is_selection and __kupfer_settings__["sync_selection"]
         )
 
-        if not is_selection or __kupfer_settings__["use_selection"]:
-            if is_valid:
-                self._add_to_history(text, is_selection)
+        if (
+            not is_selection or __kupfer_settings__["use_selection"]
+        ) and is_valid:
+            self._add_to_history(text, is_selection)
 
         if is_sync_selection and is_valid:
             Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD).set_text(text, -1)

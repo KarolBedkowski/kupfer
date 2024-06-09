@@ -75,11 +75,7 @@ class WikipediaSearch(Action):
 
     def activate(self, leaf, iobj=None, ctx=None):
         # Send in UTF-8 encoding
-        if iobj:
-            lang_code = iobj.object
-        else:
-            lang_code = self._languages[0]
-
+        lang_code = iobj.object if iobj else self._languages[0]
         search_url = f"https://{lang_code}.wikipedia.org/w/index.php?title=Special:Search&go=Go&"
         # will encode search=text, where `text` is escaped
         query_url = search_url + urllib.parse.urlencode({"search": leaf.object})

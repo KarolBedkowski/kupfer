@@ -34,7 +34,7 @@ class RecollLeaf(FileLeaf):
     def get_description(self) -> str | None:
         return self._title
 
-    def get_content_type(self) -> str|None:
+    def get_content_type(self) -> str | None:
         return self._mtype or super().get_content_type()
 
 

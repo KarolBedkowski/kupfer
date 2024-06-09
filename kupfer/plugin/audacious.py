@@ -103,7 +103,7 @@ def get_current_song() -> str | None:
         conn = _create_dbus_connection(_IFACE_NAME, _OBJ_NAME, _BUS_NAME)
         pos = conn.Position()
         total = conn.Length()
-        info = "\n".join(
+        return "\n".join(
             filter(
                 None,
                 (
@@ -115,7 +115,6 @@ def get_current_song() -> str | None:
                 ),
             )
         )
-        return info
     except Exception:
         pretty.print_exc(__name__)
 

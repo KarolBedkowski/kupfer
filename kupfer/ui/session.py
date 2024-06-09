@@ -5,6 +5,7 @@ close, to be able to save state before being killed;
 
 the module API does not depend on the session API used
 """
+
 from __future__ import annotations
 
 import os
@@ -147,8 +148,7 @@ class SessionClient(GObject.GObject, pretty.OutputMixin):  # type:ignore
             pretty.print_error(__name__, exc)
             return None
 
-        smanager = dbus.Interface(obj, iface_name)
-        return smanager
+        return dbus.Interface(obj, iface_name)
 
     def _on_query_end_session(self, flags: str) -> None:
         self.output_debug("Query end", flags)

@@ -11,13 +11,14 @@ import kupfer.config
 import kupfer.environment
 from kupfer import icons
 from kupfer.core import actionaccel, learn, relevance, settings, search
-from kupfer.core.search import Rankable
 from kupfer.obj import Action, AnySource, KupferObject, Leaf
 from kupfer.support import pretty
 from kupfer.ui._support import escape_markup_str, text_direction_is_ltr
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from kupfer.core.search import Rankable
 
 
 def _format_match(match: str) -> str:
@@ -780,9 +781,10 @@ class Search(GObject.GObject, pretty.OutputMixin):  # type:ignore
                 if len(self._model) - rows_count <= row:
                     self._populate(_SHOW_MORE)
                 # go down only if table is visible
-                if table_visible:
-                    if step := min(len(self._model) - row - 1, rows_count):
-                        self._table_set_cursor_at_row(row + step)
+                if table_visible and (
+                    step := min(len(self._model) - row - 1, rows_count)
+                ):
+                    self._table_set_cursor_at_row(row + step)
             else:
                 self._table_set_cursor_at_row(0)
 

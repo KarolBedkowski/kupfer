@@ -18,7 +18,7 @@ try:
 
     Wnck.set_client_type(Wnck.ClientType.PAGER)
     if "WAYLAND_DISPLAY" in os.environ:
-        Wnck.Screen.get_default = lambda *x: None
+        Wnck.Screen.get_default = lambda *_x: None
 
 except ImportError as e:
     from kupfer.support import pretty
@@ -68,8 +68,7 @@ def application_id(
 ) -> str:
     """Return an application id (string) for GAppInfo @app_info"""
     app_id = app_info.get_id() or desktop_file or ""
-    app_id = app_id.removesuffix(".desktop")
-    return app_id
+    return app_id.removesuffix(".desktop")
 
 
 # pylint: disable=too-many-arguments
@@ -170,9 +169,8 @@ class ApplicationsMatcherService(pretty.OutputMixin):
 
     @classmethod
     def _get_wnck_screen_windows_stacked(cls) -> ty.Iterable["Wnck.Window"]:
-        if Wnck:
-            if screen := Wnck.Screen.get_default():
-                return screen.get_windows_stacked()  # type: ignore
+        if Wnck and (screen := Wnck.Screen.get_default()):
+            return screen.get_windows_stacked()  # type: ignore
 
         return ()
 

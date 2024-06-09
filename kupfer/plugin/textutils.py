@@ -146,9 +146,8 @@ def _trim_to_len_sep(
     keep `min_len` characters."""
     if len(instr) > max_len:
         instr = instr[:max_len]
-        if sep:
-            if (idx := instr.rfind(sep)) > min_len:
-                instr = instr[:idx]
+        if sep and (idx := instr.rfind(sep)) > min_len:
+            instr = instr[:idx]
 
     return instr
 

@@ -1,5 +1,6 @@
 """Inspiration from the deskbar pidgin plugin and from the gajim kupfer
 plugin"""
+
 __kupfer_name__ = _("Pidgin")
 __kupfer_sources__ = ("ContactsSource",)
 __kupfer_actions__ = ("OpenChat", "SendMessage")
@@ -162,7 +163,7 @@ class SendMessage(ContactAction):
 class PidginContact(ContactLeaf):
     """Leaf represent single contact from Pidgin"""
 
-    grouping_slots = ContactLeaf.grouping_slots + (EMAIL_KEY,)
+    grouping_slots = (*ContactLeaf.grouping_slots, EMAIL_KEY)
 
     def __init__(
         self, jid, name, account, icon, protocol, available, status_message

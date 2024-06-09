@@ -14,7 +14,6 @@ from gi.repository import Gdk, Gio, GObject, Gtk
 from kupfer import interface
 from kupfer.core import actionaccel, settings
 from kupfer.core.datactrl import DataController, PaneMode, PaneSel
-from kupfer.core.search import Rankable
 from kupfer.obj import AnySource, FileLeaf, Leaf, Action
 from kupfer.support import pretty, scheduler
 from kupfer.ui import accelerators, getkey_dialog, kupferhelp, uievents, uiutils
@@ -24,6 +23,8 @@ from kupfer.ui.search import ActionSearch, LeafSearch, Search, State
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from kupfer.core.search import Rankable
 
 _SLOW_INPUT_INTERVAL: ty.Final = 2
 _KEY_PRESS_INTERVAL: ty.Final = 0.3
@@ -39,8 +40,7 @@ AccelFunc = ty.Callable[[], ty.Any]
 class KeyCallback(ty.Protocol):
     """Key press callback interface."""
 
-    def __call__(self, shift_mask: int, mod_mask: int, /) -> bool:
-        ...
+    def __call__(self, shift_mask: int, mod_mask: int, /) -> bool: ...
 
 
 def _trunc_long_str(instr: ty.Any) -> str:
@@ -333,10 +333,9 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
                 if self.comma_trick():
                     return True
 
-            elif keyv in init_text_keys:
-                if self._try_enable_text_mode():
-                    # swallow if it is the direct key
-                    return keyv == direct_text_key
+            elif keyv in init_text_keys and self._try_enable_text_mode():
+                # swallow if it is the direct key
+                return keyv == direct_text_key
 
         if self._is_text_mode and keyv in (
             key_book["Left"],
@@ -912,9 +911,11 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
 
         In ACTION_OBJECT mode second panel is hidden.
         """
-        order: tuple[LeafSearch, ActionSearch, LeafSearch] | tuple[
-            LeafSearch, ActionSearch
-        ] | tuple[LeafSearch, LeafSearch]
+        order: (
+            tuple[LeafSearch, ActionSearch, LeafSearch]
+            | tuple[LeafSearch, ActionSearch]
+            | tuple[LeafSearch, LeafSearch]
+        )
 
         if not self._panel_two_is_visible:
             order = (self.search, self.third)
@@ -1042,7 +1043,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         """mouse clicked on a pane widget - activate it."""
         # activate on double-click
         # pylint: disable=no-member,protected-access
-        if event.type == Gdk.EventType._2BUTTON_PRESS:
+        if event.type == Gdk.EventType._2BUTTON_PRESS:  # noqa:SLF001
             self.activate()
             return True
 
@@ -1267,10 +1268,11 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         """Try to re-search current selected KupferObject if it has qf_id.
         For leaves like selected text this update leaf to current selected not
         previously selected."""
-        if obj := self.search.get_current():
-            if qf_id := getattr(obj, "qf_id", None):
-                pretty.print_debug(__name__, f"re-search qpfer '{qf_id}'")
-                self._data_ctrl.find_object(f"qpfer:{qf_id}")
+        if (obj := self.search.get_current()) and (
+            qf_id := getattr(obj, "qf_id", None)
+        ):
+            pretty.print_debug(__name__, f"re-search qpfer '{qf_id}'")
+            self._data_ctrl.find_object(f"qpfer:{qf_id}")
 
     def find_object(self, qpfer: str) -> None:
         self._data_ctrl.find_object(qpfer)

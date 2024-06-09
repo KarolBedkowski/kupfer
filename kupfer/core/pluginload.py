@@ -2,7 +2,6 @@ import contextlib
 import traceback
 import typing as ty
 
-from kupfer.obj.base import Action, ActionGenerator, Source, TextSource
 from kupfer.support import pretty
 
 from kupfer.core import plugins
@@ -12,16 +11,20 @@ from kupfer.core.plugins import (
     load_plugin_objects,
 )
 
+if ty.TYPE_CHECKING:
+    from kupfer.obj.base import Action, ActionGenerator, Source, TextSource
+
 __all__ = ("load_plugin", "exception_guard", "remove_plugin")
 
 
 # pylint: disable=too-few-public-methods
 class PluginDescription:
-    text_sources: list[TextSource] = []
-    action_decorators: list[Action] = []
-    content_decorators: list[ty.Type[Source]] = []
-    action_generators: list[ActionGenerator] = []
-    sources: list[Source] = []
+    def __init__(self):
+        self.text_sources: list[TextSource] = []
+        self.action_decorators: list[Action] = []
+        self.content_decorators: list[ty.Type[Source]] = []
+        self.action_generators: list[ActionGenerator] = []
+        self.sources: list[Source] = []
 
 
 def load_plugin(plugin_id: str) -> PluginDescription:

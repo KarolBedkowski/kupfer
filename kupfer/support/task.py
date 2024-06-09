@@ -8,7 +8,9 @@ import typing as ty
 from gi.repository import GLib
 
 from kupfer.support import pretty, scheduler
-from kupfer.support.types import ExecInfo
+
+if ty.TYPE_CHECKING:
+    from kupfer.support.types import ExecInfo
 
 __all__ = ("Task", "ThreadTask", "TaskRunner")
 

@@ -47,7 +47,7 @@ def _find_desktop_file(desk_id: str) -> str:
         raise ResourceLookupError("Empty id")
 
     try:
-        return next(xdg.BaseDirectory.load_data_paths("applications", desk_id))
+        return next(xdg.BaseDirectory.load_data_paths("applications", desk_id))  # type: ignore
     except StopIteration:
         ## it was not found as an immediate child of the data paths,
         ## so we split by the hyphens and search deeper
@@ -67,7 +67,7 @@ def _find_desktop_file(desk_id: str) -> str:
             ## try the first parts of the id to see if it matches a directory
             for x in range(1, 4):
                 dirname, rest_id = get_dir_id_depth(file_id, x)
-                if rest_id and lookup(directories + [dirname]):
+                if rest_id and lookup([*directories, dirname]):
                     file_id = rest_id
                     directories.append(dirname)
                     break
@@ -75,7 +75,7 @@ def _find_desktop_file(desk_id: str) -> str:
                 ## we did not reach break
                 break
 
-            if desktop_file_path := lookup(directories + [file_id]):
+            if desktop_file_path := lookup([*directories, file_id]):
                 return desktop_file_path
 
     raise ResourceLookupError(f"Cannot locate '{desk_id}'")
@@ -282,8 +282,7 @@ class LaunchCallback(ty.Protocol):
         filelist: list[str],
         timestamp: int | None,
         /,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 # pylint: disable=too-many-locals

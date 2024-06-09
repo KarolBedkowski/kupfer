@@ -5,6 +5,7 @@ drill down into compressed archives.
 So far we only support .zip and .tar, .tar.gz, .tar.bz2, using Python's
 standard library.
 """
+
 from __future__ import annotations
 
 __kupfer_name__ = _("Deep Archives")
@@ -52,13 +53,12 @@ class _Extractor(ty.Protocol):
     extensions: ty.Collection[str]
     predicate: ty.Callable[[str], bool] | None
 
-    def __call__(self, src: str, dst: str) -> None:
-        ...
+    def __call__(self, src: str, dst: str) -> None: ...
 
 
 class ArchiveContent(Source):
-    extractors: list[_Extractor] = []
-    unarchived_files: list[str] = []
+    extractors: ty.ClassVar[list[_Extractor]] = []
+    unarchived_files: ty.ClassVar[list[str]] = []
     end_timer = scheduler.Timer(True)
 
     def __init__(self, fileleaf: FileLeaf, unarchive_func: _Extractor) -> None:

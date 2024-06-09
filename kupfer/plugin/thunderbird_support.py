@@ -223,23 +223,22 @@ def _read_mork(filename: str) -> dict[str, _Table]:
                 if table:
                     table.del_row(rowid)
 
-            if tran != "-":
-                if rowdata := row[2:]:
-                    if not table:
-                        table = tables["1:80"] = _Table("1:80")
+            if tran != "-" and (rowdata := row[2:]):
+                if not table:
+                    table = tables["1:80"] = _Table("1:80")
 
-                    for rowcell in filter(None, rowdata):
-                        for cell in _RE_CELL.findall(rowcell):
-                            atom, col = None, None
-                            if cmatch := _RE_CELL_TEXT.match(cell):
-                                col = cells.get(cmatch.group(1))
-                                atom = cmatch.group(2)
-                            elif cmatch := _RE_CELL_OID.match(cell):
-                                col = cells.get(cmatch.group(1))
-                                atom = atoms.get(cmatch.group(2))
+                for rowcell in filter(None, rowdata):
+                    for cell in _RE_CELL.findall(rowcell):
+                        atom, col = None, None
+                        if cmatch := _RE_CELL_TEXT.match(cell):
+                            col = cells.get(cmatch.group(1))
+                            atom = cmatch.group(2)
+                        elif cmatch := _RE_CELL_OID.match(cell):
+                            col = cells.get(cmatch.group(1))
+                            atom = atoms.get(cmatch.group(2))
 
-                            if col and atom:
-                                table.add_cell(rowid, col, atom)
+                        if col and atom:
+                            table.add_cell(rowid, col, atom)
 
             pos = match.span()[1]
             continue
@@ -357,7 +356,7 @@ def _load_abook_sqlite(filename: str) -> ty.Iterator[tuple[str, str]]:
                                 email,
                             )
             return
-        except sqlite3.Error as err:
+        except sqlite3.Error as err:  # noqa: PERF203
             # Something is wrong with the database
             # wait short time and try again
             pretty.print_debug(__name__, "_load_abook_sqlite error:", str(err))

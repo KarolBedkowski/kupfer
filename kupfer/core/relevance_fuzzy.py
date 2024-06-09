@@ -42,7 +42,9 @@ def _score_partial_token_set(string: str, query: str) -> float:
         return 1.0
 
     return (  # type: ignore
-        fuzz.partial_token_set_ratio(query, string, processor=kupferstring.tofolded)
+        fuzz.partial_token_set_ratio(
+            query, string, processor=kupferstring.tofolded
+        )
         / 100.0
     )
 
@@ -61,11 +63,16 @@ def _score_partial_token(string: str, query: str) -> float:
         return 1.0
 
     return (  # type: ignore
-        fuzz.partial_token_ratio(query, string, processor=kupferstring.tofolded) / 100.0
+        fuzz.partial_token_ratio(query, string, processor=kupferstring.tofolded)
+        / 100.0
     )
 
 
-def get_score_function(method: str) -> ty.Callable[[str, str], float]:
+class ScoreFunction(ty.Protocol):
+    def __call__(self, string: str, query: str) -> float: ...
+
+
+def get_score_function(method: str) -> ScoreFunction:
     if method in ("indel", "standard"):
         return _score
 

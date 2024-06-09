@@ -15,8 +15,6 @@ import typing as ty
 from pathlib import Path
 import shutil
 
-from gi.repository import Gio
-
 from kupfer import plugin_support, launch, icons
 from kupfer.obj import FileLeaf, Source, SourceLeaf, Action
 from kupfer.obj.apps import AppLeafContentMixin
@@ -25,6 +23,8 @@ from kupfer.support.datatools import simple_cache
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from gi.repository import Gio
 
 
 plugin_support.check_any_command_available("vim", "gvim")

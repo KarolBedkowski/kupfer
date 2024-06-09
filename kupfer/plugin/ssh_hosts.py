@@ -223,10 +223,11 @@ class SSHSource(ToplevelGroupingSource, FilesystemWatchMixin):
                         # process only 'host' restriction; skip wildcard and
                         # negative entries
                         current_hosts = list(_parse_host_stms(args))
-                    elif len(args) > 1:
+                    elif len(args) > 1 and (
+                        hostuser := _parse_match_stmt(args)
+                    ):
                         # process "key val" parameters of match
-                        if hostuser := _parse_match_stmt(args):
-                            current_hosts = [hostuser]
+                        current_hosts = [hostuser]
 
                 elif head == "hostname" and args:
                     # if found hostname use is as HOST_ADDRESS_KEY

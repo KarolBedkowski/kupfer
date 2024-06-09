@@ -124,9 +124,8 @@ class Tracker3Fulltext(TextSource):
         return _("Use '?' prefix to get full text results")
 
     def get_text_items(self, text):
-        if text.startswith("?"):
-            if term := text.lstrip("? "):
-                return tuple(_query(term, 25))
+        if text.startswith("?") and (term := text.lstrip("? ")):
+            return tuple(_query(term, 25))
 
         return ()
 

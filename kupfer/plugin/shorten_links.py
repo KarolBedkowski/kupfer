@@ -46,7 +46,7 @@ class _GETService(_ShortLinksService, pretty.OutputMixin):
                 result: bytes = resp.read()
                 return result.strip().decode("utf-8")
 
-        except (OSError, ValueError) as exc:
+        except OSError as exc:
             raise ValueError(exc) from exc
 
         return _("Error")

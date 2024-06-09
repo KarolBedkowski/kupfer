@@ -112,7 +112,9 @@ def add_rank_objects(
         yield obj
 
 
-def score_objects(rankables: ty.Iterable[Rankable], key: str) -> ty.Iterator[Rankable]:
+def score_objects(
+    rankables: ty.Iterable[Rankable], key: str
+) -> ty.Iterator[Rankable]:
     """
     rankables: List[Rankable]
 

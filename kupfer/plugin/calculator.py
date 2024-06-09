@@ -20,7 +20,7 @@ if ty.TYPE_CHECKING:
     from gettext import gettext as _
 
 
-class IgnoreResultException(Exception):
+class IgnoreResultError(Exception):
     pass
 
 
@@ -32,7 +32,7 @@ class KupferSurprise(float):
 
     def __call__(self, *args):
         launch.show_url(version.WEBSITE)
-        raise IgnoreResultException
+        raise IgnoreResultError
 
 
 # pylint: disable=too-few-public-methods
@@ -86,7 +86,7 @@ class Help:
             formatted.append(f"{docsplit[0]}\n    {wrapped}")
 
         uiutils.show_text_result("\n\n".join(formatted), _("Calculator"))
-        raise IgnoreResultException
+        raise IgnoreResultError
 
     def __complex__(self):
         return self()
@@ -123,7 +123,7 @@ class Calculate(Action):
     # since it applies only to special queries, we can up the rank
     rank_adjust = 10
     # global last_result
-    last_result = {"last": None}
+    last_result: ty.ClassVar[dict[str, ty.Any]] = {"last": None}
 
     def __init__(self):
         Action.__init__(self, _("Calculate"))
@@ -147,7 +147,7 @@ class Calculate(Action):
             result = eval(expr, environment)  # pylint: disable=eval-used
             resultstr = format_result(result)
             self.last_result["last"] = result
-        except IgnoreResultException:
+        except IgnoreResultError:
             return None
         except Exception as exc:
             pretty.print_error(__name__, type(exc).__name__, exc)

@@ -7,6 +7,7 @@ to textfiles, we always work in the locale-defined encoding.
 
 FIXME: Be less strict (use UTF-8 if locale says Ascii)
 """
+
 __kupfer_name__ = _("Textfiles")
 __kupfer_actions__ = (
     "AppendTo",
@@ -83,7 +84,8 @@ class WriteTo(Action):
                 iobj.object, _("Empty File")
             )
         else:
-            raise ValueError()
+            # TODO: raise TypeError
+            raise ValueError  # noqa:TRY004:
 
         if not outfile or not outpath:
             return None
@@ -193,7 +195,7 @@ class CopyContent(Action):
                         encoding=kupferstring.get_encoding()
                     )
                 )
-            except Exception as err:
+            except Exception as err:  # noqa: PERF203
                 content.append(f"Read file {obj.object} error: {err}")
 
         clip.set_text("\n".join(content), -1)  # -1 for computed string length

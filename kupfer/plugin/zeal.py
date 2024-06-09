@@ -1,6 +1,7 @@
 """
 This is a Zeal search plugin.
 """
+
 from __future__ import annotations
 
 
@@ -137,10 +138,11 @@ class ZealDocset(Leaf):
                     "zeal", icons.get_gicon_from_file(self.icon)
                 )
                 self._icon = NonpersistentToken(icon)
-                return icon
             except Exception:
                 # do not try load icon again
                 self.icon = None
+            else:
+                return icon
 
         # this is cached in icons
         return icons.ComposedIcon("zeal", "emblem-documents")

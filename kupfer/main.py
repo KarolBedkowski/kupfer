@@ -63,8 +63,7 @@ def _make_help_text(
 
     popts = format_options(program_options)
     mopts = format_options(misc_options)
-    options_string = f"{usage_string}\n\n{popts}\n\n{mopts}\n"
-    return options_string
+    return f"{usage_string}\n\n{popts}\n\n{mopts}\n"
 
 
 def _make_plugin_list() -> str:

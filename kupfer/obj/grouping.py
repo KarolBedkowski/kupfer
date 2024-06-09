@@ -5,6 +5,7 @@ This file is a part of the program kupfer, which is
 released under GNU General Public License v3 (or any later version),
 see the main program file, and COPYING for details.
 """
+
 from __future__ import annotations
 
 import copy
@@ -18,10 +19,11 @@ from gi.repository import Gtk, Gdk
 
 from kupfer.support import kupferstring, itertools as kitertools
 from kupfer.obj.base import Leaf, Source, Action
-from kupfer.core import commandexec
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from kupfer.core import commandexec
 
 __author__ = (
     "Karol Będkowski <karol.bedkowsk+gh@gmail.com>, "
@@ -63,6 +65,12 @@ class GroupingLeaf(Leaf):
 
     def content_source(self, alternate: bool = False) -> Source:
         return _GroupedItemsSource(self)
+
+    def get(self, key: ty.Any, default: ty.Any = None) -> ty.Any:
+        try:
+            return next(self.all(key))
+        except StopIteration:
+            return default
 
     def __len__(self) -> int:
         return len(self.links)
@@ -113,7 +121,7 @@ class GroupingSource(Source):
             for leaf in leaves or ():
                 try:
                     slots = leaf.slots()  # type: ignore
-                except AttributeError:
+                except AttributeError:  # noqa:PERF203
                     # Let through Non-grouping leaves
                     non_group_leaves.append(leaf)
                 else:
@@ -204,7 +212,9 @@ class ToplevelGroupingSource(GroupingSource):
     """Sources of this type group their leaves with others in the toplevel
     of the catalog."""
 
-    _sources: dict[str, weakref.WeakKeyDictionary[Source, int]] = {}
+    _sources: ty.ClassVar[dict[str, weakref.WeakKeyDictionary[Source, int]]] = (
+        {}
+    )
 
     def __init__(self, name: str, category: str) -> None:
         GroupingSource.__init__(self, name, [self])

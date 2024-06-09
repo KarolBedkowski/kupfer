@@ -126,8 +126,75 @@ additional-builtins = ["_", "ngettext", "ic"]
 
 
 [tool.ruff]
+lint.select = ["E", "F", "I", "W"]
+output-format = "full"
+line-length = 79
 builtins = ["_", "ic", "ic_stack", "ngettext"]
 exclude = ["waflib", "waf", "oldplugins"]
+#lint.fixable = ["I"]
+lint.extend-select = [
+#  "C",
+  "N",
+  "FBT",
+  "B",
+  "A",
+  "COM",
+  "C4",
+  "EM",
+  "ISC",
+  "ICN",
+  "LOG",
+  "G",
+  "PIE",
+  "PYI",
+  "Q",
+  "RSE",
+  "RET",
+  "SLF",
+  "SLOT",
+  "SIM",
+  "TID",
+  "TCH",
+  "ARG",
+#  "PTH",
+#  "TD",
+#  "FIX",
+#  "PL",
+  "R",
+  "TRY",
+  "PERF",
+  "RUF",
+]
+lint.ignore = [
+  "FBT001",
+  "FBT002",
+  "PT011",
+  "DTZ011",
+  "PLW2901",
+  "EM101",
+  "TRY003",
+  "FBT003",
+  "PYI034",
+  "COM812",
+  "ISC001",
+  "RUF100",
+  "ARG001",
+  "ARG002",
+  "TCH004",
+  "RUF001",
+  "PLR2004",
+  "I001",
+  "E501",
+  "PLR0913",
+  "EM102",
+  "PLR0911",
+  "PLR0915",
+  "B008",
+  "TRY300",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/*_test.py" = ["ANN", "PTH", "DTZ", 'SLF001', "ARG", "PLR"]
 
 [tool.pytest]
 addopts = "--doctest-modules"

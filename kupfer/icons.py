@@ -36,9 +36,9 @@ __all__ = (
     "parse_load_icon_list",
 )
 
-_ICON_CACHE: ty.Final[
-    datatools.LruCache[tuple[int, str], GdkPixbuf.Pixbuf]
-] = datatools.LruCache(128, name="_ICON_CACHE")
+_ICON_CACHE: ty.Final[datatools.LruCache[tuple[int, str], GdkPixbuf.Pixbuf]] = (
+    datatools.LruCache(128, name="_ICON_CACHE")
+)
 
 _LARGE_SZ = 128
 _SMALL_SZ = 24
@@ -198,9 +198,9 @@ class ComposedIcon:
     Icon itself is rendered only once.
     """
 
-    _cache: datatools.LruCache[
-        tuple[ty.Any, ...], GdkPixbuf.Pixbuf | None
-    ] = datatools.LruCache(32, name="ComposedIcon cache")
+    _cache: datatools.LruCache[tuple[ty.Any, ...], GdkPixbuf.Pixbuf | None] = (
+        datatools.LruCache(32, name="ComposedIcon cache")
+    )
 
     __slots__ = (
         "baseicon",
@@ -282,7 +282,7 @@ class ComposedIcon:
 
 
 # pylint: disable=invalid-name
-def ComposedIconSmall(
+def ComposedIconSmall(  # noqa:N802
     baseicon: GIcon | str, emblem: GIcon | str, **kwargs: ty.Any
 ) -> ComposedIcon:
     """Create composed icon for leaves with emblem visible on browser list"""
@@ -326,8 +326,7 @@ def get_pixbuf_from_file(
     if not thumb_path:
         return None
     try:
-        icon = GdkPixbuf.Pixbuf.new_from_file_at_size(thumb_path, width, height)
-        return icon
+        return GdkPixbuf.Pixbuf.new_from_file_at_size(thumb_path, width, height)
     except GError as exc:
         # this error is not important, the program continues on fine,
         # so we put it in debug output.
@@ -456,10 +455,9 @@ class IconRenderer:
         cls, file_path: str, icon_size: int
     ) -> GdkPixbuf.Pixbuf | None:
         with suppress(GError):
-            icon = GdkPixbuf.Pixbuf.new_from_file_at_size(
+            return GdkPixbuf.Pixbuf.new_from_file_at_size(
                 file_path, icon_size, icon_size
             )
-            return icon
 
         return None
 
@@ -508,11 +506,10 @@ def get_icon_for_name(
             if icon := _ICON_RENDERER.pixbuf_for_name(load_name, icon_size):
                 break
 
-            if fallback_name := _KUPFER_ICON_FALLBACKS.get(icon_name):
-                if icon := _ICON_RENDERER.pixbuf_for_name(
-                    fallback_name, icon_size
-                ):
-                    break
+            if (fallback_name := _KUPFER_ICON_FALLBACKS.get(icon_name)) and (
+                icon := _ICON_RENDERER.pixbuf_for_name(fallback_name, icon_size)
+            ):
+                break
 
         except Exception:
             pretty.print_exc(__name__)

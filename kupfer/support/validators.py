@@ -236,11 +236,14 @@ def is_url(text: str) -> str | None:
         elif path:
             netloc, _d, path = path.partition("/")
 
-    if netloc and validate_netloc(netloc):
-        # valid netloc
-        if path or url.query or _is_http_domain(netloc):
-            schema = _guess_schema(netloc)
-            return f"{schema}://{text}"
+    # valid netloc
+    if (
+        netloc
+        and validate_netloc(netloc)
+        and (path or url.query or _is_http_domain(netloc))
+    ):
+        schema = _guess_schema(netloc)
+        return f"{schema}://{text}"
 
     return None
 

@@ -5,6 +5,7 @@ This file is a part of the program kupfer, which is
 released under GNU General Public License v3 (or any later version),
 see the main program file, and COPYING for details.
 """
+
 from __future__ import annotations
 
 import os
@@ -20,10 +21,11 @@ from kupfer.version import DESKTOP_ID
 from kupfer.obj.base import Action, Leaf, Source
 from kupfer.obj.exceptions import InvalidDataError, OperationError
 from kupfer.obj.helplib import FilesystemWatchMixin, PicklingHelperMixin
-from kupfer.core import commandexec
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from kupfer.core import commandexec
 
 __all__ = (
     "AppLeafContentMixin",
@@ -161,7 +163,7 @@ class AppLeaf(Leaf):
     def __hash__(self) -> int:
         return hash(str(self))
 
-    def __eq__(self, other: ty.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, type(self)) and self.get_id() == other.get_id()
 
     def __getstate__(self) -> dict[str, ty.Any]:

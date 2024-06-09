@@ -6,6 +6,7 @@ purpose), but care should be taken to only call UI functions from the main
 (default) thread.
 
 """
+
 from __future__ import annotations
 
 import math
@@ -15,13 +16,14 @@ import typing as ty
 from gi.repository import Gdk, Gtk, Pango
 
 from kupfer import config, version
-from kupfer.core import commandexec
 from kupfer.support import pretty
 
 from kupfer.ui import uievents
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from kupfer.core import commandexec
 
 
 def _window_close_on_escape(widget: Gtk.Widget, event: Gdk.EventKey) -> bool:

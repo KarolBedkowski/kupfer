@@ -5,6 +5,7 @@ This file is a part of the program kupfer, which is
 released under GNU General Public License v3 (or any later version),
 see the main program file, and COPYING for details.
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -15,10 +16,11 @@ from kupfer.desktop_launch import SpawnError
 from kupfer.obj.base import Action, Leaf
 from kupfer.obj.exceptions import OperationError
 from kupfer.obj.objects import RunnableLeaf
-from kupfer.core import commandexec
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
+
+    from kupfer.core import commandexec
 
 __all__ = ("OpenUrl", "OpenTerminal", "Execute", "Perform")
 

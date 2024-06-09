@@ -9,8 +9,10 @@ from collections import defaultdict
 from pathlib import Path
 
 from kupfer import config
-from kupfer.obj.base import KupferObject, Leaf, Action
 from kupfer.support import conspickle, pretty
+
+if ty.TYPE_CHECKING:
+    from kupfer.obj.base import KupferObject, Leaf, Action
 
 __all__ = (
     "add_favorite",
@@ -192,14 +194,12 @@ def get_correlation_bonus(obj: Action, for_leaf: Leaf | None) -> int:
     raval = ty.cast(dict[str, tuple[str, int]], _REGISTER[_ACTIVATIONS_KEY])
 
     # bonus for last used action for object
-    if val := raval.get(repr_leaf):
-        if val[0] == repr_obj:
-            return 20
+    if (val := raval.get(repr_leaf)) and val[0] == repr_obj:
+        return 20
 
     # bonus for last used action for object type
-    if val := raval.get(repr(type(for_leaf))):
-        if val[0] == repr_obj:
-            return 7
+    if (val := raval.get(repr(type(for_leaf)))) and val[0] == repr_obj:
+        return 7
 
     return 0
 
@@ -318,9 +318,10 @@ def load() -> None:
     """Load learning database."""
     _REGISTER.clear()
 
-    if filepath := config.get_config_file(_MNEMONICS_FILENAME):
-        if reg := Learning.unpickle_register(filepath):
-            _REGISTER.update(reg)
+    if (filepath := config.get_config_file(_MNEMONICS_FILENAME)) and (
+        reg := Learning.unpickle_register(filepath)
+    ):
+        _REGISTER.update(reg)
 
     if _CORRELATION_KEY not in _REGISTER:
         _REGISTER[_CORRELATION_KEY] = _DEFAULT_ACTIONS
