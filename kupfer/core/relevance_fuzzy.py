@@ -25,7 +25,10 @@ def _score_partial(string: str, query: str) -> float:
     if string == query:
         return 1.0
 
-    return fuzz.partial_ratio(query, string, processor=kupferstring.tofolded) / 100.0  # type: ignore
+    return (  # type: ignore
+        fuzz.partial_ratio(query, string, processor=kupferstring.tofolded)
+        / 100.0
+    )
 
 
 def _score_token_set(string: str, query: str) -> float:
@@ -33,7 +36,10 @@ def _score_token_set(string: str, query: str) -> float:
     if string == query:
         return 1.0
 
-    return fuzz.token_set_ratio(query, string, processor=kupferstring.tofolded) / 100.0  # type: ignore
+    return (  # type: ignore
+        fuzz.token_set_ratio(query, string, processor=kupferstring.tofolded)
+        / 100.0
+    )
 
 
 def _score_partial_token_set(string: str, query: str) -> float:
@@ -42,7 +48,9 @@ def _score_partial_token_set(string: str, query: str) -> float:
         return 1.0
 
     return (  # type: ignore
-        fuzz.partial_token_set_ratio(query, string, processor=kupferstring.tofolded)
+        fuzz.partial_token_set_ratio(
+            query, string, processor=kupferstring.tofolded
+        )
         / 100.0
     )
 
@@ -52,7 +60,10 @@ def _score_token(string: str, query: str) -> float:
     if string == query:
         return 1.0
 
-    return fuzz.token_ratio(query, string, processor=kupferstring.tofolded) / 100.0  # type: ignore
+    return (  # type: ignore
+        fuzz.token_ratio(query, string, processor=kupferstring.tofolded)
+        / 100.0
+    )
 
 
 def _score_partial_token(string: str, query: str) -> float:
@@ -61,28 +72,31 @@ def _score_partial_token(string: str, query: str) -> float:
         return 1.0
 
     return (  # type: ignore
-        fuzz.partial_token_ratio(query, string, processor=kupferstring.tofolded) / 100.0
+        fuzz.partial_token_ratio(
+            query, string, processor=kupferstring.tofolded
+        )
+        / 100.0
     )
 
 
-def get_score_function(method: str) -> ty.Callable[[str, str], float]:
-    if method in ("indel", "standard"):
-        return _score
+class ScoreFunction(ty.Protocol):
+    def __call__(self, string: str, query: str) -> float: ...
 
-    if method == "token_set":
-        return _score_token_set
 
-    if method == "partial_token_set":
-        return _score_partial_token_set
+def get_score_function(method: str) -> ScoreFunction:
+    func = {
+        "indel": _score,
+        "standard": _score,
+        "token_set": _score_token_set,
+        "partial_token_set": _score_partial_token_set,
+        "token": _score_token,
+        "partial_token": _score_partial_token,
+        "partial": _score_partial,
+        "": _score_partial,
+    }.get(method)
 
-    if method == "token":
-        return _score_token
-
-    if method == "partial_token":
-        return _score_partial_token
-
-    if method in ("partial", ""):
-        return _score_partial
+    if func:
+        return func
 
     pretty.print_error(
         __name__,
