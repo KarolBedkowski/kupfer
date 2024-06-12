@@ -20,8 +20,8 @@ __description__ = _("Action for text files")
 __version__ = "2017.1"
 __author__ = ""
 
-from pathlib import Path
 import typing as ty
+from pathlib import Path
 
 from gi.repository import Gdk, Gtk
 
@@ -142,7 +142,9 @@ class GetTextContents(Action):
         return True
 
     def activate(self, leaf, iobj=None, ctx=None):
-        text = Path(leaf.object).read_text(encoding=kupferstring.get_encoding())
+        text = Path(leaf.object).read_text(
+            encoding=kupferstring.get_encoding()
+        )
         return TextLeaf(text)
 
     def item_types(self):

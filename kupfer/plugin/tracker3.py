@@ -2,6 +2,7 @@
 """
 Tracker3 plugin using gir1.2-tracker-3.0
 """
+
 from __future__ import annotations
 
 __kupfer_name__ = _("Tracker3")
@@ -25,13 +26,13 @@ except ValueError as exc:
     ) from exc
 
 # pylint: disable=no-name-in-module
-from gi.repository import Tracker, Gio  # noqa: E402
+from gi.repository import Gio, Tracker  # noqa: E402
 
 from kupfer.obj import (  # noqa: E402
     Action,
     FileLeaf,
-    TextLeaf,
     Source,
+    TextLeaf,
     TextSource,
 )
 

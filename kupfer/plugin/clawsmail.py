@@ -5,10 +5,10 @@ __description__ = _("Claws Mail Contacts and Actions")
 __version__ = "2018-10-07"
 __author__ = "Karol Będkowski <karol.bedkowski@gmail.com>"
 
+import typing as ty
 import xml
 from pathlib import Path
 from xml.dom import minidom
-import typing as ty
 
 from kupfer import launch, plugin_support
 from kupfer.obj import Action, FileLeaf, RunnableLeaf, TextLeaf, UrlLeaf
@@ -95,7 +95,9 @@ class SendFileByMail(Action):
     def activate_multiple(self, objects, iobjects):
         recipients = ",".join(filter(None, map(email_from_leaf, iobjects)))
         attachlist = ["--attach"] + [L.object for L in objects]
-        launch.spawn_async(["claws-mail", "--compose", recipients, *attachlist])
+        launch.spawn_async(
+            ["claws-mail", "--compose", recipients, *attachlist]
+        )
 
     def item_types(self):
         yield FileLeaf

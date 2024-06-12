@@ -14,10 +14,10 @@ from collections import defaultdict
 from pathlib import Path
 
 from kupfer import config
+from kupfer.core import pluginload, plugins
 from kupfer.obj import Action, AnySource, Leaf, Source, TextSource
 from kupfer.obj.sources import MultiSource, SourcesSource
 from kupfer.support import conspickle, pretty, scheduler
-from kupfer.core import pluginload, plugins
 
 if ty.TYPE_CHECKING:
     from kupfer.obj.base import ActionGenerator
@@ -397,7 +397,9 @@ class SourceController(pretty.OutputMixin):
             self._register_plugin_objects(plugin_id, *new_srcs)
 
     def set_toplevel(self, src: Source, toplevel: bool) -> None:
-        assert src in self._sources, "Source is not tracked in SourceController"
+        assert (
+            src in self._sources
+        ), "Source is not tracked in SourceController"
         self._invalidate_root()
         if toplevel:
             self._toplevel_sources.add(src)

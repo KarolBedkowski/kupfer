@@ -10,7 +10,7 @@ from gi.repository import Gdk, GdkPixbuf, GLib, GObject, Gtk
 import kupfer.config
 import kupfer.environment
 from kupfer import icons
-from kupfer.core import actionaccel, learn, relevance, settings, search
+from kupfer.core import actionaccel, learn, relevance, search, settings
 from kupfer.obj import Action, AnySource, KupferObject, Leaf
 from kupfer.support import pretty
 from kupfer.ui._support import escape_markup_str, text_direction_is_ltr
@@ -195,7 +195,9 @@ class _LeafModel:
 
         return -1
 
-    def _get_icon(self, leaf: search.RankableObject) -> GdkPixbuf.Pixbuf | None:
+    def _get_icon(
+        self, leaf: search.RankableObject
+    ) -> GdkPixbuf.Pixbuf | None:
         """Get icon from `leaf` to show in row."""
         if (size := self.icon_size) > 8:
             return leaf.get_thumbnail(size, size) or leaf.get_pixbuf(size)
@@ -289,7 +291,9 @@ class MatchViewOwner(pretty.OutputMixin):
         key: str | None,
         value: ty.Any,
     ) -> None:
-        self._icon_size = setctl.get_config_int("Appearance", "icon_large_size")
+        self._icon_size = setctl.get_config_int(
+            "Appearance", "icon_large_size"
+        )
 
     def _read_icon_size(self, *_args: ty.Any) -> None:
         setctl = settings.get_settings_controller()
@@ -585,7 +589,9 @@ class Search(GObject.GObject, pretty.OutputMixin):  # type:ignore
         key: str | None,
         value: ty.Any,
     ) -> None:
-        self._icon_size = setctl.get_config_int("Appearance", "icon_large_size")
+        self._icon_size = setctl.get_config_int(
+            "Appearance", "icon_large_size"
+        )
         self._icon_size_small = setctl.get_config_int(
             "Appearance", "icon_small_size"
         )
@@ -678,7 +684,10 @@ class Search(GObject.GObject, pretty.OutputMixin):  # type:ignore
         win_pos = window.get_position()
 
         # do nothing if position and size not changed
-        if self._old_win_position == win_pos and self._old_win_size == win_size:
+        if (
+            self._old_win_position == win_pos
+            and self._old_win_size == win_size
+        ):
             return
 
         ssize = widget.translate_coordinates(window, 0, 0)
@@ -1094,7 +1103,9 @@ class ActionSearch(Search):
         else:
             title = ""
 
-        return title, icons.get_icon_for_name("kupfer-execute", self._icon_size)
+        return title, icons.get_icon_for_name(
+            "kupfer-execute", self._icon_size
+        )
 
     def _setup_empty(self) -> None:
         self._handle_no_matches()

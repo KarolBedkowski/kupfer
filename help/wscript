@@ -6,6 +6,7 @@
 ## Mallard functionality definitions ##
 import os
 from pathlib import Path
+
 from waflib import Task, TaskGen, Utils
 
 # FIXME: Support for figures

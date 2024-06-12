@@ -16,7 +16,7 @@ import typing as ty
 import dbus
 
 from kupfer import icons, plugin_support
-from kupfer.obj import Action, TextLeaf, TextSource, Leaf
+from kupfer.obj import Action, Leaf, TextLeaf, TextSource
 from kupfer.obj.apps import AppLeafContentMixin
 from kupfer.obj.contacts import EMAIL_KEY, NAME_KEY, ContactLeaf
 from kupfer.obj.grouping import ToplevelGroupingSource
@@ -24,7 +24,8 @@ from kupfer.support import pretty, scheduler, weaklib
 from kupfer.support.validators import is_valid_email
 
 if ty.TYPE_CHECKING:
-    from gettext import gettext as _, ngettext
+    from gettext import gettext as _
+    from gettext import ngettext
 
 __kupfer_settings__ = plugin_support.PluginSettings(
     {

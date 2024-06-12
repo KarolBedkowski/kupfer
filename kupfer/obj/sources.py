@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import typing as ty
 
-from kupfer.support import itertools
 from kupfer.obj.base import Leaf, Source
 from kupfer.obj.objects import SourceLeaf
+from kupfer.support import itertools
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _

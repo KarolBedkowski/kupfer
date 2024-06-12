@@ -43,6 +43,7 @@ from functools import partial
 
 from gi.repository import GObject
 
+from kupfer.core._support import get_leaf_members, is_multiple_leaf
 from kupfer.obj import (
     Action,
     KupferObject,
@@ -55,7 +56,6 @@ from kupfer.obj.compose import MultipleLeaf
 from kupfer.obj.sources import MultiSource
 from kupfer.support import pretty, task
 from kupfer.ui import uiutils
-from kupfer.core._support import get_leaf_members, is_multiple_leaf
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _

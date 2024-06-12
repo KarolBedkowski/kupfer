@@ -9,8 +9,8 @@ __description__ = _("Search in Wikipedia")
 __version__ = "2017.1"
 __author__ = "US"
 
-import urllib.parse
 import typing as ty
+import urllib.parse
 
 from kupfer import launch, plugin_support
 from kupfer.obj import Action, Leaf, Source, TextLeaf
@@ -78,7 +78,9 @@ class WikipediaSearch(Action):
         lang_code = iobj.object if iobj else self._languages[0]
         search_url = f"https://{lang_code}.wikipedia.org/w/index.php?title=Special:Search&go=Go&"
         # will encode search=text, where `text` is escaped
-        query_url = search_url + urllib.parse.urlencode({"search": leaf.object})
+        query_url = search_url + urllib.parse.urlencode(
+            {"search": leaf.object}
+        )
         launch.show_url(query_url)
 
     def item_types(self):

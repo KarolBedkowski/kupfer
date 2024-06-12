@@ -13,9 +13,9 @@ __version__ = ""
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
 import os
+import typing as ty
 from contextlib import suppress
 from pathlib import Path
-import typing as ty
 
 import dbus
 

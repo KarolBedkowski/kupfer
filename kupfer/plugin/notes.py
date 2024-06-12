@@ -17,8 +17,8 @@ __author__ = ""
 
 import os
 import time
-import xml.sax.saxutils
 import typing as ty
+import xml.sax.saxutils
 
 import dbus
 from gi.repository import GLib

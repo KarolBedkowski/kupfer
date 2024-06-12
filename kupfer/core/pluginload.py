@@ -2,14 +2,13 @@ import contextlib
 import traceback
 import typing as ty
 
-from kupfer.support import pretty
-
 from kupfer.core import plugins
 from kupfer.core.plugins import (
     PluginAttr,
     initialize_plugin,
     load_plugin_objects,
 )
+from kupfer.support import pretty
 
 if ty.TYPE_CHECKING:
     from kupfer.obj.base import Action, ActionGenerator, Source, TextSource
@@ -43,7 +42,9 @@ def load_plugin(plugin_id: str) -> PluginDescription:
     if not plugins.is_plugin_loaded(plugin_id):
         return PluginDescription()
 
-    text_sources.extend(load_plugin_objects(plugin_id, PluginAttr.TEXT_SOURCES))
+    text_sources.extend(
+        load_plugin_objects(plugin_id, PluginAttr.TEXT_SOURCES)
+    )
     action_decorators.extend(
         load_plugin_objects(plugin_id, PluginAttr.ACTION_DECORATORS)
     )

@@ -12,10 +12,9 @@ from __future__ import annotations
 
 import typing as ty
 
-
 from kupfer import icons
-from kupfer.support import validators
 from kupfer.obj.grouping import GroupingLeaf, Slots
+from kupfer.support import validators
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
@@ -79,7 +78,9 @@ class ContactLeaf(GroupingLeaf):
     def get_text_representation(self) -> str | None:
         return self.get_description()
 
-    def get_thumbnail(self, width: int, height: int) -> GdkPixbuf.Pixbuf | None:
+    def get_thumbnail(
+        self, width: int, height: int
+    ) -> GdkPixbuf.Pixbuf | None:
         if self.image:
             return icons.get_pixbuf_from_data(self.image, width, height)
 
@@ -244,7 +245,9 @@ class YahooContact(IMContact):
     def __init__(
         self, id_: str, name: str, slots: Slots = None, image: ty.Any = None
     ) -> None:
-        IMContact.__init__(self, YAHOO_KEY, id_, name, _("Yahoo"), slots, image)
+        IMContact.__init__(
+            self, YAHOO_KEY, id_, name, _("Yahoo"), slots, image
+        )
 
 
 class SkypeContact(IMContact):
@@ -253,7 +256,9 @@ class SkypeContact(IMContact):
     def __init__(
         self, id_: str, name: str, slots: Slots = None, image: ty.Any = None
     ) -> None:
-        IMContact.__init__(self, SKYPE_KEY, id_, name, _("Skype"), slots, image)
+        IMContact.__init__(
+            self, SKYPE_KEY, id_, name, _("Skype"), slots, image
+        )
 
 
 class PhoneContact(ContactLeaf):

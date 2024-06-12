@@ -325,7 +325,9 @@ def _load_abook_sqlite(filename: str) -> ty.Iterator[tuple[str, str]]:
     for _ in range(2):
         try:
             pretty.print_debug(__name__, "_load_abook_sqlite load:", dbfpath)
-            with closing(sqlite3.connect(dbfpath, uri=True, timeout=1)) as conn:
+            with closing(
+                sqlite3.connect(dbfpath, uri=True, timeout=1)
+            ) as conn:
                 cur = conn.cursor()
 
                 # check db version

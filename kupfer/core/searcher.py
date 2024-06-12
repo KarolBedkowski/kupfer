@@ -3,13 +3,13 @@ from __future__ import annotations
 import operator
 import typing as ty
 
-from kupfer.support import pretty
-from kupfer.support.itertools import peekfirst, unique_iterator
 from kupfer.core import search
 from kupfer.core.search import Rankable
+from kupfer.support import pretty
+from kupfer.support.itertools import peekfirst, unique_iterator
 
 if ty.TYPE_CHECKING:
-    from kupfer.obj.base import Leaf, Source, TextSource, Action
+    from kupfer.obj.base import Action, Leaf, Source, TextSource
 
 __all__ = ("Searcher",)
 

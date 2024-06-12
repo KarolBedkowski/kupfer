@@ -9,7 +9,6 @@ see the main program file, and COPYING for details.
 # TODO: use interfaces (?)
 # ruff:
 
-
 import abc
 
 __all__ = ("TextRepresentation", "UriListRepresentation")

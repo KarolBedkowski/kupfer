@@ -36,9 +36,9 @@ __all__ = (
     "parse_load_icon_list",
 )
 
-_ICON_CACHE: ty.Final[datatools.LruCache[tuple[int, str], GdkPixbuf.Pixbuf]] = (
-    datatools.LruCache(128, name="_ICON_CACHE")
-)
+_ICON_CACHE: ty.Final[
+    datatools.LruCache[tuple[int, str], GdkPixbuf.Pixbuf]
+] = datatools.LruCache(128, name="_ICON_CACHE")
 
 _LARGE_SZ = 128
 _SMALL_SZ = 24
@@ -286,7 +286,9 @@ def ComposedIconSmall(  # noqa:N802
     baseicon: GIcon | str, emblem: GIcon | str, **kwargs: ty.Any
 ) -> ComposedIcon:
     """Create composed icon for leaves with emblem visible on browser list"""
-    return ComposedIcon(baseicon, emblem, minimum_icon_size=_SMALL_SZ, **kwargs)
+    return ComposedIcon(
+        baseicon, emblem, minimum_icon_size=_SMALL_SZ, **kwargs
+    )
 
 
 GIcon = ty.Union[ComposedIcon, ThemedIcon, FileIcon]
@@ -326,7 +328,9 @@ def get_pixbuf_from_file(
     if not thumb_path:
         return None
     try:
-        return GdkPixbuf.Pixbuf.new_from_file_at_size(thumb_path, width, height)
+        return GdkPixbuf.Pixbuf.new_from_file_at_size(
+            thumb_path, width, height
+        )
     except GError as exc:
         # this error is not important, the program continues on fine,
         # so we put it in debug output.
@@ -385,7 +389,9 @@ def get_gicon_from_file(path: str) -> FileIcon | None:
     return icon
 
 
-def get_icon_for_gicon(gicon: GIcon, icon_size: int) -> GdkPixbuf.Pixbuf | None:
+def get_icon_for_gicon(
+    gicon: GIcon, icon_size: int
+) -> GdkPixbuf.Pixbuf | None:
     """
     Return a pixbuf of @icon_size for the @gicon
 
@@ -470,7 +476,9 @@ def _setup_icon_renderer(_sched: ty.Any) -> None:
     setctl.connect(
         "alternatives-changed::icon_renderer", _on_icon_render_change
     )
-    setctl.connect("value-changed::tools.icon_renderer", _on_icon_render_change)
+    setctl.connect(
+        "value-changed::tools.icon_renderer", _on_icon_render_change
+    )
     _on_icon_render_change(setctl)
 
 
@@ -507,7 +515,9 @@ def get_icon_for_name(
                 break
 
             if (fallback_name := _KUPFER_ICON_FALLBACKS.get(icon_name)) and (
-                icon := _ICON_RENDERER.pixbuf_for_name(fallback_name, icon_size)
+                icon := _ICON_RENDERER.pixbuf_for_name(
+                    fallback_name, icon_size
+                )
             ):
                 break
 
@@ -616,8 +626,9 @@ def get_pixbuf_from_data(
         ) -> None:
             assert width and height
             scale = min(width / float(img_width), height / float(img_height))
-            new_width, new_height = int(img_width * scale), int(
-                img_height * scale
+            new_width, new_height = (
+                int(img_width * scale),
+                int(img_height * scale),
             )
             img.set_size(new_width, new_height)
 

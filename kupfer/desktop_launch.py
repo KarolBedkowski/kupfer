@@ -11,9 +11,8 @@ import xdg.Exceptions
 from gi.repository import Gdk, Gio, GLib, Gtk
 
 from kupfer.core import settings
-from kupfer.support import desktop_parse
+from kupfer.support import desktop_parse, pretty
 from kupfer.support import itertools as kitertools
-from kupfer.support import pretty
 
 __all__ = ["launch_app_info", "spawn_app", "spawn_app_id"]
 

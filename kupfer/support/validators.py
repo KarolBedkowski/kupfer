@@ -4,7 +4,6 @@ import re
 import urllib.parse
 from contextlib import suppress
 
-
 __all__ = ("is_url", "is_valid_email", "is_valid_file_path", "validate_netloc")
 
 

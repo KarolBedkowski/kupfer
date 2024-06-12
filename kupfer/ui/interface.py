@@ -3,6 +3,7 @@
 """
 UI Interface controller
 """
+
 from __future__ import annotations
 
 import functools
@@ -14,10 +15,16 @@ from gi.repository import Gdk, Gio, GObject, Gtk
 from kupfer import interface
 from kupfer.core import actionaccel, settings
 from kupfer.core.datactrl import DataController, PaneMode, PaneSel
-from kupfer.obj import AnySource, FileLeaf, Leaf, Action
+from kupfer.obj import Action, AnySource, FileLeaf, Leaf
 from kupfer.support import pretty, scheduler
-from kupfer.ui import accelerators, getkey_dialog, kupferhelp, uievents, uiutils
-from kupfer.ui import preferences
+from kupfer.ui import (
+    accelerators,
+    getkey_dialog,
+    kupferhelp,
+    preferences,
+    uievents,
+    uiutils,
+)
 from kupfer.ui._support import escape_markup_str, text_direction_is_ltr
 from kupfer.ui.search import ActionSearch, LeafSearch, Search, State
 
@@ -356,7 +363,9 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         if key_cb := self._key_book_cbs.get(keyv):
             self._reset_to_toplevel = False
             # pylint: disable=no-member
-            return key_cb(shift_mask, event_state == Gdk.ModifierType.MOD1_MASK)
+            return key_cb(
+                shift_mask, event_state == Gdk.ModifierType.MOD1_MASK
+            )
 
         return False
 
@@ -1030,7 +1039,9 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         raise ValueError("invalid widget")
 
     def _on_object_stack_changed(
-        self, controller: DataController, pane: int  # real PaneSel
+        self,
+        controller: DataController,
+        pane: int,  # real PaneSel
     ) -> None:
         """Stack of objects (for comma trick) changed in @pane."""
         pane = PaneSel(pane)

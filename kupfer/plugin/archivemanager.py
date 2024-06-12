@@ -10,12 +10,12 @@ __author__ = "Ulrik, KB"
 
 import os
 import re
-import typing as ty
-from pathlib import Path
 import shutil
+import typing as ty
 
 # since "path" is a very generic name, you often forget..
 from os import path as os_path
+from pathlib import Path
 
 from kupfer import launch, plugin_support, runtimehelper
 from kupfer.obj import Action, FileLeaf, Leaf, OperationError

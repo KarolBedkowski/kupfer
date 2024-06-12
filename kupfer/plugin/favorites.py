@@ -90,7 +90,9 @@ class FavoritesSource(Source):
                 favorites.insert(0, leaf)
                 continue
 
-            if isinstance(id_, str) and (leaf := self.reference_table.get(id_)):
+            if isinstance(id_, str) and (
+                leaf := self.reference_table.get(id_)
+            ):
                 # id_ is in reference_table, so is reference, so it's str
                 favorites.insert(0, leaf)
                 continue

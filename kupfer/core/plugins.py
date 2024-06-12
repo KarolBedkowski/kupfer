@@ -10,8 +10,8 @@ from enum import Enum
 
 from kupfer import icons
 from kupfer import plugin as kplugin
-from kupfer.support import pretty
 from kupfer.core import settings
+from kupfer.support import pretty
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
@@ -124,7 +124,9 @@ def get_plugin_info() -> ty.Iterator[dict[str, ty.Any]]:
 
             plugin = vars(plugin)
         except ImportError as exc:
-            pretty.print_error(__name__, f"import plugin '{plugin_name}':", exc)
+            pretty.print_error(
+                __name__, f"import plugin '{plugin_name}':", exc
+            )
             continue
         except Exception:
             pretty.print_error(__name__, f"Could not load '{plugin_name}'")

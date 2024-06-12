@@ -15,10 +15,11 @@ import typing as ty
 import weakref
 from collections import defaultdict
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk, Gtk
 
-from kupfer.support import kupferstring, itertools as kitertools
-from kupfer.obj.base import Leaf, Source, Action
+from kupfer.obj.base import Action, Leaf, Source
+from kupfer.support import itertools as kitertools
+from kupfer.support import kupferstring
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
@@ -212,9 +213,9 @@ class ToplevelGroupingSource(GroupingSource):
     """Sources of this type group their leaves with others in the toplevel
     of the catalog."""
 
-    _sources: ty.ClassVar[dict[str, weakref.WeakKeyDictionary[Source, int]]] = (
-        {}
-    )
+    _sources: ty.ClassVar[
+        dict[str, weakref.WeakKeyDictionary[Source, int]]
+    ] = {}
 
     def __init__(self, name: str, category: str) -> None:
         GroupingSource.__init__(self, name, [self])

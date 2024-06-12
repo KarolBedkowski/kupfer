@@ -1,4 +1,4 @@
-""" This plugin opens WhatsApp Web in the browser, and can send messages to
+"""This plugin opens WhatsApp Web in the browser, and can send messages to
 numbers that are not scheduled
 """
 
@@ -25,8 +25,8 @@ For help visit https://faq.whatsapp.com/general/chats/how-to-use-click-to-chat/
 __version__ = "1.0"
 __author__ = "Leonardo Masuero <leom255255@gmail.com>"
 
-from contextlib import suppress
 import typing as ty
+from contextlib import suppress
 
 from kupfer import launch
 from kupfer.obj import Action, TextLeaf

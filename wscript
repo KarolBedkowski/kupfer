@@ -8,8 +8,8 @@
 import os
 import subprocess
 import sys
-from pathlib import Path
 import typing as ty
+from pathlib import Path
 
 try:
     from waflib import Errors, Logs, Options, Utils

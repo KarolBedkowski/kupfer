@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import ast
 import configparser
 import copy
 import locale
 import os
 import typing as ty
-import ast
 
 from gi.repository import GLib, GObject, Pango
 
@@ -39,7 +39,9 @@ class ExtendedSetting(ty.Protocol):
         plugin/key (string)"""
 
 
-PlugConfigValue = ty.Union[str, bool, int, float, list[ty.Any], ExtendedSetting]
+PlugConfigValue = ty.Union[
+    str, bool, int, float, list[ty.Any], ExtendedSetting
+]
 
 
 # pylint: disable=too-few-public-methods

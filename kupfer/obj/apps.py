@@ -14,13 +14,12 @@ from contextlib import suppress
 
 from gi.repository import Gio, GLib
 
-from kupfer import launch, icons
-from kupfer.support import pretty
-from kupfer.version import DESKTOP_ID
-
+from kupfer import icons, launch
 from kupfer.obj.base import Action, Leaf, Source
 from kupfer.obj.exceptions import InvalidDataError, OperationError
 from kupfer.obj.helplib import FilesystemWatchMixin, PicklingHelperMixin
+from kupfer.support import pretty
+from kupfer.version import DESKTOP_ID
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
@@ -164,7 +163,9 @@ class AppLeaf(Leaf):
         return hash(str(self))
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, type(self)) and self.get_id() == other.get_id()
+        return (
+            isinstance(other, type(self)) and self.get_id() == other.get_id()
+        )
 
     def __getstate__(self) -> dict[str, ty.Any]:
         self._init_item_id = self.object and self.object.get_id()
@@ -190,7 +191,9 @@ class AppLeaf(Leaf):
                 ):
                     # serilizable if created from a "loose file"
                     self.serializable = 1
-                    item = Gio.DesktopAppInfo.new_from_filename(self._init_path)
+                    item = Gio.DesktopAppInfo.new_from_filename(
+                        self._init_path
+                    )
                 elif self._init_item_id:
                     item = Gio.DesktopAppInfo.new(self._init_item_id)
 

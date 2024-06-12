@@ -4,8 +4,8 @@ import locale
 import runpy
 import sys
 import typing as ty
-from pathlib import Path
 from contextlib import suppress
+from pathlib import Path
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _

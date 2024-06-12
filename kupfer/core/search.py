@@ -3,9 +3,9 @@ from __future__ import annotations
 import operator
 import typing as ty
 
-from kupfer.obj.base import Leaf, Action
-from kupfer.core import learn, relevance
 from kupfer import config
+from kupfer.core import learn, relevance
+from kupfer.obj.base import Action, Leaf
 from kupfer.support import pretty
 
 __all__ = (

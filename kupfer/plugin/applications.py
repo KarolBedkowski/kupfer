@@ -19,7 +19,7 @@ from pathlib import Path
 from gi.repository import Gio
 
 from kupfer import config, plugin_support
-from kupfer.obj import Action, AppLeaf, FileLeaf, Source, UrlLeaf, Leaf
+from kupfer.obj import Action, AppLeaf, FileLeaf, Leaf, Source, UrlLeaf
 from kupfer.obj.helplib import FilesystemWatchMixin
 from kupfer.support import weaklib
 

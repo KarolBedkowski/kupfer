@@ -4,6 +4,7 @@
 """
 Tests for validators.
 """
+
 import unittest
 
 from kupfer.support import validators as v

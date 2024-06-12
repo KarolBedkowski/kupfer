@@ -13,9 +13,9 @@ __version__ = "2017.2"
 __author__ = "US"
 
 import os
+import typing as ty
 from contextlib import suppress
 from xml.etree.ElementTree import ElementTree
-import typing as ty
 
 import dbus
 from gi.repository import Gio

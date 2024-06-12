@@ -12,7 +12,6 @@ import typing as ty
 
 from kupfer import launch, support
 from kupfer.desktop_launch import SpawnError
-
 from kupfer.obj.base import Action, Leaf
 from kupfer.obj.exceptions import OperationError
 from kupfer.obj.objects import RunnableLeaf

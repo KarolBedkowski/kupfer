@@ -16,11 +16,11 @@ from os import path
 from gi.repository import Gio, GLib
 
 from kupfer import icons
-from kupfer.support import fileutils
 from kupfer.obj import apps, files
 from kupfer.obj.base import Leaf, Source
 from kupfer.obj.exceptions import InvalidDataError
 from kupfer.obj.helplib import FilesystemWatchMixin
+from kupfer.support import fileutils
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _

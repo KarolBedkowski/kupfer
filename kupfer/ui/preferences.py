@@ -14,9 +14,9 @@ from xdg import Exceptions as xdgExc
 from kupfer import config, icons, launch, plugin_support, version
 from kupfer.core import plugins, relevance, settings, sources
 from kupfer.support import kupferstring, pretty, scheduler
+from kupfer.ui import _widgets as widgets
 from kupfer.ui import accelerators, getkey_dialog, keybindings, kupferhelp
 from kupfer.ui.credentials_dialog import ask_user_credentials
-from kupfer.ui import _widgets as widgets
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
@@ -119,7 +119,9 @@ def _create_plugin_credentials_cb(
         )
         # pylint: disable=no-member
         user_password = ask_user_credentials(
-            upass.username, upass.password, information  # type:ignore
+            upass.username,
+            upass.password,
+            information,  # type:ignore
         )
         if user_password:
             # pylint: disable=no-member
@@ -424,7 +426,9 @@ class PreferencesWindowController(pretty.OutputMixin):
 
         self._icons_combobox = builder.get_object("icons_combobox")
         _make_combobox_model(self._icons_combobox)
-        self._update_alternative_combobox("icon_renderer", self._icons_combobox)
+        self._update_alternative_combobox(
+            "icon_renderer", self._icons_combobox
+        )
 
         _set_combobox_id(
             setctl.get_config_int("Appearance", "ellipsize_mode"),
@@ -591,7 +595,9 @@ class PreferencesWindowController(pretty.OutputMixin):
     ) -> None:
         """Add directory to list indexed folders. When `store` update list in
         SettingController."""
-        have = [os.path.normpath(row[0]) for row in self._indexed_folders_store]
+        have = [
+            os.path.normpath(row[0]) for row in self._indexed_folders_store
+        ]
         if directory in have:
             self.output_debug("Ignoring duplicate directory: ", directory)
             return
@@ -868,7 +874,9 @@ class PreferencesWindowController(pretty.OutputMixin):
         return vbox
 
     # pylint: disable=too-many-locals
-    def _make_plugin_settings_widget(self, plugin_id: str) -> Gtk.Widget | None:
+    def _make_plugin_settings_widget(
+        self, plugin_id: str
+    ) -> Gtk.Widget | None:
         plugin_settings: plugin_support.PluginSettings | None
         plugin_settings = plugins.get_plugin_attribute(
             plugin_id, plugins.PluginAttr.SETTINGS

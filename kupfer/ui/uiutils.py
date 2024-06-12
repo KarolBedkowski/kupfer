@@ -17,7 +17,6 @@ from gi.repository import Gdk, Gtk, Pango
 
 from kupfer import config, version
 from kupfer.support import pretty
-
 from kupfer.ui import uievents
 
 if ty.TYPE_CHECKING:

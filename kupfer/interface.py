@@ -4,8 +4,10 @@ import typing as ty
 
 # NOTE: TextRepresentation moved into obj.representation
 # pylint: disable=unused-import
-from kupfer.obj.representation import TextRepresentation  # noqa: F401
-from kupfer.obj.representation import UriListRepresentation  # noqa: F401
+from kupfer.obj.representation import (
+    TextRepresentation,  # noqa: F401
+    UriListRepresentation,  # noqa: F401
+)
 
 if ty.TYPE_CHECKING:
     from gi.repository import Gtk

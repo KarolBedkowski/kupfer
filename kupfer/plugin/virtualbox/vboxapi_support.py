@@ -12,8 +12,8 @@ from contextlib import suppress
 
 import vboxapi  # pylint: disable=import-error
 
-from kupfer.support import pretty
 from kupfer.plugin.virtualbox import constants as vbox_const
+from kupfer.support import pretty
 
 MONITORED_DIRS = None
 IS_DYNAMIC = False

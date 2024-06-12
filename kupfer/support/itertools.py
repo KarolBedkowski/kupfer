@@ -20,7 +20,9 @@ __all__ = (
 )
 
 
-def two_part_mapper(instr: str, repfunc: ty.Callable[[str], str | None]) -> str:
+def two_part_mapper(
+    instr: str, repfunc: ty.Callable[[str], str | None]
+) -> str:
     """Scan @instr two characters at a time and replace using @repfunc.
     If @repfunc return not None - use origin character.
     """

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typing as ty
 import shutil
+import typing as ty
 
 from gi.repository import GObject
 
@@ -9,7 +9,8 @@ from kupfer.core import plugins, settings
 from kupfer.support import fileutils, pretty
 
 if ty.TYPE_CHECKING:
-    from gettext import gettext as _, ngettext
+    from gettext import gettext as _
+    from gettext import ngettext
 
 __all__ = [
     "UserNamePassword",
@@ -204,7 +205,9 @@ def check_keyring_support() -> None:
 
 def check_keybinding_support() -> None:
     """Check if we can make global keybindings."""
-    from kupfer.ui import keybindings  # pylint: disable=import-outside-toplevel
+    from kupfer.ui import (
+        keybindings,  # pylint: disable=import-outside-toplevel
+    )
 
     if not keybindings.is_available():
         raise ImportError(_("Dependency '%s' is not available") % "Keybinder")
@@ -282,7 +285,8 @@ def register_alternative(
 
     if full_id in _ALTERNATIVES[category_key]:
         pretty.print_debug(
-            __name__, f"Alternative {full_id} already defined in {category_key}"
+            __name__,
+            f"Alternative {full_id} already defined in {category_key}",
         )
         return False
 
@@ -290,7 +294,9 @@ def register_alternative(
         _plugin_configuration_error(
             caller, f"Configuration error for alternative '{category_key}':"
         )
-        _plugin_configuration_error(caller, f"Missing keys: {req_set - kw_set}")
+        _plugin_configuration_error(
+            caller, f"Missing keys: {req_set - kw_set}"
+        )
         return False
 
     _ALTERNATIVES[category_key][full_id] = kwargs

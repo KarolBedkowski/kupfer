@@ -13,12 +13,12 @@ import typing as ty
 from os import path
 from pathlib import Path
 
-from xdg import BaseDirectory
 from gi.repository import Gio, Gtk
+from xdg import BaseDirectory
 
 from kupfer import icons, launch, plugin_support
 from kupfer.obj import Action, AppLeaf, FileLeaf, Source, SourceLeaf, UrlLeaf
-from kupfer.support import weaklib, datatools
+from kupfer.support import datatools, weaklib
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
@@ -188,7 +188,9 @@ class RecentsSource(Source):
     def initialize(self):
         """Set up change callback"""
         manager = Gtk.RecentManager.get_default()
-        weaklib.gobject_connect_weakly(manager, "changed", self._recent_changed)
+        weaklib.gobject_connect_weakly(
+            manager, "changed", self._recent_changed
+        )
 
     def _recent_changed(self, _rmgr: Gtk.RecentManager) -> None:
         # when using typeguard lru_cache is wrapped

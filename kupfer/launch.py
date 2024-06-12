@@ -97,9 +97,9 @@ def launch_application(
     Raises `SpawnError` on failed program start.
     """
     assert app_info
-    assert not (
-        bool(paths) and bool(uris)
-    ), "either paths or uris must be given: " + repr((paths, uris))
+    assert not (bool(paths) and bool(uris)), (
+        "either paths or uris must be given: " + repr((paths, uris))
+    )
 
     svc = get_applications_matcher_service()
     app_id = application_id(app_info, desktop_file)
@@ -480,7 +480,9 @@ class AsyncCommand(pretty.OutputMixin):
 
         if stdin:
             self.stdin = list(_split_string(stdin, self.max_input_buf))
-            in_io_flags = GLib.IO_OUT | GLib.IO_ERR | GLib.IO_HUP | GLib.IO_NVAL
+            in_io_flags = (
+                GLib.IO_OUT | GLib.IO_ERR | GLib.IO_HUP | GLib.IO_NVAL
+            )
             GLib.io_add_watch(
                 stdin_fd, in_io_flags, self._in_io_callback, self.stdin
             )
@@ -526,7 +528,9 @@ class AsyncCommand(pretty.OutputMixin):
         # @condition is the &status field of waitpid(2) (C library)
         self.exit_status = os.WEXITSTATUS(condition)
         self.finished = True
-        self.finish_callback(self, b"".join(self.stdout), b"".join(self.stderr))
+        self.finish_callback(
+            self, b"".join(self.stdout), b"".join(self.stderr)
+        )
 
     def _timeout_callback(self) -> None:
         "send term signal on timeout"

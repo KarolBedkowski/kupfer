@@ -6,10 +6,10 @@ see the main program file, and COPYING for details.
 
 from __future__ import annotations
 
+import functools
 import inspect
 import typing as ty
 from collections import OrderedDict
-import functools
 
 __all__ = ("LruCache", "simple_cache", "evaluate_once")
 

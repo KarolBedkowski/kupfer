@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import time
 import sys
 import threading
+import time
 import typing as ty
 
 from gi.repository import GLib

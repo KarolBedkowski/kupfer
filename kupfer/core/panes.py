@@ -12,12 +12,12 @@ import typing as ty
 
 from gi.repository import GObject
 
-from kupfer.obj import objects
-from kupfer.obj.base import Action, AnySource, KupferObject, Leaf, Source
-from kupfer.support import pretty
 from kupfer.core import actioncompat
 from kupfer.core.searcher import Searcher
 from kupfer.core.sources import get_source_controller
+from kupfer.obj import objects
+from kupfer.obj.base import Action, AnySource, KupferObject, Leaf, Source
+from kupfer.support import pretty
 
 if ty.TYPE_CHECKING:
     from kupfer.core.search import Rankable
@@ -311,7 +311,9 @@ class PrimaryActionPane(Pane[Action]):
                     action_hash = hash(action)
                     valid = cache.get(action_hash)
                     if valid is None:
-                        valid = actioncompat.action_valid_for_item(action, leaf)
+                        valid = actioncompat.action_valid_for_item(
+                            action, leaf
+                        )
                         cache[action_hash] = valid
 
                     if valid:
@@ -392,9 +394,9 @@ class SecondaryObjectPane(LeafPane):
             return
 
         sources_: ty.Iterable[AnySource] = []
-        if (not text_mode or hasattr(self.get_source(), "get_text_items")) and (
-            srcs := self.get_source()
-        ):
+        if (
+            not text_mode or hasattr(self.get_source(), "get_text_items")
+        ) and (srcs := self.get_source()):
             sources_ = itertools.chain(sources_, (srcs,))
 
         if key and self.is_at_source_root():

@@ -94,7 +94,9 @@ class KupferObject:
         """Return a description of the specific item."""
         return None
 
-    def get_thumbnail(self, width: int, height: int) -> GdkPixbuf.Pixbuf | None:
+    def get_thumbnail(
+        self, width: int, height: int
+    ) -> GdkPixbuf.Pixbuf | None:
         """Return pixbuf of size @width x @height if available.
         Most objects will not implement this."""
         return None

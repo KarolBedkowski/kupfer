@@ -12,7 +12,7 @@ from kupfer import config
 from kupfer.support import conspickle, pretty
 
 if ty.TYPE_CHECKING:
-    from kupfer.obj.base import KupferObject, Leaf, Action
+    from kupfer.obj.base import Action, KupferObject, Leaf
 
 __all__ = (
     "add_favorite",
@@ -227,8 +227,7 @@ def get_object_has_affinity(obj: Leaf) -> bool:
     """Return if @obj has any positive score in the register."""
     robj = repr(obj)
     return bool(
-        _REGISTER.get(robj)
-        or _REGISTER[_CORRELATION_KEY].get(robj)  # type: ignore
+        _REGISTER.get(robj) or _REGISTER[_CORRELATION_KEY].get(robj)  # type: ignore
     )
 
 
@@ -255,7 +254,8 @@ def _prune_register(goalitems: int = 500) -> None:
 
     # get all items sorted by last used time
     items: list[tuple[int, str, Mnemonics]] = sorted(
-        (mne.last_ts_used, leaf, mne) for leaf, mne in _get_register_mnemonics()
+        (mne.last_ts_used, leaf, mne)
+        for leaf, mne in _get_register_mnemonics()
     )
     to_del = []
     to_del_cnt = len(items) - goalitems

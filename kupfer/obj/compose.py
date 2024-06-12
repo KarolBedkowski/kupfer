@@ -11,12 +11,13 @@ from __future__ import annotations
 import typing as ty
 
 from kupfer import icons, puid
-from kupfer.support import itertools, pretty, scheduler, textutils
 from kupfer.obj import actions, exceptions, objects
 from kupfer.obj.base import Action, Leaf, Source
+from kupfer.support import itertools, pretty, scheduler, textutils
 
 if ty.TYPE_CHECKING:
-    from gettext import gettext as _, ngettext
+    from gettext import gettext as _
+    from gettext import ngettext
 
     from kupfer.core import commandexec
 
@@ -80,7 +81,9 @@ class ComposedLeaf(objects.RunnableLeaf):
     ) -> None:
         object_ = (obj, action, iobj)
         # A slight hack: We remove trailing ellipsis and whitespace
-        name = " → ".join(str(o).strip(".… ") for o in object_ if o is not None)
+        name = " → ".join(
+            str(o).strip(".… ") for o in object_ if o is not None
+        )
         objects.RunnableLeaf.__init__(self, object_, name)
 
     def __getstate__(self) -> dict[str, ty.Any]:

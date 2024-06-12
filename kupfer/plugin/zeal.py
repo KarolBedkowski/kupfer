@@ -4,7 +4,6 @@ This is a Zeal search plugin.
 
 from __future__ import annotations
 
-
 __kupfer_name__ = _("Zeal Search")
 __kupfer_sources__ = ("ZealDocsetsSource",)
 __kupfer_actions__ = ("ZealSearch", "ZealSearchInDocset", "ZealSearchFor")
@@ -16,8 +15,8 @@ __author__ = "Karol Będkowski"
 
 import json
 import os
-from pathlib import Path
 import typing as ty
+from pathlib import Path
 
 from kupfer import icons, launch, plugin_support
 from kupfer.obj import Action, Leaf, Source, TextLeaf

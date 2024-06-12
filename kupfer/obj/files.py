@@ -16,11 +16,11 @@ from pathlib import Path
 from gi.repository import GdkPixbuf, Gio, GLib
 
 from kupfer import icons, launch
-from kupfer.support import pretty
 from kupfer.obj import actions, fileactions, filesrc
 from kupfer.obj.base import Action, Leaf, Source
 from kupfer.obj.exceptions import InvalidDataError
 from kupfer.obj.representation import TextRepresentation
+from kupfer.support import pretty
 
 __all__ = ("FileLeaf",)
 
@@ -141,7 +141,9 @@ class FileLeaf(Leaf, TextRepresentation):
 
         return Leaf.content_source(self)
 
-    def get_thumbnail(self, width: int, height: int) -> GdkPixbuf.Pixbuf | None:
+    def get_thumbnail(
+        self, width: int, height: int
+    ) -> GdkPixbuf.Pixbuf | None:
         if self.is_dir():
             return None
 
@@ -168,7 +170,9 @@ class FileLeaf(Leaf, TextRepresentation):
         if not gfile.query_exists(None):
             return None
 
-        info = gfile.query_info(content_attr, Gio.FileQueryInfoFlags.NONE, None)
+        info = gfile.query_info(
+            content_attr, Gio.FileQueryInfoFlags.NONE, None
+        )
         content_type: str = info.get_attribute_string(content_attr)
         return content_type
 
@@ -186,7 +190,9 @@ class FileLeaf(Leaf, TextRepresentation):
         if not gfile.query_exists(None):
             return False
 
-        info = gfile.query_info(content_attr, Gio.FileQueryInfoFlags.NONE, None)
+        info = gfile.query_info(
+            content_attr, Gio.FileQueryInfoFlags.NONE, None
+        )
         content_type = info.get_attribute_string(content_attr)
         return predicate(content_type, ctype)  # type: ignore
 
