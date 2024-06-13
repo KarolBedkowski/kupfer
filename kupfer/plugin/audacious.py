@@ -94,8 +94,8 @@ def get_playlist_songs() -> ty.Iterator[SongLeaf]:
             position, rest = line.split(b"|", 1)
             songname, rest = rest.rsplit(b"|", 1)
             pos = int(position.strip())
-            nam = kupferstring.fromlocale(songname.strip())
-            yield SongLeaf(pos, nam)
+            name = kupferstring.fromlocale(songname.strip())
+            yield SongLeaf(pos, name)
 
 
 def get_current_song() -> str | None:

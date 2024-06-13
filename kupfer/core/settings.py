@@ -153,7 +153,7 @@ def _parse_value(defval: ty.Any, value: str) -> ty.Any:
     return value
 
 
-def _fill_confmap_fom_parser(
+def _fill_confmap_from_parser(
     parser: configparser.RawConfigParser,
     confmap: Config,
     defaults: Config,
@@ -321,7 +321,7 @@ class SettingsController(GObject.GObject, pretty.OutputMixin):  # type: ignore
                 )
 
         # Read parsed file into the dictionary again
-        _fill_confmap_fom_parser(parser, confmap, self._defaults)
+        _fill_confmap_from_parser(parser, confmap, self._defaults)
         return confmap
 
     def _save_config(self, _scheduler: ty.Any = None) -> None:

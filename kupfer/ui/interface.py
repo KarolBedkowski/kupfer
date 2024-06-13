@@ -1154,11 +1154,11 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
         if not text:
             self._data_ctrl.cancel_search()
             # See if it was a deleting key press
-            curev = Gtk.get_current_event()
+            curr_evt = Gtk.get_current_event()
             if (
-                curev
-                and curev.type == Gdk.EventType.KEY_PRESS
-                and curev.keyval
+                curr_evt
+                and curr_evt.type == Gdk.EventType.KEY_PRESS
+                and curr_evt.keyval
                 in (self._key_book["Delete"], self._key_book["BackSpace"])
             ):
                 self._delete_from_stack()

@@ -134,7 +134,7 @@ class Calculate(Action):
     def activate(self, leaf, iobj=None, ctx=None):
         expr = leaf.object.lstrip("= ")
 
-        # try to add missing parantheses
+        # try to add missing parentheses
         brackets_missing = expr.count("(") - expr.count(")")
         if brackets_missing > 0:
             expr += ")" * brackets_missing

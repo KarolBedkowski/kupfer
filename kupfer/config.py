@@ -1,5 +1,5 @@
 """
-Module for confiugration and misc things
+Module for configuration and misc things
 """
 
 from __future__ import annotations
@@ -130,7 +130,7 @@ def get_config_file(filename: str, package: str = PACKAGE_NAME) -> str | None:
 
 def get_config_files(filename: str) -> ty.Iterable[str]:
     """Iterator to @filename in all config paths, with most important (takes
-    precendence) files first."""
+    precedence) files first."""
     return BaseDirectory.load_config_paths(PACKAGE_NAME, filename) or ()
 
 

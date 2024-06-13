@@ -205,7 +205,7 @@ def gettagname(tag):
 
 
 def _get_plugin_dirs() -> ty.Iterator[Path]:
-    """Get all posible plugins path (may not exists)"""
+    """Get all possible plugins path (may not exists)"""
     # accept in kupfer data dirs
     yield from map(Path, config.get_data_dirs("searchplugins"))
 

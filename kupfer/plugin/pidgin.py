@@ -39,7 +39,7 @@ __kupfer_settings__ = plugin_support.PluginSettings(
 
 plugin_support.check_dbus_connection()
 
-# Contact data contstants
+# Contact data constants
 _PIDGIN_ACCOUNT = "_PIDGIN_ACCOUNT"
 _PIDGIN_JID = "_PIDGIN_JID"
 

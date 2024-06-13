@@ -115,7 +115,7 @@ def _machine_start(vm_uuid, mode):
                 __name__, "StartVM:", vm_uuid, "Mode ", mode, "error", err
             )
 
-        with suppress(Exception):  # varoius errors (xpcom.Exception)
+        with suppress(Exception):  # various errors (xpcom.Exception)
             if session.state == vbox.constants.SessionState_Open:
                 session.close()
 
@@ -139,7 +139,7 @@ def _execute_machine_action(vm_uuid, action):
             err,
         )
 
-    with suppress(Exception):  # varoius errors (xpcom.Exception)
+    with suppress(Exception):  # various errors (xpcom.Exception)
         if session.state == vbox.constants.SessionState_Open:
             session.close()
 

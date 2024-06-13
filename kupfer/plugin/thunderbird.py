@@ -52,7 +52,7 @@ class ComposeMail(RunnableLeaf):
 
 
 class NewMailAction(Action):
-    """Createn new mail to selected leaf (Contact or TextLeaf)"""
+    """Create new mail to selected leaf (Contact or TextLeaf)"""
 
     def __init__(self):
         Action.__init__(self, _("Compose Email To"))

@@ -250,7 +250,7 @@ def _get_info_recursive(item, level=0):
 
 class ShowInfo(Action):
     def __init__(self):
-        Action.__init__(self, _("Show informations"))
+        Action.__init__(self, _("Show information"))
 
     def wants_context(self):
         return True
@@ -282,7 +282,7 @@ class ShowInfo(Action):
         uiutils.show_text_result(msg, title=_("Connection details"), ctx=ctx)
 
     def get_description(self):
-        return _("Show informations about device")
+        return _("Show information about device")
 
 
 class Connection(Leaf):

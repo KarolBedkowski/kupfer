@@ -146,7 +146,7 @@ def _get_register_mnemonics() -> ty.Iterator[tuple[str, Mnemonics]]:
 def record_search_hit(obj: ty.Any, key: str | None = None) -> None:
     """Record that KupferObject @obj was used, with the optional
     search term @key recording.
-    When key is None - skip registeration (this is only valid when action is
+    When key is None - skip registration (this is only valid when action is
     performed by accelerator)."""
     if key is None:
         return
@@ -245,7 +245,7 @@ def _prune_register(goalitems: int = 500) -> None:
 
     Then, remove items with chance (len/25000)
 
-    Assuming homogenous records (all with score one) we keep:
+    Assuming homogeneous records (all with score one) we keep:
     x_n+1 := x_n * (1 - chance)
 
     To this we have to add the expected number of added mnemonics per

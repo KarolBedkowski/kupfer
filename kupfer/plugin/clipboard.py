@@ -293,7 +293,7 @@ class ClipboardSource(Source):
     def _add_to_history(self, cliptext, is_selection):
         if cliptext in self.clipboards:
             self.clipboards.remove(cliptext)
-        # if the previous text is a prefix of the new selection, supercede it
+        # if the previous text is a prefix of the new selection, supersede it
         if (
             is_selection
             and self.clipboards

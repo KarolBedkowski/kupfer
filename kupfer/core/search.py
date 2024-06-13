@@ -35,7 +35,7 @@ if method := config.get_kupfer_env("FUZZY_MATCH"):
         pretty.print_error(
             __name__,
             "fuzzy match enabled but rapidfuzz is not available; "
-            "fallabck to standard matching method",
+            "fallback to standard matching method",
         )
 
 

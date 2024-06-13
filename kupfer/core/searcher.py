@@ -16,7 +16,7 @@ __all__ = ("Searcher",)
 T = ty.TypeVar("T")
 # function that validate leaves before search
 ItemCheckFunc = ty.Callable[[ty.Iterable[T]], ty.Iterable[T]]
-# function that decorate leaves before acccess
+# function that decorate leaves before access
 DecoratorFunc = ty.Callable[[ty.Iterable[Rankable]], ty.Iterable[Rankable]]
 
 

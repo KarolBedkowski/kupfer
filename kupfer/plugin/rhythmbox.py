@@ -7,7 +7,7 @@ Changes:
         + catch errors when no mpris is available via dbus
         + simplify dbus string conversion
 
-NOTE: this require Rhythmbox with mpris supprt (i.e. rhythmbox-plugins package
+NOTE: this require Rhythmbox with mpris support (i.e. rhythmbox-plugins package
 installed)
 """
 

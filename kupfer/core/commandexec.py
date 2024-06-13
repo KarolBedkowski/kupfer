@@ -159,7 +159,7 @@ class ExecutionToken:
     @property
     def environment(self) -> GUIEnvironmentContext:
         """This is a property for the current environment,
-        acess env variables like this::
+        access env variables like this::
 
             ctx.environment.get_timestamp()
 
@@ -312,7 +312,7 @@ class ActionExecutionContext(GObject.GObject, pretty.OutputMixin):  # type: igno
         if res_desc := result.get_description():
             description = f"{res_name} ({res_desc})"
 
-        # If only registration was requsted, remove the command id info
+        # If only registration was requested, remove the command id info
         if not show:
             command_id = -1
 
@@ -631,7 +631,7 @@ def _activate_action_multiple_multiplied(
     ctx: ExecutionToken | None,
 ) -> tuple[ExecResult, ActionResult] | ActionResult | None:
     """
-    Multiple dispatch by "mulitplied" invocation of the simple activation
+    Multiple dispatch by "multiplied" invocation of the simple activation
 
     When action is delegated return (ExecResult, ActionResult), otherwise
     return ActionResult

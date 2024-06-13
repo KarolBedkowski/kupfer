@@ -25,7 +25,7 @@ class Glob(Action):
         return self.activate_multiple((leaf,), (iobj,))
 
     def activate_multiple(self, objects, iobjects):
-        ## Do case-insentive matching
+        ## Do case-insensitive matching
         ## As a special case, understand '**/' prefix as recurive
 
         def get_subcatalog_matches(subcatalog, pat, recursive, paths):

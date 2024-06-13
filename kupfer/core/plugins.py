@@ -320,7 +320,7 @@ def _import_plugin(name: str) -> PluginModule | None:
     except NotEnabledError:
         plugin = _staged_import(name, _import_hook_fake)
     finally:
-        # store nonexistant plugins as None here
+        # store non-existing plugins as None here
         _IMPORTED_PLUGINS[name] = plugin
 
     return plugin

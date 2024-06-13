@@ -33,7 +33,7 @@ def get_text_representation(obj: ty.Any) -> str | None:
 def copy_to_clipboard(obj: KupferObject, clipboard: Gtk.Clipboard) -> bool:
     """Copy @obj to @clipboard, a Gtk.Clipboard.
 
-    Support only text represention.
+    Support only text representation.
     TODO: support images (maybe)
 
     Return True if successful

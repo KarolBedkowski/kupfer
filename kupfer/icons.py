@@ -614,7 +614,7 @@ def get_pixbuf_from_data(
     """Create pixbuf object from data with optional scaling
 
     @data: picture as raw data
-    @width, @heigh: optional destination size
+    @width, @height: optional destination size
     """
 
     ploader = GdkPixbuf.PixbufLoader.new()

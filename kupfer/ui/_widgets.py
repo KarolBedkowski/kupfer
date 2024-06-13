@@ -324,7 +324,7 @@ class ObjectsInfoWidget(Gtk.Bin):  # type: ignore
             # Display information for application content-sources.
             # only sources have leaf representation
             if isinstance(obj, Source):
-                _valud, leaf_repr = obj.get_valid_leaf_repr()
+                _valid, leaf_repr = obj.get_valid_leaf_repr()
                 if leaf_repr is not None:
                     hbox = self._create_leaves_info(leaf_repr, small_icon_size)
                     ibox.pack_start(hbox, True, True, 0)
@@ -358,7 +358,7 @@ class ObjectsInfoWidget(Gtk.Bin):  # type: ignore
 
 # pylint: disable=too-few-public-methods
 class PluginAboutWidget(Gtk.Bin):  # type: ignore
-    """Widget with basic informations about plugin."""
+    """Widget with basic information about plugin."""
 
     def __init__(self, plugin_id: str, info: dict[str, ty.Any]) -> None:
         super().__init__()

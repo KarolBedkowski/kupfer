@@ -223,7 +223,7 @@ class _LeafModel:
         return ""
 
     def _get_aux_info(self, leaf: search.RankableObject) -> str:
-        """Show additional informations about leaves using aux_info_callback.
+        """Show additional information about leaves using aux_info_callback.
         For objects: Show arrow if it has content.
         For actions: Show accelerator.
         """
@@ -304,7 +304,7 @@ class MatchViewOwner(pretty.OutputMixin):
         self._on_icon_size_changed(setctl, None, None, None)
 
     def _build_widget(self) -> None:
-        """Core initalization method that builds the widget."""
+        """Core initialization method that builds the widget."""
         self._label = label = Gtk.Label.new("<match>")
         label.set_single_line_mode(True)
         label.set_width_chars(_LABEL_CHAR_WIDTH)
@@ -611,7 +611,7 @@ class Search(GObject.GObject, pretty.OutputMixin):  # type:ignore
 
     def _build_widget(self) -> None:
         """
-        Core initalization method that builds the widget
+        Core initialization method that builds the widget
         """
         self.match_view = MatchViewOwner()
 
@@ -1054,7 +1054,7 @@ class ActionSearch(Search):
             "value-changed::kupfer.action_accelerator_modifer",
             self._on_modifier_changed,
         )
-        self._read_accel_modifer(setctl.get_action_accelerator_modifer())
+        self._read_accel_modifier(setctl.get_action_accelerator_modifer())
 
     def _on_modifier_changed(
         self,
@@ -1063,9 +1063,9 @@ class ActionSearch(Search):
         key: ty.Any,
         value: str,
     ) -> None:
-        self._read_accel_modifer(value)
+        self._read_accel_modifier(value)
 
-    def _read_accel_modifer(self, value: str) -> None:
+    def _read_accel_modifier(self, value: str) -> None:
         if value == "alt":
             # pylint: disable=no-member
             self.accel_modifier = Gdk.ModifierType.MOD1_MASK

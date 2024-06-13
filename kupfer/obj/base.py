@@ -487,12 +487,12 @@ class Source(KupferObject, pretty.OutputMixin):
         return None
 
     def get_leaf_repr(self) -> Leaf | None:
-        """Return, if appicable, another object to take the source's place as
+        """Return, if applicable, another object to take the source's place as
         Leaf"""
         return None
 
     def get_valid_leaf_repr(self) -> tuple[bool, Leaf | None]:
-        """Return, if appicable, another object to take the source's place as
+        """Return, if applicable, another object to take the source's place as
         Leaf.  Return tuple (leaf representation is valid, leaf).
         Valid representation may be None, so first element of tuple must be
         checked."""

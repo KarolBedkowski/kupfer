@@ -301,7 +301,7 @@ class Format(_ConvertAction):
         )
 
 
-class _GeneraterLeaf(RunnableLeaf):
+class _GeneratorLeaf(RunnableLeaf):
     def __init__(
         self,
         name: str,
@@ -347,33 +347,33 @@ class Generators(Source):
 
     def get_items(self):
         for size in (16, 32, 64):
-            yield _GeneraterLeaf(
+            yield _GeneratorLeaf(
                 _("Random %(size)d-bytes hex token") % {"size": size},
                 partial(secrets.token_hex, size),
             )
 
         for size in (16, 32, 64):
-            yield _GeneraterLeaf(
+            yield _GeneratorLeaf(
                 _("Random %(size)d-bytes alpha-numeric token")
                 % {"size": size},
                 partial(_generate_alfanum_token, size),
             )
 
-        yield _GeneraterLeaf(
+        yield _GeneratorLeaf(
             _("UUID based on host and time"),
             lambda: str(uuid.uuid1()),
         )
-        yield _GeneraterLeaf(_("Random UUID"), lambda: str(uuid.uuid4()))
+        yield _GeneratorLeaf(_("Random UUID"), lambda: str(uuid.uuid4()))
 
-        yield _GeneraterLeaf(
+        yield _GeneratorLeaf(
             _("Current time in ISO8601 format"),
             datetime.datetime.now().isoformat,
         )
-        yield _GeneraterLeaf(
+        yield _GeneratorLeaf(
             _("Current time as Unix timestamp"),
             lambda: str(int(datetime.datetime.now().timestamp())),
         )
-        yield _GeneraterLeaf(
+        yield _GeneratorLeaf(
             _("Current time as timestamp"),
             lambda: str(int(datetime.datetime.now().timestamp() * 1000)),
         )

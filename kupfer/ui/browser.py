@@ -772,7 +772,7 @@ class WindowController(pretty.OutputMixin):
         kserv2 = None
 
         try:
-            # NOTE: For a *very short* time we will use both APIs  TOOD: off one
+            # NOTE: For a *very short* time we will use both APIs  TODO: off one
             kserv1 = listen.Service()
             kserv2 = listen.ServiceNew()
         except listen.AlreadyRunningError:

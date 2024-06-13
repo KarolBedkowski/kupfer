@@ -312,7 +312,7 @@ class PlacesSource(Source):
 
 
 class IgnoredApps(Source):
-    # This Source is invisibile and has no content
+    # This Source is invisible and has no content
     # It exists just to store (through the config mechanism) the list of apps
     # we ignore for recent documents content decoration
     instance: IgnoredApps = None  # type:ignore

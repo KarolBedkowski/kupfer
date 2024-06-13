@@ -56,7 +56,7 @@ plugin_support.check_dbus_connection()
 
 
 ## Tuples of  service name, object name, interface name
-PROGRAM_SERIVCES = {
+_PROGRAM_SERVICES = {
     "gnote": (
         "org.gnome.Gnote",
         "/org/gnome/Gnote/RemoteControl",
@@ -86,7 +86,7 @@ def _get_notes_interface(activate=False):
     programs = (set_prog,) if set_prog else PROGRAM_IDS
 
     for program in programs:
-        service_name, obj_name, iface_name = PROGRAM_SERIVCES[program]
+        service_name, obj_name, iface_name = _PROGRAM_SERVICES[program]
         if activate:
             bus.start_service_by_name(service_name)
         else:
@@ -463,8 +463,8 @@ class NotesSource(ApplicationSource):
         self.monitor_token = self.monitor_directories(*dirs)
 
         set_prog = __kupfer_settings__["notes_application"]
-        if set_prog in PROGRAM_SERIVCES:
-            bus_name = PROGRAM_SERIVCES[set_prog][0]
+        if set_prog in _PROGRAM_SERVICES:
+            bus_name = _PROGRAM_SERVICES[set_prog][0]
             bus = dbus.SessionBus()
             weaklib.dbus_signal_connect_weakly(
                 bus,

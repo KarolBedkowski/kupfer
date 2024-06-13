@@ -108,7 +108,7 @@ def _calculate_window_size(
     tw_sr = textview.size_request()
     wid, hei = tw_sr.width, tw_sr.height
 
-    # Set max window size to 100 colums x 60 lines
+    # Set max window size to 100 columns x 60 lines
     max_hsize = ink_r.height * 60
     max_vsize = ink_r.width * 100
 

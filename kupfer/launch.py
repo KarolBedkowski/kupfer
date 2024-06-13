@@ -700,7 +700,7 @@ def start_plugin_helper(
 
     raises SpawnError
 
-    UNUNSED
+    UNUSED
     """
     argv = [sys.executable]
     argv.extend(sys.argv)
