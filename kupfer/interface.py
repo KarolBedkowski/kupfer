@@ -5,8 +5,8 @@ import typing as ty
 # NOTE: TextRepresentation moved into obj.representation
 # pylint: disable=unused-import
 from kupfer.obj.representation import (
-    TextRepresentation,  # noqa: F401
-    UriListRepresentation,  # noqa: F401
+    TextRepresentation,
+    UriListRepresentation,
 )
 
 if ty.TYPE_CHECKING:

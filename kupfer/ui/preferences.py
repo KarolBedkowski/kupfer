@@ -119,9 +119,9 @@ def _create_plugin_credentials_cb(
         )
         # pylint: disable=no-member
         user_password = ask_user_credentials(
-            upass.username,
-            upass.password,
-            information,  # type:ignore
+            upass.username,  # type:ignore
+            upass.password,  # type:ignore
+            information,
         )
         if user_password:
             # pylint: disable=no-member

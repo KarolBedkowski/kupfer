@@ -31,7 +31,7 @@ from kupfer.core import settings
 
 ## NOTE: SpawnError  *should* be imported from this module TODO: check
 # pylint: disable=unused-import
-from kupfer.desktop_launch import SpawnError  # noqa: F401
+from kupfer.desktop_launch import SpawnError
 from kupfer.support import fileutils, pretty, scheduler, system
 from kupfer.ui import uievents
 

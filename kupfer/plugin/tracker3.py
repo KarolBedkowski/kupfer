@@ -22,13 +22,13 @@ try:
     gi.require_version("Tracker", "3.0")
 except ValueError as exc:
     raise ImportError(
-        f"{exc}: missing GIRepository Tracker library " "(gir1.2-tracker-3.0)"
+        f"{exc}: missing GIRepository Tracker library (gir1.2-tracker-3.0)"
     ) from exc
 
 # pylint: disable=no-name-in-module
-from gi.repository import Gio, Tracker  # noqa: E402
+from gi.repository import Gio, Tracker
 
-from kupfer.obj import (  # noqa: E402
+from kupfer.obj import (
     Action,
     FileLeaf,
     Source,

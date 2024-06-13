@@ -25,10 +25,10 @@ def _score_partial(string: str, query: str) -> float:
     if string == query:
         return 1.0
 
-    return (
+    return (  # type: ignore
         fuzz.partial_ratio(query, string, processor=kupferstring.tofolded)
         / 100.0
-    )  # type: ignore
+    )
 
 
 def _score_token_set(string: str, query: str) -> float:
@@ -36,10 +36,10 @@ def _score_token_set(string: str, query: str) -> float:
     if string == query:
         return 1.0
 
-    return (
+    return (  # type: ignore
         fuzz.token_set_ratio(query, string, processor=kupferstring.tofolded)
         / 100.0
-    )  # type: ignore
+    )
 
 
 def _score_partial_token_set(string: str, query: str) -> float:
@@ -60,10 +60,10 @@ def _score_token(string: str, query: str) -> float:
     if string == query:
         return 1.0
 
-    return (
+    return (  # type: ignore
         fuzz.token_ratio(query, string, processor=kupferstring.tofolded)
         / 100.0
-    )  # type: ignore
+    )
 
 
 def _score_partial_token(string: str, query: str) -> float:
