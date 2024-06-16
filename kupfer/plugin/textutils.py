@@ -32,11 +32,12 @@ from kupfer.obj import (
     Source,
     TextLeaf,
 )
+from kupfer.ui import gettext_dialog
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
 
-TextConverter = ty.Callable[[str], str]
+TextConverter = ty.Callable[[str], ty.Optional[str]]
 
 
 class _Converter(Leaf):
@@ -76,9 +77,12 @@ class _ConvertAction(Action):
 
         converter = iobj.object
         try:
-            return TextLeaf(converter(leaf.object))
+            if (result := converter(leaf.object)) is not None:
+                return TextLeaf(result)
         except Exception as err:
             raise OperationError(f"Error: {err}") from err
+
+        return None
 
     def requires_object(self):
         return True
@@ -253,6 +257,16 @@ class Convert(_ConvertAction):
         )
 
 
+def _ask_and_join_lines(inp: str) -> str | None:
+    res = gettext_dialog.ask_for_text(
+        _("Join lines options"), _("Please enter characters to join with")
+    )
+    if res is None:
+        return None
+
+    return res.join(filter(None, map(str.strip, inp.split("\n"))))
+
+
 class LineConvert(_ConvertAction):
     def __init__(self, name=_("Convert lines…")):
         super().__init__(name)
@@ -261,6 +275,11 @@ class LineConvert(_ConvertAction):
         return _("Convert multiline text with selected tool")
 
     def _get_converters(self, for_leaf: Leaf) -> ty.Iterator[_Converter]:
+        yield _Converter(
+            _ask_and_join_lines,
+            _("Join lines with..."),
+            _("Join lines with user selected separator"),
+        )
         yield _Converter(
             lambda x: ",".join(t for i in x.split("\n") if (t := i.strip())),
             _("Join lines"),
