@@ -22,6 +22,7 @@ import xml.sax.saxutils
 
 import dbus
 from gi.repository import GLib
+from xdg import BaseDirectory
 
 from kupfer import icons, plugin_support
 from kupfer.obj import (
@@ -37,8 +38,6 @@ from kupfer.support import pretty, textutils, weaklib
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
-
-    from xdg import BaseDirectory
 
 
 PROGRAM_IDS = ["gnote", "tomboy", "kzrnote"]
@@ -89,9 +88,8 @@ def _get_notes_interface(activate=False):
         service_name, obj_name, iface_name = _PROGRAM_SERVICES[program]
         if activate:
             bus.start_service_by_name(service_name)
-        else:
-            if not bus.name_has_owner(service_name):
-                continue
+        elif not bus.name_has_owner(service_name):
+            continue
 
         try:
             searchobj = bus.get_object(service_name, obj_name)

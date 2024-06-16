@@ -118,16 +118,16 @@ def _fill_parser_read(
 
         for key, default in section.items():
             if isinstance(default, (tuple, list)):
-                default = SettingsController.sep.join(default)
+                default = SettingsController.sep.join(default)  # noqa:PLW2901
 
             elif isinstance(default, int):
-                default = str(default)
+                default = str(default)  # noqa:PLW2901
 
             parser.set(secname, key, default)
 
 
 # pylint: disable=too-many-return-statements
-def _parse_value(defval: ty.Any, value: str) -> ty.Any:
+def _parse_value(defval: ty.Any, value: str) -> ty.Any:  # noqa:PLR0911
     if isinstance(defval, tuple):
         if not value:
             return ()

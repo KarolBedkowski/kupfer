@@ -29,7 +29,7 @@ class Glob(Action):
         ## As a special case, understand '**/' prefix as recurive
 
         def get_subcatalog_matches(subcatalog, pat, recursive, paths):
-            if len(paths) > 1000:
+            if len(paths) > 1000:  # noqa:PLR2004
                 raise OperationError("Globbing way too many objects")
 
             for content in subcatalog.content_source().get_leaves():

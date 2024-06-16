@@ -174,7 +174,7 @@ def _replace_format_specs(
         return ""
 
     # pylint: disable=too-many-return-statements
-    def replace_single_code(key: str) -> str | None:
+    def replace_single_code(key: str) -> str | None:  # noqa: PLR0911
         "Handle all embedded format codes, including those to be removed"
         if key in ("%d", "%D", "%n", "%N", "%v", "%m"):  # deprecated keys
             return ""
@@ -234,10 +234,9 @@ def _replace_format_specs(
         succ, newargs = replace_array_format(x)
         if succ:
             new_argv.extend(newargs)
-        else:
+        elif arg := kitertools.two_part_mapper(x, replace_single_code):
             # Handle embedded format codes
-            if arg := kitertools.two_part_mapper(x, replace_single_code):
-                new_argv.append(arg)
+            new_argv.append(arg)
 
     if len(gfilelist) > 1 and not flags.did_see_large_f:
         supports_single_file = True
@@ -285,7 +284,7 @@ class LaunchCallback(ty.Protocol):
 
 
 # pylint: disable=too-many-locals
-def launch_app_info(
+def launch_app_info(  # noqa:PLR0912
     app_info: Gio.AppInfo,
     gfiles: ty.Iterable[Gio.File] | None = None,
     in_terminal: bool | None = None,
@@ -358,7 +357,7 @@ def launch_app_info(
             if exearg := term["exearg"]:
                 targv.append(exearg)
 
-            argv = targv + argv
+            argv = targv + argv  # noqa: PLW2901
 
         if not spawn_app(
             app_info,

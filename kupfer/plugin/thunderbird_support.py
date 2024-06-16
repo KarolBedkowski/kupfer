@@ -120,13 +120,13 @@ def _read_mork_filecontent(filename: str) -> ty.Iterable[str]:
 
         for line in mfile:
             # remove blank lines and comments
-            line = line.strip()
+            line = line.strip()  # noqa: PLW2901
             if not line:
                 continue
+
             # remove comments
-            comments = line.find("// ")
-            if comments > -1:
-                line = line[:comments].strip()
+            if (comments := line.find("// ")) > -1:
+                line = line[:comments].strip()  # noqa: PLW2901
 
             if line:
                 yield line.replace("\\)", "$29")
@@ -134,7 +134,7 @@ def _read_mork_filecontent(filename: str) -> ty.Iterable[str]:
 
 # pylint: disable=too-many-locals,too-many-nested-blocks,too-many-branches
 # pylint: disable=too-many-statements
-def _read_mork(filename: str) -> dict[str, _Table]:
+def _read_mork(filename: str) -> dict[str, _Table]:  # noqa:PLR0915,PLR0912
     """Read mork file, return tables from file"""
 
     data = "".join(_read_mork_filecontent(filename))
@@ -348,7 +348,7 @@ def _load_abook_sqlite(filename: str) -> ty.Iterator[tuple[str, str]]:
                     primary_email,
                     second_email,
                 ) in cur:
-                    display_name = display_name or " ".join(
+                    display_name = display_name or " ".join(  # noqa: PLW2901
                         filter(None, (first_name, last_name))
                     )
                     for email in (primary_email, second_email):

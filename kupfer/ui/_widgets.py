@@ -118,8 +118,7 @@ class DirsSelectWidget(Gtk.Bin):  # type: ignore
         self.add(box)
 
     def _add_dirs(self, dirs: list[str]) -> None:
-        for directory in dirs:
-            directory = os.path.expanduser(directory)
+        for directory in map(os.path.expanduser, dirs):
             dispname = launch.get_display_path_for_bytestring(directory)
             gicon = icons.get_gicon_for_file(directory)
             self.model.append((directory, gicon, dispname))

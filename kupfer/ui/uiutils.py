@@ -166,6 +166,9 @@ def _set_font_size(label: Gtk.Label, fontsize: float = 48.0) -> None:
     label.modify_font(Pango.FontDescription.from_string(str(fontsize)))
 
 
+_MAX_LINE_WIDTH: ty.Final[int] = 100
+
+
 def show_large_type(
     text: str, ctx: commandexec.ExecutionToken | None = None
 ) -> None:
@@ -195,7 +198,7 @@ def show_large_type(
     # If the text contains long lines, we try to
     # hard-wrap the text
     if (wid > maxwid or hei > maxhei) and any(
-        len(L) > 100 for L in text.splitlines()
+        len(L) > _MAX_LINE_WIDTH for L in text.splitlines()
     ):
         label.set_text(_wrap_paragraphs(text))
 

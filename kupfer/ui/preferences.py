@@ -209,7 +209,7 @@ def _make_plugin_sett_widget_combo(
     for idx, text in enumerate(alternatives):
         id_ = text
         if isinstance(text, (tuple, list)):
-            id_, text = text
+            id_, text = text  # noqa: PLW2901
 
         wid.append(id=id_, text=text)
         if id_ == val:
@@ -736,7 +736,7 @@ class PreferencesWindowController(pretty.OutputMixin):
                 folded_name = kupferstring.tofolded(name)
                 fold_name_score = relevance.score(folded_name, us_filter)
                 desc_score = relevance.score(info["description"], us_filter)
-                if not name_score and not fold_name_score and desc_score < 0.9:
+                if not name_score and not fold_name_score and desc_score < 0.9:  # noqa:PLR2004
                     continue
 
             enabled = setctl.get_plugin_enabled(plugin_id)

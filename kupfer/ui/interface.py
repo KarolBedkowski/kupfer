@@ -50,10 +50,17 @@ class KeyCallback(ty.Protocol):
     def __call__(self, shift_mask: int, mod_mask: int, /) -> bool: ...
 
 
+_MAX_STRING_LEN: ty.Final[int] = 27
+
+
 def _trunc_long_str(instr: ty.Any) -> str:
     "truncate long object names"
     ustr = str(instr)
-    return ustr[:25] + "…" if len(ustr) > 27 else ustr
+    return (
+        ustr[: _MAX_STRING_LEN - 2] + "…"
+        if len(ustr) > _MAX_STRING_LEN
+        else ustr
+    )
 
 
 def _get_accel(key: str, acf: AccelFunc) -> tuple[str, AccelFunc]:
@@ -300,7 +307,7 @@ class Interface(GObject.GObject, pretty.OutputMixin):  # type:ignore
 
         return False
 
-    def _on_entry_key_press(
+    def _on_entry_key_press(  # noqa: PLR0911
         self, entry: Gtk.Entry, event: Gdk.EventKey
     ) -> bool:
         """Intercept arrow keys and manipulate table without losing focus from

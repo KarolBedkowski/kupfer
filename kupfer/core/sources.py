@@ -724,7 +724,7 @@ class SourceController(pretty.OutputMixin):
             if configsaver.source_has_config(source):
                 configsaver.load_source(source)
             else:
-                source = sourcepickler.unpickle_source(source)
+                source = sourcepickler.unpickle_source(source)  # noqa:PLW2901
 
             if source:
                 yield source

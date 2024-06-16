@@ -513,8 +513,7 @@ def _locale_sort_artist_album_songs(artists):
             albums[album].extend(songs)
 
         for album in kupferstring.locale_sort(albums):
-            for song in albums[album]:
-                yield song
+            yield from albums[album]
 
 
 class RhythmboxSongsSource(Source):

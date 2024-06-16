@@ -355,7 +355,7 @@ def get_plugin_attributes(
 
     for attr in attrs:
         if isinstance(attr, PluginAttr):
-            attr = attr.value
+            attr = attr.value  # noqa: PLW2901
 
         try:
             yield getattr(plugin, attr)

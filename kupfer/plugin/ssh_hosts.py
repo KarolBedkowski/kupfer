@@ -149,7 +149,7 @@ def _parse_host_stms(args: list[str]) -> ty.Iterator[tuple[str, str | None]]:
         if "*" in host or host[0] == "!":
             continue
 
-        user, _, host = host.partition("@")
+        user, _, host = host.partition("@")  # noqa:PLW2901
         if user and host:
             yield host, user
         else:
@@ -168,7 +168,7 @@ def _parse_match_stmt(args: list[str]) -> tuple[str, str | None] | None:
         if "*" in val or val[0] == "!":
             continue
 
-        key = key.lower()
+        key = key.lower()  # noqa:PLW2901
         if key == "host":
             host = val
         elif key == "user":
@@ -205,7 +205,7 @@ class SSHSource(ToplevelGroupingSource, FilesystemWatchMixin):
             current_hosts: list[tuple[str, str | None]] = []
             current_hostname: str | None = None
             for line in cfile:
-                line = line.strip()
+                line = line.strip()  # noqa:PLW2901
                 if not line:
                     continue
 

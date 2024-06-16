@@ -88,7 +88,7 @@ def get_playlist_songs() -> ty.Iterator[SongLeaf]:
     ) as proc:
         stdout, _stderr = proc.communicate()
         for line in stdout.splitlines():
-            if not line.count(b"|") >= 2:
+            if not line.count(b"|") >= 2:  # noqa:PLR2004
                 continue
 
             position, rest = line.split(b"|", 1)

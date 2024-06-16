@@ -77,7 +77,7 @@ class DownloadTask(task.ThreadTask):
 
     def thread_do(self):
         with urllib.request.urlopen(self.uri) as response:
-            if response.status >= 300 or response.status < 200:
+            if response.status >= 300 or response.status < 200:  # noqa: PLR2004
                 raise RuntimeError(
                     f"Could not download file; status: {response.status}"
                 )

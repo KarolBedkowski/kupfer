@@ -303,7 +303,7 @@ class TrackerFulltext(TextSource):
                 rank = "recent"
 
             query = text.lstrip("? ~")
-            if len(query) > 2 and not has_parsing_error(query):
+            if len(query) > 2 and not has_parsing_error(query):  # noqa: PLR2004
                 yield from TrackerQuerySource(
                     query, order_by=rank, max_items=50
                 ).get_items()

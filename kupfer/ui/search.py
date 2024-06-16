@@ -43,6 +43,8 @@ _FAV_COL: ty.Final = 3
 _INFO_COL: ty.Final = 4
 _RANK_COL: ty.Final = 5
 
+_MIN_ICON_SIZE_TO_SHOW: ty.Final[int] = 8
+
 
 class _LeafModel:
     """A base for a tree view with a magic load-on-demand feature.
@@ -199,7 +201,7 @@ class _LeafModel:
         self, leaf: search.RankableObject
     ) -> GdkPixbuf.Pixbuf | None:
         """Get icon from `leaf` to show in row."""
-        if (size := self.icon_size) > 8:
+        if (size := self.icon_size) > _MIN_ICON_SIZE_TO_SHOW:
             return leaf.get_thumbnail(size, size) or leaf.get_pixbuf(size)
 
         return None

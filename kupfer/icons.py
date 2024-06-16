@@ -91,7 +91,7 @@ def parse_load_icon_list(
             continue
 
         fields = tuple(map(str.strip, line.split("\t", 2)))
-        if len(fields) < 2:
+        if len(fields) <= 1:
             pretty.print_error(
                 __name__,
                 "Malformed icon-list line {line!r} from {plugin_name!r}",
@@ -483,7 +483,7 @@ def _setup_icon_renderer(_sched: ty.Any) -> None:
 
 
 def _on_icon_render_change(setctl, *_arguments):
-    global _ICON_RENDERER  # pylint: disable=global-statement
+    global _ICON_RENDERER  # pylint: disable=global-statement# noqa: PLW0603
     renderer_dict = setctl.get_preferred_alternative("icon_renderer")
     assert renderer_dict
 

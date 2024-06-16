@@ -171,7 +171,7 @@ class SessionClient(GObject.GObject, pretty.OutputMixin):  # type:ignore
         self.output_debug(
             "XFCE Session change", time.asctime(), old_value, new_value
         )
-        if new_value == 4:
+        if new_value == 4:  # noqa:PLR2004
             self.emit("save-yourself")
 
     def _on_stop_signal(self) -> None:

@@ -84,23 +84,19 @@ class ScoreFunction(ty.Protocol):
 
 
 def get_score_function(method: str) -> ScoreFunction:
-    if method in ("indel", "standard"):
-        return _score
+    func = {
+        "indel": _score,
+        "standard": _score,
+        "token_set": _score_token_set,
+        "partial_token_set": _score_partial_token_set,
+        "token": _score_token,
+        "partial_token": _score_partial_token,
+        "partial": _score_partial,
+        "": _score_partial,
+    }.get(method)
 
-    if method == "token_set":
-        return _score_token_set
-
-    if method == "partial_token_set":
-        return _score_partial_token_set
-
-    if method == "token":
-        return _score_token
-
-    if method == "partial_token":
-        return _score_partial_token
-
-    if method in ("partial", ""):
-        return _score_partial
+    if func:
+        return func
 
     pretty.print_error(
         __name__,

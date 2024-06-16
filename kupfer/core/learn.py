@@ -330,15 +330,18 @@ def load() -> None:
         _REGISTER[_ACTIVATIONS_KEY] = ty.cast(dict[str, tuple[str, int]], {})
 
 
+_MAX_REGISTER_SIZE: ty.Final[int] = 500
+
+
 def save() -> None:
     """Save the learning record."""
     if not _REGISTER:
         pretty.print_debug(__name__, "Not writing empty register")
         return
 
-    _purge_action_reg(500)
-    if len(_REGISTER) > 500:
-        _prune_register(500)
+    _purge_action_reg(_MAX_REGISTER_SIZE)
+    if len(_REGISTER) > _MAX_REGISTER_SIZE:
+        _prune_register(_MAX_REGISTER_SIZE)
 
     filepath = config.save_config_file(_MNEMONICS_FILENAME)
     assert filepath

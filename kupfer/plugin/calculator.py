@@ -75,7 +75,7 @@ class Help:
         for docstr in docstrings:
             # Wrap the description and align continued lines
             docsplit = docstr.split("\n", 1)
-            if len(docsplit) < 2:
+            if len(docsplit) <= 1:
                 formatted.append(docstr)
                 continue
 

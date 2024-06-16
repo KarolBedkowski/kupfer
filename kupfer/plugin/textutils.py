@@ -106,9 +106,9 @@ def _str_to_unix_ts(inp: str) -> str:
     """Convert int or float from `inp` do date."""
     ts = float(inp)
     # check is ns/ms precision
-    if ts > 9999999999999.0:
+    if ts > 9999999999999.0:  # noqa: PLR2004
         ts /= 1000000.0
-    elif ts > 9999999999.0:
+    elif ts > 9999999999.0:  # noqa: PLR2004
         ts /= 1000.0
 
     return str(datetime.datetime.fromtimestamp(ts))
@@ -173,7 +173,7 @@ def _to_filename(instr: str) -> str:
     while "--" in res:
         res = res.replace("__", "_")
 
-    if len(res) > 255:
+    if len(res) > 255:  # noqa: PLR2004
         base, _sep, ext = res.rpartition(".")
         if ext and len(ext) < len(base):
             base = _trim_to_len_sep(base, 250 - len(ext), "_")

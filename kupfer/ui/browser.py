@@ -764,7 +764,7 @@ class WindowController(pretty.OutputMixin):
 
         self.output_debug("finished lazy_setup")
 
-    def main(self, quiet: bool = False) -> None:
+    def main(self, quiet: bool = False) -> None:  # noqa:PLR0915
         """Start WindowController, present its window (if not @quiet)"""
         signal.signal(signal.SIGINT, self._on_early_interrupt)
 

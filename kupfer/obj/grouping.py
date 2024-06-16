@@ -32,11 +32,7 @@ __author__ = (
 )
 
 
-__all__ = (
-    "GroupingLeaf",
-    "GroupingSource",
-    "ToplevelGroupingSource",
-)
+__all__ = ["GroupingLeaf", "GroupingSource", "ToplevelGroupingSource"]
 
 Slots = ty.Optional[dict[str, ty.Any]]
 
@@ -180,7 +176,7 @@ class GroupingSource(Source):
         if self.should_sort_lexically():
             leaves = kupferstring.locale_sort(leaves)
 
-        if (mergetime := time.time() - starttime) > 0.05:
+        if (mergetime := time.time() - starttime) > 0.05:  # noqa: PLR2004
             self.output_debug(f"Warning(?): merged in {mergetime} seconds")
 
         return itertools.chain(non_group_leaves, leaves)

@@ -102,7 +102,7 @@ def _get_app_id(item: Gtk.RecentInfo) -> ty.Iterator[str]:
     for app in item.get_applications():
         # get app_id from application info
         instr = item.get_application_info(app)[0]
-        app = app.lower()
+        app = app.lower()  # noqa:PLW2901
         yield app
         # get first word as app id
         if (aid := instr.split(None, 1)[0]) != app:
@@ -283,7 +283,7 @@ class PlacesSource(Source):
     def _get_places(self, fileloc):
         with open(fileloc, encoding="UTF-8") as fin:
             for line in fin:
-                line = line.strip()
+                line = line.strip()  # noqa:PLW2901
                 if not line:
                     continue
 

@@ -88,7 +88,7 @@ class FilesystemWatchMixin:
         tokens = []
         for file in files:
             if isinstance(file, Path):
-                file = str(file)
+                file = str(file)  # noqa: PLW2901
 
             gfile = Gio.File.new_for_path(file)
             try:
@@ -119,7 +119,7 @@ class FilesystemWatchMixin:
         tokens = []
         for directory in directories:
             if isinstance(directory, Path):
-                directory = str(directory)
+                directory = str(directory)  # noqa: PLW2901
 
             gfile = Gio.File.new_for_path(directory)
             if not force and not gfile.query_exists():
