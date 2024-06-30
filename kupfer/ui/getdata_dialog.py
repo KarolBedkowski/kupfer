@@ -11,7 +11,7 @@ class GetDataDialog:
     def __init__(
         self,
         title: str,
-        message: str,
+        message: str = "",
         screen: Gdk.Screen | None = None,
         parent: Gtk.Window | None = None,
     ):
@@ -27,7 +27,10 @@ class GetDataDialog:
         self.window = builder.get_object("dialoggetdata")
         self._box_fields = builder.get_object("box_fields")
         builder.get_object("label_title").set_text(title or "")
-        builder.get_object("label_message").set_text(message or "")
+        if message:
+            builder.get_object("label_message").set_text(message or "")
+        else:
+            builder.get_object("label_message").hide()
 
         if screen:
             self.window.set_screen(screen)
@@ -45,6 +48,7 @@ class GetDataDialog:
         row = len(self._fields)
 
         wlabel = Gtk.Label()
+        wlabel.set_alignment(0, 0.5)  # pylint: disable=no-member
         wlabel.set_markup(label)
         wlabel.set_selectable(False)
         self._box_fields.attach(wlabel, 0, row, 1, 1)
@@ -59,8 +63,8 @@ class GetDataDialog:
 
     def run(self) -> dict[str, str] | None:
         """Run dialog, return key codes or None when user press cancel"""
+        self._box_fields.show_all()
         self.window.set_keep_above(True)
-        self.window.show_all()
         self.window.run()
         self.window.destroy()
         return self._result
