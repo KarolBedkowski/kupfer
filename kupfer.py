@@ -95,6 +95,9 @@ try:
 
         import typing
         typing.TYPE_CHECKING = True
+
+        import typeguard._checkers as checkers
+        checkers.check_protocol = None  # agronholm/typeguard#465
 except ImportError as err:
     print(err)
     pass
