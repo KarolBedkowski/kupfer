@@ -32,7 +32,7 @@ from kupfer.obj import (
     Source,
     TextLeaf,
 )
-from kupfer.ui import gettext_dialog
+from kupfer.ui import getdata_dialog
 
 if ty.TYPE_CHECKING:
     from gettext import gettext as _
@@ -258,13 +258,17 @@ class Convert(_ConvertAction):
 
 
 def _ask_and_join_lines(inp: str) -> str | None:
-    res = gettext_dialog.ask_for_text(
-        _("Join lines options"), _("Please enter characters to join with")
+    res = getdata_dialog.ask_for_text(
+        _("Join lines options"),
+        _("Please enter characters to join with"),
+        _("Separator"),
+        ";",
     )
-    if res is None:
-        return None
 
-    return res.join(filter(None, map(str.strip, inp.split("\n"))))
+    if res:
+        return res.join(filter(None, map(str.strip, inp.split("\n"))))
+
+    return None
 
 
 class LineConvert(_ConvertAction):

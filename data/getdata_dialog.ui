@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.22"/>
-  <object class="GtkDialog" id="dialoggettext">
+  <object class="GtkDialog" id="dialoggetdata">
     <property name="can-focus">False</property>
     <property name="border-width">6</property>
     <property name="title" translatable="yes">Kupfer</property>
@@ -10,9 +10,9 @@
     <property name="modal">True</property>
     <property name="window-position">center</property>
     <property name="default-width">300</property>
-    <property name="type-hint">normal</property>
+    <property name="type-hint">dialog</property>
     <property name="gravity">center</property>
-    <property name="startup-id">Kupfer Get Text</property>
+    <property name="startup-id">Kupfer Get Data</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox1">
         <property name="visible">True</property>
@@ -28,7 +28,7 @@
               <object class="GtkButton" id="buttonclose">
                 <property name="label">gtk-close</property>
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="can-focus">True</property>
                 <property name="receives-default">False</property>
                 <property name="use-stock">True</property>
                 <signal name="clicked" handler="on_buttonclose_activate" swapped="no"/>
@@ -43,9 +43,10 @@
               <object class="GtkButton" id="buttonok">
                 <property name="label">gtk-ok</property>
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="can-focus">True</property>
+                <property name="can-default">True</property>
                 <property name="has-default">True</property>
-                <property name="receives-default">False</property>
+                <property name="receives-default">True</property>
                 <property name="use-stock">True</property>
                 <signal name="clicked" handler="on_buttonok_activate" swapped="no"/>
               </object>
@@ -82,7 +83,7 @@
                 </attributes>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
               </packing>
@@ -97,35 +98,29 @@
                 <property name="yalign">0</property>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">1</property>
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="entry">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="labelaccelerator">
+              <!-- n-columns=2 n-rows=1 -->
+              <object class="GtkGrid" id="box_fields">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="xalign">0</property>
-                <attributes>
-                  <attribute name="weight" value="bold"/>
-                </attributes>
+                <property name="row-spacing">6</property>
+                <property name="column-spacing">12</property>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
               </object>
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">3</property>
+                <property name="position">2</property>
               </packing>
             </child>
           </object>
@@ -139,6 +134,7 @@
     </child>
     <action-widgets>
       <action-widget response="-7">buttonclose</action-widget>
+      <action-widget response="-5">buttonok</action-widget>
     </action-widgets>
   </object>
 </interface>
