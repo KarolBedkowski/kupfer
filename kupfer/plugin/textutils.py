@@ -271,6 +271,20 @@ def _ask_and_join_lines(inp: str) -> str | None:
     return None
 
 
+def _ask_and_quote_join_lines(inp: str) -> str | None:
+    dlg = getdata_dialog.GetDataDialog(_("Quote and join lines options"))
+
+    dlg.add_field("sep", _("Separator:"), ";")
+    dlg.add_field("qchar", _("Quotation character:"), '"')
+    res = dlg.run()
+    if res and (sep := res["sep"]) and (quot := res["qchar"]):
+        return sep.join(
+            f"{quot}{t}{quot}" for i in inp.split("\n") if (t := i.strip())
+        )
+
+    return None
+
+
 class LineConvert(_ConvertAction):
     def __init__(self, name=_("Convert lines…")):
         super().__init__(name)
@@ -285,16 +299,9 @@ class LineConvert(_ConvertAction):
             _("Join lines with user selected separator"),
         )
         yield _Converter(
-            lambda x: ",".join(t for i in x.split("\n") if (t := i.strip())),
-            _("Join lines"),
-            _("Join lines with comma"),
-        )
-        yield _Converter(
-            lambda x: ",".join(
-                f'"{t}"' for i in x.split("\n") if (t := i.strip())
-            ),
-            _("Quote and join lines"),
-            _("Wrap with quote and join lines with comma"),
+            _ask_and_quote_join_lines,
+            _("Quote and join lines..."),
+            _("Wrap with quote characters and join lines."),
         )
 
 
