@@ -113,7 +113,7 @@ class QuerySource(Source):
     def repr_key(self):
         return self.query
 
-    def get_items(self):
+    async def get_items(self):
         return tuple(_query(self.query, self.limit))
 
 
@@ -124,11 +124,9 @@ class Tracker3Fulltext(TextSource):
     def get_description(self):
         return _("Use '?' prefix to get full text results")
 
-    def get_text_items(self, text):
+    async def get_text_items(self, text):
         if text.startswith("?") and (term := text.lstrip("? ")):
-            return tuple(_query(term, 25))
-
-        return ()
+            yield tuple(_query(term, 25))
 
     def provides(self):
         yield FileLeaf

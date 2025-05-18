@@ -86,10 +86,12 @@ class Triggers(Source):
         exec_token = ctx.make_execution_token(ui_ctx)
         self.perform_trigger(exec_token, target)
 
-    def get_items(self):
+    async def get_items(self):
+        res =[]
         for target, (keystr, name, _id) in self.trigger_table.items():
             label = Gtk.accelerator_get_label(*Gtk.accelerator_parse(keystr))
-            yield Trigger(target, f"{label or keystr} ({name})")
+            res.append(Trigger(target, f"{label or keystr} ({name})"))
+        return res
 
     def should_sort_lexically(self):
         return True

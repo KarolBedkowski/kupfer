@@ -44,7 +44,7 @@ class XfceItemsSource(support.CommonSource):
     def __init__(self):
         support.CommonSource.__init__(self, _("XFCE Session Management"))
 
-    def get_items(self):
+    async def get_items(self):
         lockscreen_cmd = (
             __kupfer_settings__["lock_cmd"] or "xdg-screensaver lock"
         )
@@ -109,7 +109,7 @@ class XfceWhskerFavoritesSource(Source):
     def finalize(self) -> None:
         learn.replace_favorites(__name__)
 
-    def get_items(self):
+    async def get_items(self):
         if not __kupfer_settings__["whisker_favs"]:
             return []
 

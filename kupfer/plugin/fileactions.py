@@ -102,16 +102,16 @@ class RenameSource(TextSource):
         # this should rank high
         return 100
 
-    def get_items(self, text):
+    async def get_items(self, text):
         if not text:
-            return
+            return []
         basename = os_path.basename(self.sourcefile.object)
         _root, ext = os_path.splitext(basename)
         t_root, t_ext = os_path.splitext(text)
         if text.endswith(" "):
-            yield TextLeaf(text.rstrip())
-        else:
-            yield TextLeaf(text) if t_ext else TextLeaf(t_root + ext)
+            return [TextLeaf(text.rstrip())]
+
+        return [TextLeaf(text) if t_ext else TextLeaf(t_root + ext)]
 
     def get_gicon(self):
         return self.sourcefile.get_gicon()

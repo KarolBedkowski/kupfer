@@ -92,14 +92,13 @@ class RecollQuerySource(Source):
     def repr_key(self):
         return f"recoll_query:{self._query}"
 
-    def get_items(self):
+    async def get_items(self):
         recoll_cmd = shutil.which("recoll")
         if not recoll_cmd:
-            yield CommandNotAvailableLeaf(__name__, __kupfer_name__, "recoll")
-            return
+            return [CommandNotAvailableLeaf(__name__, __kupfer_name__, "recoll")]
 
         if not self._query:
-            return
+            return []
 
         command = [
             recoll_cmd,
@@ -114,6 +113,8 @@ class RecollQuerySource(Source):
             self._query,
         ]
 
+        res =[]
+
         with subprocess.Popen(command, stdout=subprocess.PIPE) as proc:
             out, _error = proc.communicate()
             for line in out.splitlines():
@@ -127,7 +128,9 @@ class RecollQuerySource(Source):
                 with suppress(OSError):
                     gfile = Gio.File.new_for_uri(uri)
                     fpath = gfile.get_path()
-                    yield RecollLeaf(fpath, title or filename, mtype)
+                    res.append(RecollLeaf(fpath, title or filename, mtype))
+
+        return res
 
     def has_parent(self) -> bool:
         return False

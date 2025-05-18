@@ -202,12 +202,13 @@ class ComposedSource(Source):
         Source.__init__(self, "Composed Command")
         self.leaf = leaf
 
-    def get_items(self):
+    async def get_items(self):
         obj = self.leaf.object
-        yield self.leaf.object[0]
-        yield ActionLeaf(obj[1])
+        res = [self.leaf.object[0], ActionLeaf(obj[1])]
         if self.leaf.object[2] is not None:
-            yield self.leaf.object[2]
+            res.append(self.leaf.object[2])
+
+        return res
 
     def repr_key(self):
         return self.leaf.repr_key()

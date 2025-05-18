@@ -145,7 +145,7 @@ def _get_items_sorted(
     """Get recent documents as iterable FileLeaf for `for_app_names` sorted
     sorted by modified date desc."""
     items = sorted(_get_items(for_app_names), reverse=True)
-    return (FileLeaf(item[1]) for item in items)
+    return [FileLeaf(item[1]) for item in items]
 
 
 @functools.lru_cache(maxsize=10)
@@ -201,7 +201,7 @@ class RecentsSource(Source):
 
         self.mark_for_update()
 
-    def get_items(self):
+    async def get_items(self):
         return _get_items_sorted()
 
     def get_description(self):
@@ -225,7 +225,7 @@ class ApplicationRecentsSource(RecentsSource):
     def repr_key(self):
         return self.application.repr_key()
 
-    def get_items(self):
+    async def get_items(self):
         app_names = _app_names(self.application)
         self.output_debug("Items for", app_names)
         return _get_items_sorted(app_names)
@@ -269,7 +269,7 @@ class PlacesSource(Source):
             BaseDirectory.xdg_config_home, "gtk-3.0", "bookmarks"
         )
 
-    def get_items(self):
+    async def get_items(self):
         """
         gtk-bookmarks: each line has url and optional title
         file:///path/to/that.end [title]
@@ -338,7 +338,7 @@ class IgnoredApps(Source):
     def finalize(self):
         del IgnoredApps.instance
 
-    def get_items(self):
+    async def get_items(self):
         return []
 
     def provides(self):

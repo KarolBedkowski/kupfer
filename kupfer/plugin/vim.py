@@ -85,15 +85,15 @@ class VimRecentsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
     def monitor_include_file(self, gfile: Gio.File) -> bool:
         return bool(gfile) and gfile.get_basename() == ".viminfo"
 
-    def get_items_forced(self):
+    async def get_items_forced(self):
         try:
             _load_recent_files.cache_clear()
         except AttributeError:
             _load_recent_files.__wrapped__.cache_clear()  # type:ignore
 
-        return self.get_items()
+        return await self.get_items()
 
-    def get_items(self):
+    async def get_items(self):
         viminfo = self._viminfo
         if not viminfo.exists():
             self.output_debug("Viminfo not found at", viminfo)
@@ -101,10 +101,10 @@ class VimRecentsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
 
         limit = __kupfer_settings__["limit"]
         try:
-            return map(
+            return list(map(
                 FileLeaf,
                 _load_recent_files(viminfo, limit, viminfo.stat().st_mtime),
-            )
+            ))
         except OSError:
             self.output_exc()
 
@@ -141,8 +141,9 @@ class VimWikiSource(Source):
     def __init__(self):
         super().__init__(name=_("VimWiki Wikis"))
 
-    def get_items(self):
+    async def get_items(self):
         existing_wiki = []
+        res = []
         for path in __kupfer_settings__["wikis"] or ():
             filepath = Path(path).expanduser().resolve()
             if filepath.is_dir():
@@ -152,7 +153,9 @@ class VimWikiSource(Source):
                     name = f"{name} ({filepath.parent.name})"
 
                 existing_wiki.append(name)
-                yield VimWiki(VimWikiFilesSource(filepath), name)
+                res.append(VimWiki(VimWikiFilesSource(filepath), name))
+
+        return res
 
     def provides(self):
         yield VimWiki
@@ -200,11 +203,12 @@ class VimWikiFilesSource(Source, FilesystemWatchMixin):
     def repr_key(self) -> str:
         return str(self.wikipath)
 
-    def get_items(self) -> ty.Iterable[VimWikiFile]:
+    async def get_items(self) -> ty.Iterable[VimWikiFile]:
         # wiki can keep various files (txt, md, etc). Instead of read index
         # and guess extension - load add files in wiki
         wikipath = self.wikipath
         wikiname = self.wikipath.name
+        res =[]
         for dirname, dirs, files in os.walk(wikipath):
             dirp = Path(dirname)
             # skip hidden directories
@@ -218,9 +222,10 @@ class VimWikiFilesSource(Source, FilesystemWatchMixin):
                     continue
 
                 filepath = dirp.joinpath(file)
-                yield VimWikiFile(
+                res.append(VimWikiFile(
                     filepath, str(filepath.relative_to(wikipath)), wikiname
-                )
+                ))
+        return res
 
     def provides(self):
         yield VimWikiFile

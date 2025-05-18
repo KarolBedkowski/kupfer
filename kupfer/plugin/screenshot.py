@@ -183,17 +183,19 @@ class ScreenshotTools(Source):
     def is_dynamic(self):
         return True
 
-    def get_items(self):
-        yield ScreenshotToFile()
+    async def get_items(self):
+        res = [ScreenshotToFile()]
         tool = __kupfer_settings__["tool"]
         if not _tool_cmd_path(tool):
-            yield CommandNotAvailableLeaf(__name__, __kupfer_name__, tool)
-            return
+            res.append(CommandNotAvailableLeaf(__name__, __kupfer_name__, tool))
+            return res
 
         if tool == "Flameshot":
-            yield _SSToClipboardNative()
+            res.append(_SSToClipboardNative())
         elif tool == "Scrot":
-            yield SSToClipboard()
+            res.append(SSToClipboard())
+
+        return res
 
     def provides(self):
         yield RunnableLeaf

@@ -313,7 +313,7 @@ class ConnectionsSource(Source):
         self.device = device_path
         self.interface = interface
 
-    def get_items(self):
+    async def get_items(self):
         sbus = dbus.SystemBus()
         dconn = _create_dbus_connection(
             _PROPS_IFACE, self.device, _NM_SERVICE, sbus=sbus
@@ -335,6 +335,7 @@ class ConnectionsSource(Source):
             need_check_conn = True
             connections = dconn.ListConnections()
 
+        res =[]
         for conn in connections:
             cset = _create_dbus_connection(
                 _CONNECTION_IFACE, conn, _NM_SERVICE, sbus=sbus
@@ -346,7 +347,9 @@ class ConnectionsSource(Source):
                 if iface_name != self.interface:
                     continue
 
-            yield Connection.from_setting(conn, settings_connection)
+            res.append(Connection.from_setting(conn, settings_connection))
+
+        return res
 
 
 class DevicesSource(Source):
@@ -379,20 +382,23 @@ class DevicesSource(Source):
     def _on_nm_updated(self, *args):
         self.mark_for_update()
 
-    def get_items(self):
+    async def get_items(self):
         sbus = dbus.SystemBus()
+        res =[]
         if interface := _create_dbus_connection_nm(sbus=sbus):
             for dev in interface.GetAllDevices():
                 if conn := _create_dbus_connection(
                     _PROPS_IFACE, dev, _NM_SERVICE, sbus=sbus
                 ):
-                    yield Device(
+                    res.append(Device(
                         str(dev),
                         str(conn.Get(_DEVICE_IFACE, "Interface")),
                         int(conn.Get(_DEVICE_IFACE, "State")),
                         bool(conn.Get(_DEVICE_IFACE, "Managed")),
                         int(conn.Get(_DEVICE_IFACE, "DeviceType")),
-                    )
+                    ))
+
+        return res
 
     def provides(self):
         yield Device

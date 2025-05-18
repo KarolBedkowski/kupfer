@@ -296,7 +296,7 @@ class TrackerFulltext(TextSource):
     def get_description(self):
         return _("Use '?' prefix to get full text results")
 
-    def get_text_items(self, text):
+    async def get_text_items(self, text):
         if text.startswith("?"):
             rank = "rank"
             if text.startswith("?~"):
@@ -304,9 +304,10 @@ class TrackerFulltext(TextSource):
 
             query = text.lstrip("? ~")
             if len(query) > 2 and not has_parsing_error(query):  # noqa: PLR2004
-                yield from TrackerQuerySource(
-                    query, order_by=rank, max_items=50
-                ).get_items()
+                async for item in TrackerQuerySource(
+                        query, order_by=rank, max_items=50
+                    ).get_items():
+                    yield item
 
     def provides(self):
         yield FileLeaf

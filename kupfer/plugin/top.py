@@ -83,7 +83,7 @@ class _SignalsSource(Source):
     def __init__(self):
         Source.__init__(self, _("Signals"))
 
-    def get_items(self):
+    async def get_items(self):
         return _SIGNALS
 
     def provides(self):
@@ -102,7 +102,7 @@ class TaskSource(Source):
     def is_dynamic(self):
         return True
 
-    def get_items(self):
+    async def get_items(self):
         uid = os.getuid()
         with subprocess.Popen(
             ["top", "-b", "-n", "1", "-u", str(uid)],
@@ -112,7 +112,7 @@ class TaskSource(Source):
             if proc.stdout:
                 content = proc.stdout.read()
             else:
-                return
+                return []
 
         processes = parse_top_output(content)
         sort_order = __kupfer_settings__["sort_order"]
@@ -127,6 +127,7 @@ class TaskSource(Source):
         fields = _(
             "pid: %(pid)s  cpu: %(cpu)g%%  mem: %(mem)g%%  time: %(time)s"
         )
+        res =[]
         for pid, cpu, mem, ptime, cmd in processes:
             description = fields % {
                 "pid": pid,
@@ -134,7 +135,9 @@ class TaskSource(Source):
                 "mem": mem,
                 "time": ptime,
             }
-            yield Task(pid, cmd, description)
+            res.append(Task(pid, cmd, description))
+
+        return res
 
     def get_description(self):
         return _("Running tasks for current user")

@@ -160,7 +160,8 @@ class ClawsContactsSource(
     def mark_for_update(self, postpone=False):
         super().mark_for_update(postpone=True)
 
-    def get_items(self):
+    async def get_items(self):
+        res = []
         if self._claws_addrbook_index.is_file():
             for addrbook_file in self._load_address_books():
                 addrbook_filepath = self._claws_addrbook_dir.joinpath(
@@ -177,13 +178,13 @@ class ClawsContactsSource(
                         addresses = person.getElementsByTagName("address")
                         for address in addresses:
                             email = address.getAttribute("email")
-                            yield EmailContact(email, commonname)
+                            res.append(EmailContact(email, commonname))
 
                 except (Exception, xml.parsers.expat.ExpatError) as err:
                     self.output_error(err)
 
-        yield ComposeMail()
-        yield ReceiveMail()
+        res.extend((ComposeMail(), ReceiveMail()))
+        return res
 
     def should_sort_lexically(self):
         # since it is a grouping source, grouping and non-grouping will be

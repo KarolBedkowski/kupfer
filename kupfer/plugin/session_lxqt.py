@@ -23,7 +23,7 @@ class LxqtItemsSource(support.CommonSource):
     def __init__(self):
         support.CommonSource.__init__(self, _("LXQT Session Management"))
 
-    def get_items(self):
+    async def get_items(self):
         return (
             support.Logout(_LOGOUT_CMD),
             support.LockScreen(_LOCKSCREEN_CMD),

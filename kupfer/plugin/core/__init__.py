@@ -8,6 +8,7 @@ __description__ = "Core actions and items"
 __version__ = ""
 __author__ = "Ulrik Sverdrup <ulrik.sverdrup@gmail.com>"
 
+import asyncio
 import typing as ty
 from contextlib import suppress
 
@@ -143,7 +144,7 @@ class RescanActionTask(task.ThreadTask):
         self.retval = retval
 
     def thread_do(self) -> None:
-        self.source.get_leaves(force_update=True)
+        asyncio.run(self.source.get_leaves(force_update=True))
 
     def thread_finish(self) -> None:
         self.async_token.register_late_result(self.retval)

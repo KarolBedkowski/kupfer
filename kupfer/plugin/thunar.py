@@ -449,9 +449,8 @@ class ThunarObjects(AppLeafContentMixin, Source):
     def __init__(self):
         Source.__init__(self, _("Thunar"))
 
-    def get_items(self):
-        yield EmptyTrash()
-        yield OpenTrash()
+    async def get_items(self):
+        return [EmptyTrash(), OpenTrash()]
 
     def provides(self):
         yield RunnableLeaf
@@ -466,7 +465,8 @@ class _SendToAppsSource(Source):
     def __init__(self):
         Source.__init__(self, _("Thunar Send To Objects"))
 
-    def get_items(self):
+    async def get_items(self):
+        res =[]
         for data_dir in config.get_data_dirs("sendto", package="Thunar"):
             with os.scandir(data_dir) as sd:
                 for dir_entry in sd:
@@ -476,9 +476,10 @@ class _SendToAppsSource(Source):
                         continue
 
                     with suppress(InvalidDataError):
-                        yield AppLeaf(
+                        res.append(AppLeaf(
                             init_path=dir_entry.path, require_x=False
-                        )
+                        ))
+        return res
 
     def get_icon_name(self):
         return "Thunar"

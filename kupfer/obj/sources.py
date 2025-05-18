@@ -36,15 +36,15 @@ class SourcesSource(Source):
         self.sources = sources
         self.use_reprs = use_reprs
 
-    def get_items(self) -> ty.Iterable[Leaf]:
+    async def get_items(self) -> ty.Iterable[Leaf]:
         """Ask each Source for a Leaf substitute, else yield a SourceLeaf"""
         if self.use_reprs:
             for src in self.sources:
-                yield src.get_leaf_repr() or SourceLeaf(src)
+                return [src.get_leaf_repr() or SourceLeaf(src)]
 
-            return
+            return []
 
-        yield from map(SourceLeaf, self.sources)
+        return [item async for item in map(SourceLeaf, self.sources)]
 
     def should_sort_lexically(self) -> bool:
         return True
@@ -69,12 +69,22 @@ class MultiSource(Source):
         """MultiSource should be dynamic so some of its content also can be."""
         return True
 
-    def get_items(self) -> ty.Iterable[Leaf]:
+    async def get_items(self) -> ty.Iterable[Leaf]:
         uniq_srcs = itertools.unique_iterator(
             S.toplevel_source() for S in self.sources
         )
+        res =[]
         for src in uniq_srcs:
-            yield from src.get_leaves() or ()
+            leaves = await src.get_leaves()
+            if not leaves:
+                continue
+
+            if isinstance(leaves[0], list):
+                ic(src, leaves)
+
+            res.extend(leaves)
+
+        return res
 
     def get_description(self) -> str:
         return _("Root catalog")

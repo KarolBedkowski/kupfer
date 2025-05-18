@@ -53,12 +53,12 @@ class NameSource(TextSource):
     def get_rank(self):
         return 100
 
-    def get_items(self, text):
+    async def get_items(self, text):
         if not text:
-            return
+            return []
 
         t_root, t_ext = os.path.splitext(text)
-        yield TextLeaf(text) if t_ext else TextLeaf(t_root + self.extension)
+        return [TextLeaf(text) if t_ext else TextLeaf(t_root + self.extension)]
 
     def get_gicon(self):
         return self.sourcefile and self.sourcefile.get_gicon()

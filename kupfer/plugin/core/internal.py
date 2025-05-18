@@ -34,10 +34,12 @@ class KupferInterals(Source):
     def is_dynamic(self):
         return True
 
-    def get_items(self):
+    async def get_items(self):
         ctx = commandexec.default_action_execution_context()
         if ctx.last_command is not None:
-            yield LastCommand(ctx.last_command)
+            return [LastCommand(ctx.last_command)]
+
+        return []
 
     def provides(self):
         yield LastCommand
@@ -85,15 +87,16 @@ class CommandResults(Source):
     def is_dynamic(self):
         return True
 
-    def get_items(self):
+    async def get_items(self):
         ctx = commandexec.default_action_execution_context()
-        yield from reversed(ctx.last_results)
+        res = list(reversed(ctx.last_results))
         try:
             leaf = ctx.last_results[-1]
         except IndexError:
-            return
+            return res
 
-        yield _make_first_result_object(leaf)
+        res.append(_make_first_result_object(leaf))
+        return res
 
     def provides(self):
         yield Leaf

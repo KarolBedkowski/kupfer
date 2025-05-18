@@ -31,7 +31,7 @@ class Select(Action):
         yield Leaf
 
 
-def _exec_no_show_result(composedleaf):
+async def _exec_no_show_result(composedleaf):
     pretty.print_debug(__name__, "Evaluating command", composedleaf)
     _obj, action, _iobj = composedleaf.object
     ret: commandexec.ActionResult = commandexec.activate_action(  # type: ignore
@@ -43,7 +43,7 @@ def _exec_no_show_result(composedleaf):
 
     if result_type == commandexec.ExecResult.SOURCE:
         assert isinstance(ret, Source)
-        leaves = list(ret.get_leaves())
+        leaves = list(await ret.get_leaves())
         if not leaves:
             return None
 

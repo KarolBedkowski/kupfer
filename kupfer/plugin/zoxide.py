@@ -184,14 +184,14 @@ class ZoxideDirSource(Source, FilesystemWatchMixin):
     def monitor_include_file(self, gfile):
         return gfile and gfile.get_basename() == "zo.db"
 
-    def get_items(self):
+    async def get_items(self):
+        return [FileLeaf(dirname)
         for dirname in _get_dirs(
             __kupfer_settings__["exclude"],
             __kupfer_settings__["min_score"],
             __kupfer_settings__["existing"],
             __kupfer_settings__["max_items"],
-        ):
-            yield FileLeaf(dirname)
+        )]
 
     def _on_setting_changed(self, settings, key, value):
         if key in ("exclude", "min_score"):

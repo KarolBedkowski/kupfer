@@ -28,11 +28,11 @@ class Glob(Action):
         ## Do case-insensitive matching
         ## As a special case, understand '**/' prefix as recursive
 
-        def get_subcatalog_matches(subcatalog, pat, recursive, paths):
+        async def get_subcatalog_matches(subcatalog, pat, recursive, paths):
             if len(paths) > 1000:  # noqa:PLR2004
                 raise OperationError("Globbing way too many objects")
 
-            for content in subcatalog.content_source().get_leaves():
+            async for content in subcatalog.content_source().get_leaves():
                 if recursive and content.has_content():
                     get_subcatalog_matches(content, pat, recursive, paths)
                 elif re.match(pat, str(content), flags=re.IGNORECASE):

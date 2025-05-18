@@ -71,7 +71,7 @@ class TagsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
     def mark_for_update(self, postpone=False):
         super().mark_for_update(postpone=True)
 
-    def get_items(self):
+    async def get_items(self):
         """Get tags from firefox places database"""
         fpath = get_firefox_home_file(
             "places.sqlite", __kupfer_settings__["profile"]
@@ -117,7 +117,7 @@ class TagBookmarksSource(Source):
         self.tag = tag
         self.tag_id = tag_id
 
-    def get_items(self):
+    async def get_items(self):
         """Query the firefox places database for bookmarks with tag"""
         fpath = get_firefox_home_file(
             "places.sqlite", __kupfer_settings__["profile"]

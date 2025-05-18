@@ -97,9 +97,8 @@ class TmuxSessionsSource(Source):
     def is_dynamic(self):
         return True
 
-    def get_items(self):
-        for session in tmux_sessions():
-            yield TmuxSession(*session)
+    async def get_items(self):
+        return [TmuxSession(*session) for session in tmux_sessions()]
 
     def get_description(self):
         return _("Active tmux sessions")
@@ -163,13 +162,12 @@ class TmuxpWorkspacesSource(Source, FilesystemWatchMixin):
     def finalize(self):
         self.stop_monitor_fs_changes(self._monitor_token)
 
-    def get_items(self):
+    async def get_items(self):
         with os.popen("tmuxp ls") as pipe:
             output = pipe.read()
 
-        for line in output.splitlines():
-            if line := line.strip():
-                yield TmuxpSession(line)
+        return [TmuxpSession(lline) for line in output.splitlines()
+                if (lline := line.strip())]
 
     def get_description(self):
         return _("Configured tmuxp workspaces")

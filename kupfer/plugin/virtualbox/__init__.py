@@ -176,13 +176,13 @@ class VBoxMachinesSource(ApplicationSource):
     def is_dynamic(self):
         return vbox_support.IS_DYNAMIC
 
-    def get_items(self):
+    async def get_items(self):
+        return [VirtualMachine(machine_id, machine_name, machine_desc)
         for (
             machine_id,
             machine_name,
             machine_desc,
-        ) in vbox_support.get_machines():
-            yield VirtualMachine(machine_id, machine_name, machine_desc)
+        ) in vbox_support.get_machines()]
 
     def get_description(self):
         return None

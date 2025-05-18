@@ -124,12 +124,12 @@ class PeriodicRescanner(pretty.OutputMixin):
         thread.daemon = True
         thread.start()
 
-    def _rescan_source(
+    async def _rescan_source(
         self, source: Source, force_update: bool = True, campaign: bool = False
     ) -> None:
         start = time.monotonic()
         try:
-            leaves = source.get_leaves(force_update=force_update) or ()
+            leaves = await source.get_leaves(force_update=force_update) or ()
             cnt = sum(1 for leaf in leaves)
             duration = time.monotonic() - start
             self.output_info(

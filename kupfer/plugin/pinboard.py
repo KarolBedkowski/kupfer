@@ -29,7 +29,7 @@ class PinboardBookmarkSource(Source):
     def __init__(self):
         super().__init__(_("Pinboard Bookmarks"))
 
-    def get_items(self):
+    async def get_items(self):
         token = __kupfer_settings__["token"]
         if token == "":
             return []

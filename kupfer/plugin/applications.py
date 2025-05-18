@@ -128,12 +128,13 @@ class AppSource(Source, FilesystemWatchMixin):
     def _on_setting_change(self, *_args):
         self.mark_for_update()
 
-    def get_items(self):
+    async def get_items(self):
         use_filter = __kupfer_settings__["desktop_filter"]
         desktop_type = __kupfer_settings__["desktop_type"]
         load_extra_aliases = __kupfer_settings__["load_extra_aliases"]
 
         # Add this to the default
+        res = []
         for item in Gio.app_info_get_all():
             id_ = item.get_id()
             if id_ in WHITELIST_IDS or (
@@ -146,11 +147,13 @@ class AppSource(Source, FilesystemWatchMixin):
                     for action in item.list_actions()
                 ]
 
-                yield AppLeaf(
+                res.append(AppLeaf(
                     item,
                     app_actions=app_actions,
                     load_extra_aliases=load_extra_aliases,
-                )
+                ))
+
+        return res
 
     def should_sort_lexically(self):
         return True
@@ -323,20 +326,17 @@ class AppsAll(Source):
     def _on_setting_change(self, *_args):
         self.mark_for_update()
 
-    def get_items(self):
+    async def get_items(self):
         use_filter = __kupfer_settings__["desktop_filter"]
         desktop_type = __kupfer_settings__["desktop_type"]
 
         # Get all apps; this includes those only configured for
         # opening files with.
-        for item in Gio.AppInfo.get_all():
-            if _should_show(item, desktop_type, use_filter):
-                continue
+        return [AppLeaf(item)
+        for item in Gio.AppInfo.get_all()
+            if _should_show(item, desktop_type, use_filter)
+                and (item.supports_uris() or item.supports_files())]
 
-            if not item.supports_uris() and not item.supports_files():
-                continue
-
-            yield AppLeaf(item)
 
     def should_sort_lexically(self):
         return False
@@ -358,12 +358,10 @@ class AppsForMime(Source):
         super().__init__(_("Applications supporting %s") % mimetype)
         self._mimetype = mimetype
 
-    def get_items(self) -> ty.Iterator[AppLeaf]:
-        for item in Gio.app_info_get_all_for_type(self._mimetype):
-            if not item.supports_uris() and not item.supports_files():
-                continue
-
-            yield AppLeaf(item)
+    async def get_items(self) -> ty.Iterator[AppLeaf]:
+        return [AppLeaf(item)
+        for item in Gio.app_info_get_all_for_type(self._mimetype)
+            if item.supports_uris() or item.supports_files()]
 
     def should_sort_lexically(self):
         return False
@@ -447,10 +445,11 @@ class _AppActionsSource(Source):
         super().__init__("application actions")
         self.appleaf = appleaf
 
-    def get_items(self):
+    async def get_items(self):
         if self.appleaf.app_actions:
-            for action, name in self.appleaf.app_actions:
-                yield _AppAction(action, name)
+            return [_AppAction(action, name) for action, name in self.appleaf.app_actions]
+
+        return []
 
     def provides(self):
         yield _AppAction

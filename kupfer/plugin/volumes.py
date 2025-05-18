@@ -249,11 +249,11 @@ class VolumesSource(Source):
     def finalize(self):
         del self.volmon
 
-    def get_items(self):
+    async def get_items(self):
         assert self.volmon
         # get_mounts gets all mounted removable media
         volumes = self.volmon.get_mounts()
-        yield from map(Volume, volumes)
+        res = list(map(Volume, volumes))
 
         # add unmounted removable devices
         for dev in self.volmon.get_connected_drives():
@@ -262,7 +262,9 @@ class VolumesSource(Source):
 
             for vol in dev.get_volumes():
                 if vol.can_mount():
-                    yield VolumeNotMounted(vol, dev)
+                    res.append(VolumeNotMounted(vol, dev))
+
+        return res
 
     def get_description(self):
         return _("Mounted volumes and disks")

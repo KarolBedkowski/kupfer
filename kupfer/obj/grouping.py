@@ -107,14 +107,14 @@ class GroupingSource(Source):
         Source.__init__(self, name)
         self.sources = sources
 
-    def _get_groups(
+    async def _get_groups(
         self, force_update: bool
     ) -> tuple[_Groups, _NonGroupLeaves]:
         groups: _Groups = defaultdict(set)
         non_group_leaves: list[Leaf] = []
 
         for src in self.sources:
-            leaves = Source.get_leaves(src, force_update)
+            leaves = await Source.get_leaves(src, force_update)
             for leaf in leaves or ():
                 try:
                     slots = leaf.slots()  # type: ignore
@@ -159,10 +159,10 @@ class GroupingSource(Source):
 
         return redundant_keys
 
-    def get_leaves(self, force_update: bool = False) -> ty.Iterable[Leaf]:
+    async def get_leaves(self, force_update: bool = False) -> ty.Iterable[Leaf]:
         starttime = time.time()
         # map (slot, value) -> group
-        groups, non_group_leaves = self._get_groups(force_update)
+        groups, non_group_leaves = await self._get_groups(force_update)
 
         # Keep track of keys that are only duplicate references
         redundant_keys = self._merge_groups(groups)
@@ -179,7 +179,7 @@ class GroupingSource(Source):
         if (mergetime := time.time() - starttime) > 0.05:  # noqa: PLR2004
             self.output_debug(f"Warning(?): merged in {mergetime} seconds")
 
-        return itertools.chain(non_group_leaves, leaves)
+        return list(itertools.chain(non_group_leaves, leaves))
 
     def repr_key(self) -> ty.Any:
         # Distinguish when used as GroupingSource
@@ -241,8 +241,8 @@ class _GroupedItemsSource(Source):
         Source.__init__(self, str(leaf))
         self._leaf = leaf
 
-    def get_items(self) -> ty.Iterator[Leaf]:
-        yield from self._leaf.links
+    async def get_items(self) -> ty.Iterator[Leaf]:
+        return self._leaf.links
 
     def repr_key(self) -> ty.Any:
         return repr(self._leaf)

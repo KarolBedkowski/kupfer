@@ -58,7 +58,7 @@ class BookmarksSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
         for book in bookmarks:
             yield UrlLeaf(book["url"], book["name"])
 
-    def get_items(self) -> ty.Iterable[UrlLeaf]:
+    async def get_items(self) -> ty.Iterable[UrlLeaf]:
         if fpath := _get_chrome_conf_filepath():
             try:
                 return self._get_chromium_items(fpath)

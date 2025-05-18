@@ -45,7 +45,7 @@ class Players(Source):
         if name.startswith(_MPRIS_PREFIX):
             self.mark_for_update()
 
-    def get_items(self):
+    async def get_items(self):
         bus_names = []
         for bus_name in dbus.SessionBus().list_names():
             if bus_name.startswith(_MPRIS_PREFIX):
@@ -57,7 +57,9 @@ class Players(Source):
                 bus_names.append(bus_name)
 
         if bus_names:
-            yield PauseAll(bus_names)
+            return [PauseAll(bus_names)]
+
+        return []
 
     def provides(self):
         yield RunnableLeaf

@@ -310,10 +310,11 @@ class ClipboardSource(Source):
         while len(self.clipboards) > max_len:
             self.clipboards.popleft()
 
-    def get_items(self):
+    async def get_items(self):
+        res = []
         # selected text
         if leaf := _new_selected_leaf(self.selected_text):
-            yield leaf
+            res.append(leaf)
 
         # produce the current clipboard files if any
         paths: list[str] = list(
@@ -327,16 +328,17 @@ class ClipboardSource(Source):
         )
 
         if len(paths) == 1:
-            yield CurrentClipboardFile(paths[0])
+            res.append(CurrentClipboardFile(paths[0]))
         elif len(paths) > 1:
-            yield CurrentClipboardFiles(paths)
+            res.append(CurrentClipboardFiles(paths))
 
         # put out the current clipboard text
         if leaf := _new_current_leaf(self.clipboard_text):
-            yield leaf
+            res.append(leaf)
 
         # put out the clipboard history
-        yield from map(_new_clipboard_leaf, reversed(self.clipboards))
+        res.extend(map(_new_clipboard_leaf, reversed(self.clipboards)))
+        return res
 
     def get_description(self):
         return __description__

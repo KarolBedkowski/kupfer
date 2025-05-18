@@ -36,16 +36,19 @@ class KupferActions(Source):
         setctl = settings.get_settings_controller()
         setctl.connect("plugin-enabled-changed", self._on_plugin_enabled)
 
-    def get_items(self):
+    async def get_items(self):
         # we can skip action_generators
         sctl = sources.get_source_controller()
+        res =[]
         for actions in sctl.action_decorators.values():
             for action in actions:
                 # skip actions that require extra object
                 if action.requires_object():
                     continue
 
-                yield ActionLeaf(action)
+                res.append(ActionLeaf(action))
+
+        return res
 
     def get_gicon(self):
         return icons.ComposedIcon("kupfer", "kupfer-execute")

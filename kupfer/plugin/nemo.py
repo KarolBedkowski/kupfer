@@ -207,8 +207,8 @@ class FmObjects(AppLeafContentMixin, Source):
     def __init__(self):
         Source.__init__(self, _("Nemo"))
 
-    def get_items(self):
-        yield EmptyTrash()
+    async def get_items(self):
+        return [EmptyTrash()]
 
     def provides(self):
         yield RunnableLeaf

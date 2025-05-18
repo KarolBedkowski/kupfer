@@ -307,9 +307,10 @@ class OpenSearchSource(Source):
 
         return None
 
-    def get_items(self) -> ty.Iterator[SearchEngine]:
+    async def get_items(self) -> ty.Iterator[SearchEngine]:
         # files are unique by filename to allow override
         visited_files = set()
+        res =[]
         for pdir in _get_plugin_dirs():
             if not pdir.is_dir():
                 continue
@@ -325,13 +326,15 @@ class OpenSearchSource(Source):
                     if not entry.is_dir() and (
                         search := self._parse_opensearch(entry.path)
                     ):
-                        yield SearchEngine(search, search["ShortName"])
+                        res.append(SearchEngine(search, search["ShortName"]))
 
         # add user search engines
         if custom_ses := __kupfer_settings__["extra_engines"]:
             for url in custom_ses.replace(";", "\n").split():
                 if name := _get_custom_engine_name(url.strip()):
-                    yield SearchEngine({"Url": url, "Description": url}, name)
+                    res.append(SearchEngine({"Url": url, "Description": url}, name))
+
+        return res
 
     def should_sort_lexically(self):
         return True

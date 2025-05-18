@@ -42,8 +42,8 @@ class LangSource(Source):
         super().__init__("Languages")
         self.languages = languages
 
-    def get_items(self):
-        return map(Lang, self.languages)
+    async def get_items(self):
+        return list(map(Lang, self.languages))
 
 
 class WikipediaSearch(Action):

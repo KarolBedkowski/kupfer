@@ -136,7 +136,7 @@ class FavoritesSource(Source):
 
         self.mark_for_update()
 
-    def get_items(self):
+    async def get_items(self):
         self._update_items()
         learn.replace_favorites(__name__, *self.favorites)
 

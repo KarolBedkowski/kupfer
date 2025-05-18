@@ -61,7 +61,7 @@ class BookmarksSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
 
         return get_bookmarks(fpath)
 
-    def get_items(self):
+    async def get_items(self):
         return self._get_ffx3_bookmarks()
 
     def get_description(self):

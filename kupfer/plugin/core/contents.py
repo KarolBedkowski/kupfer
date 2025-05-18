@@ -127,12 +127,12 @@ class KupferSource(AppLeafContentMixin, Source):
     def is_dynamic(self):
         return True
 
-    def get_items(self):
-        yield Preferences()
-        yield Help()
-        yield About()
-        yield Quit()
-        yield DebugRestart()
+    async def get_items(self):
+        return [Preferences(),
+        Help(),
+        About(),
+        Quit(),
+        DebugRestart()]
 
     def get_description(self):
         return None

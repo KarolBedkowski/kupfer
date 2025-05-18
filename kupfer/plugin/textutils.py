@@ -63,8 +63,8 @@ class _ConvertersSource(Source):
         self.items_gen = items_gen
         self.for_item = for_item
 
-    def get_items(self):
-        yield from self.items_gen(self.for_item)
+    async def get_items(self):
+        return self.items_gen(self.for_item)
 
 
 class _ConvertAction(Action):
@@ -375,38 +375,40 @@ class Generators(Source):
     def is_dynamic(self):
         return True
 
-    def get_items(self):
+    async def get_items(self):
+        res =[]
         for size in (16, 32, 64):
-            yield _GeneratorLeaf(
+            res.append(_GeneratorLeaf(
                 _("Random %(size)d-bytes hex token") % {"size": size},
                 partial(secrets.token_hex, size),
-            )
+            ))
 
         for size in (16, 32, 64):
-            yield _GeneratorLeaf(
+            res.append(_GeneratorLeaf(
                 _("Random %(size)d-bytes alpha-numeric token")
                 % {"size": size},
                 partial(_generate_alfanum_token, size),
-            )
+            ))
 
-        yield _GeneratorLeaf(
+        res.extend((_GeneratorLeaf(
             _("UUID based on host and time"),
             lambda: str(uuid.uuid1()),
-        )
-        yield _GeneratorLeaf(_("Random UUID"), lambda: str(uuid.uuid4()))
+        ),
+        _GeneratorLeaf(_("Random UUID"), lambda: str(uuid.uuid4())),
 
-        yield _GeneratorLeaf(
+        _GeneratorLeaf(
             _("Current time in ISO8601 format"),
             datetime.datetime.now().isoformat,
-        )
-        yield _GeneratorLeaf(
+        ),
+        _GeneratorLeaf(
             _("Current time as Unix timestamp"),
             lambda: str(int(datetime.datetime.now().timestamp())),
-        )
-        yield _GeneratorLeaf(
+        ),
+        _GeneratorLeaf(
             _("Current time as timestamp"),
             lambda: str(int(datetime.datetime.now().timestamp() * 1000)),
-        )
+        )))
+        return res
 
     def provides(self):
         yield RunnableLeaf

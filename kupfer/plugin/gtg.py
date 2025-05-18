@@ -298,7 +298,7 @@ class TasksSource(AppLeafContentMixin, Source):
     def _on_tasks_updated(self, task_id):
         self.mark_for_update()
 
-    def get_items(self):
+    async def get_items(self):
         if (interface := _create_dbus_connection()) is not None:
             self._tasks = list(_load_tasks(interface))
             self._tasks.sort(key=Task.sort_key)

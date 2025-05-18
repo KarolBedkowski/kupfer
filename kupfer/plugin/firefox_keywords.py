@@ -110,7 +110,7 @@ class KeywordsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
     def mark_for_update(self, postpone=False):
         super().mark_for_update(postpone=True)
 
-    def get_items(self):
+    async def get_items(self):
         """Query the firefox places bookmark database"""
         fpath = get_firefox_home_file(
             "places.sqlite", __kupfer_settings__["profile"]
@@ -219,27 +219,28 @@ class KeywordSearchSource(TextSource):
     def __init__(self):
         super().__init__(_("Firefox Keywords (?-source)"))
 
-    def get_text_items(self, text):
+    async def get_text_items(self, text):
         if not text.startswith("?"):
-            return
+            return []
 
         parts = text[1:].split(maxsplit=1)
         if len(parts) < 1:
-            return
+            return []
 
         query = parts[1] if len(parts) > 1 else ""
         assert KeywordsSource.instance
-        for keyword in KeywordsSource.instance.get_leaves():
+        async  for keyword in KeywordsSource.instance.get_leaves():
             assert isinstance(keyword, Keyword)
             if keyword.is_search and keyword.keyword == parts[0]:
-                yield SearchWithKeyword(keyword, query)
-                return
+                return [SearchWithKeyword(keyword, query)]
 
         if default := __kupfer_settings__["default"].strip():
             if "%s" not in default:
                 default += "%s"
 
-            yield SearchWithKeyword(Keyword("", "", default), text[1:])
+            return [SearchWithKeyword(Keyword("", "", default), text[1:])]
+
+        return []
 
     def get_description(self):
         return None

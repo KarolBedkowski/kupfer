@@ -120,9 +120,8 @@ class ServicesSource(Source):
     def __init__(self):
         super().__init__(_("Services"))
 
-    def get_items(self):
-        yield IsGd()
-        yield VGd()
+    async def get_items(self):
+        return [IsGd(), VGd()]
 
     def should_sort_lexically(self):
         return True

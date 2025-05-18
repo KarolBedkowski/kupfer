@@ -122,7 +122,7 @@ class ChatTextSource(TextSource):
     def get_rank(self):
         return 100
 
-    def get_text_items(self, text):
+    async def get_text_items(self, text):
         textlen = len(text)
         summary = text[:10] + (text[10:11] and "..")
         desc_template = ngettext(
@@ -130,8 +130,8 @@ class ChatTextSource(TextSource):
         )
         yield TextLeaf(text, desc_template % (summary, textlen))
 
-    def get_items(self, text):
-        return self.get_text_items(text)
+    async def get_items(self, text):
+        return await self.get_text_items(text)
 
 
 class SendMessage(ContactAction):
@@ -382,7 +382,7 @@ class ContactsSource(AppLeafContentMixin, ToplevelGroupingSource):
             dbus_interface=_IFACE_NAME,
         )
 
-    def get_items(self):
+    async def get_items(self):
         if not self.all_buddies:
             self._get_all_buddies()
 

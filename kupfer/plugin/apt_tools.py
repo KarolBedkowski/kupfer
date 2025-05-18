@@ -183,12 +183,13 @@ class PackageSearchSource(Source):
     def repr_key(self):
         return self.query
 
-    def get_items(self):
+    async def get_items(self):
         proc = subprocess.run(
             ["apt-cache", "search", "--names-only", self.query],
             capture_output=True,
             check=True,
         )
+        res =[]
         for line in kupferstring.fromlocale(proc.stdout).splitlines():
             line = line.strip()  # noqa: PLW2901
             if not line:
@@ -199,7 +200,9 @@ class PackageSearchSource(Source):
                 self.output_error("apt-cache: ", line)
                 continue
 
-            yield Package(package, desc)
+            res.append(Package(package, desc))
+
+        return res
 
     def should_sort_lexically(self):
         return True

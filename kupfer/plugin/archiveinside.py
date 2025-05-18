@@ -69,7 +69,7 @@ class ArchiveContent(Source):
     def repr_key(self):
         return self.path
 
-    def get_items(self) -> ty.Iterable[Leaf]:
+    async def get_items(self) -> ty.Iterable[Leaf]:
         # always use the same destination for the same file and mtime
         basename = os.path.basename(os.path.normpath(self.path))
         root, _ext = os.path.splitext(basename)
@@ -84,10 +84,10 @@ class ArchiveContent(Source):
                 VERY_LONG_TIME_S, self.clean_up_unarchived_files
             )
 
-        files = list(DirectorySource(pth, show_hidden=True).get_leaves())
+        files = list(await DirectorySource(pth, show_hidden=True).get_leaves())
         if len(files) == 1 and files[0].has_content():
             csrc = files[0].content_source()
-            return (csrc.get_leaves() or []) if csrc else []
+            return (await csrc.get_leaves() or []) if csrc else []
 
         return files
 

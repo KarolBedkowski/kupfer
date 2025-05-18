@@ -35,9 +35,11 @@ class BasicTextSource(TextSource):
     def __init__(self):
         TextSource.__init__(self, name=_("Text"))
 
-    def get_text_items(self, text):
+    async def get_text_items(self, text):
         if text:
-            yield TextLeaf(text)
+            return [TextLeaf(text)]
+
+        return []
 
     def provides(self):
         yield TextLeaf
@@ -59,14 +61,14 @@ class PathTextSource(TextSource, pretty.OutputMixin):
             ("file:///", "file://localhost/", f"file://{hostname}/")
         )
 
-    def get_text_items(self, text: str) -> ty.Iterator[Leaf]:
+    async def get_text_items(self, text: str) -> ty.Iterator[Leaf]:
         # Find directories or files
         if self._is_local_file_url(text):
             leaf = FileLeaf.from_uri(text)
             if leaf and leaf.is_valid():
-                yield leaf
+                return [leaf]
 
-            return
+            return []
 
         urlpath = Path(text)
         if not urlpath.is_absolute():
@@ -75,7 +77,9 @@ class PathTextSource(TextSource, pretty.OutputMixin):
         with suppress(OSError):
             filepath = urlpath.resolve(strict=True)
             if os.access(filepath, os.R_OK):
-                yield FileLeaf(filepath)
+                return [FileLeaf(filepath)]
+
+        return []
 
     def provides(self):
         yield FileLeaf
@@ -121,26 +125,26 @@ class URLTextSource(TextSource):
     def get_rank(self):
         return 75
 
-    def get_text_items(self, text: str) -> ty.Iterator[Leaf]:
+    async def get_text_items(self, text: str) -> ty.Iterator[Leaf]:
         # Only detect "perfect" URLs
         text = text.strip()
         if not text:
-            return
+            return []
 
         components = urllib.parse.urlparse(text)
 
         # scheme and netloc are required
         if not components.scheme or not components.netloc:
-            return
+            return []
 
         # check for any whitespaces; quick and dirty
         if len(text.split(None, 1)) != 1:
-            return
+            return []
 
         name = f"{components.netloc}{components.path}".strip("/")
         # Try to turn an URL-escaped string into a Unicode string
         name = urllib.parse.unquote(name) or text
-        yield UrlLeaf(text, name=name)
+        return [UrlLeaf(text, name=name)]
 
     def provides(self):
         yield UrlLeaf

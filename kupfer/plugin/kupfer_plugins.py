@@ -108,14 +108,17 @@ class KupferPlugins(Source):
     def __init__(self):
         Source.__init__(self, _("Kupfer Plugins"))
 
-    def get_items(self):
+    async def get_items(self):
         setctl = settings.get_settings_controller()
+        res =[]
         for info in plugins.get_plugin_info():
             plugin_id = info["name"]
             if setctl.get_plugin_is_hidden(plugin_id):
                 continue
 
-            yield Plugin(info, info["localized_name"])
+            res.append(Plugin(info, info["localized_name"]))
+
+        return res
 
     def should_sort_lexically(self):
         return True
@@ -142,8 +145,8 @@ class KupferPlugins(Source):
         self_plug_id = __name__.rsplit(".", maxsplit=1)[-1]
         return obj.object["name"] == self_plug_id
 
-    def get_leaf_repr(self):
-        for obj in self.get_leaves() or []:
+    async def get_leaf_repr(self):
+        for obj in await self.get_leaves() or []:
             if self.is_self_plugin(obj):
                 return obj
 

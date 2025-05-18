@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import operator
 import typing as ty
 
@@ -55,6 +56,56 @@ class Searcher:
         self._source_cache.clear()
         self._old_key = None
 
+    async def _search(self, src, key, score, item_check, keyl):
+        fixedrank = 0
+        can_cache = True
+        src_hash = hash(src)
+        # Look in source cache for stored rankables
+        rankables = self._source_cache.get(src_hash)
+        if not rankables:
+            if hasattr(src, "get_text_items"):
+                # TextSources
+                try:
+                    items = await src.get_text_items(key)
+                except Exception as err:
+                    ic(src, err)
+                    raise
+                fixedrank = src.get_rank()  # type: ignore
+                can_cache = False
+            else:
+                # Source
+                try:
+                    items = await src.get_leaves()
+                except Exception as err:
+                    ic(src, err, src.__dict__)
+                    raise
+
+            rankables = search.make_rankables(item_check(items))
+
+        if not rankables:
+            return None
+
+        if score:
+            if fixedrank:
+                rankables = search.add_rank_objects(rankables, fixedrank)
+            elif keyl:
+                rankables = search.bonus_objects(
+                    search.score_objects(rankables, keyl),
+                    keyl,
+                    src.rank_adjust,
+                )
+
+            if can_cache:
+                rankables = tuple(rankables)
+                self._source_cache[src_hash] = rankables
+
+        return rankables
+
+    async def _search_sources(self, sources_, key, score, item_check, keyl):
+        tasks = [self._search(src, key, score, item_check, keyl) for src in sources_]
+        return await asyncio.gather(*tasks)
+
+
     # pylint: disable=too-many-locals,too-many-branches
     def search(
         self,
@@ -90,44 +141,12 @@ class Searcher:
         decorator = decorator or _identity
         start_time = pretty.timing_start()
         match_lists: list[Rankable] = []
-        for src in sources_:
-            fixedrank = 0
-            can_cache = True
-            src_hash = hash(src)
-            # Look in source cache for stored rankables
-            rankables = self._source_cache.get(src_hash)
-            if not rankables:
-                if hasattr(src, "get_text_items"):
-                    # TextSources
-                    items = src.get_text_items(key)
-                    fixedrank = src.get_rank()  # type: ignore
-                    can_cache = False
-                else:
-                    # Source
-                    items = src.get_leaves()
+        res = asyncio.run(self._search_sources(sources_, key, score, item_check, keyl))
+        for rankables in res:
+            if rankables:
+                match_lists.extend(rankables)
 
-                rankables = search.make_rankables(item_check(items))
-
-            if not rankables:
-                continue
-
-            if score:
-                if fixedrank:
-                    rankables = search.add_rank_objects(rankables, fixedrank)
-                elif keyl:
-                    rankables = search.bonus_objects(
-                        search.score_objects(rankables, keyl),
-                        keyl,
-                        src.rank_adjust,
-                    )
-
-                if can_cache:
-                    rankables = tuple(rankables)
-                    self._source_cache[src_hash] = rankables
-
-            match_lists.extend(rankables)
-
-        matches = search.find_best_sort(match_lists) if score else match_lists
+        matches = tuple(search.find_best_sort(match_lists) if score else match_lists)
 
         # Check if the items are valid as the search
         # results are accessed through the iterators

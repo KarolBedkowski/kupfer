@@ -236,7 +236,7 @@ class SSHSource(ToplevelGroupingSource, FilesystemWatchMixin):
             for host, user in current_hosts:
                 yield SSHLeaf(host, current_hostname, user)
 
-    def get_items(self):
+    async def get_items(self):
         try:
             return list(self._get_items())
         except OSError as exc:

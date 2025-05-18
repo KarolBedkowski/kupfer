@@ -225,18 +225,18 @@ class CommandTextSource(TextSource):
     def get_rank(self):
         return 80
 
-    def get_text_items(self, text):
+    async def get_text_items(self, text):
         if not text.strip():
-            return
+            return []
 
         if "\n" in text:
-            return
+            return []
 
         ## check for absolute path with arguments
         firstword, *rest = text.split(None, 1)
         ## files are handled elsewhere
         if firstword.startswith("/") and not rest:
-            return
+            return []
 
         ## absolute paths come out here since
         ## os.path.join with two abspaths returns the latter
@@ -248,8 +248,9 @@ class CommandTextSource(TextSource):
             if os.access(exepath, os.R_OK | os.X_OK) and os.path.isfile(
                 exepath
             ):
-                yield Command(exepath, text)
-                break
+                return [Command(exepath, text)]
+
+        return []
 
     def get_description(self):
         return _("Run command-line programs")

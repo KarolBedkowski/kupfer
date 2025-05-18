@@ -57,10 +57,10 @@ class DeepDirSource(FileSource):
             "plugin-setting-changed", self._on_setting_changed
         )
 
-    def get_items(self):
+    async def get_items(self):
         self.dirlist = list(self._get_dirs())
         self.depth = min(__kupfer_settings__["depth"], _MAX_DEPTH)
-        yield from FileSource.get_items(self)
+        return await FileSource.get_items(self)
 
     @staticmethod
     def _get_dirs():

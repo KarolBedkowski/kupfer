@@ -162,17 +162,17 @@ class TemplatesSource(Source, FilesystemWatchMixin):
     def initialize(self):
         self.monitor_token = self.monitor_directories(_get_tmpl_dir())
 
-    def get_items(self):
+    async def get_items(self):
         tmpl_dir = _get_tmpl_dir()
-        yield EmptyFile()
-        yield NewFolder()
+        res = [EmptyFile(), NewFolder()]
         try:
             with os.scandir(tmpl_dir) as entries:
-                for entry in entries:
-                    yield Template(entry.path)
+                res.extend(Template(entry.path) for entry in entries)
 
         except OSError as exc:
             self.output_error(exc)
+
+        return res
 
     def should_sort_lexically(self):
         return True

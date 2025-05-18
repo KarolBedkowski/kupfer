@@ -203,12 +203,13 @@ class LibvirtDomainsSource(AppLeafContentMixin, Source):
         )
         self.mark_for_update()
 
-    def get_items(self):
+    async def get_items(self):
         assert self.cmgr
         conn = self.cmgr.get_conn()
         if not conn:
-            return
+            return []
 
+        res = []
         for dom in conn.listAllDomains():
             name = dom.name()
             title = _get_domain_metadata(
@@ -217,7 +218,9 @@ class LibvirtDomainsSource(AppLeafContentMixin, Source):
             descr = _get_domain_metadata(
                 dom, libvirt.VIR_DOMAIN_METADATA_DESCRIPTION
             )
-            yield Domain(name, title or name, descr)
+            res.append(Domain(name, title or name, descr))
+
+        return res
 
     def get_description(self):
         return None

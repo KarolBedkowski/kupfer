@@ -82,17 +82,18 @@ class DirectorySource(Source, FilesystemWatchMixin):
     def monitor_include_file(self, gfile: Gio.File) -> bool:
         return self._show_hidden or not gfile.get_basename().startswith(".")
 
-    def get_items(self) -> ty.Iterator[Leaf]:
+    async def get_items(self) -> ty.Iterator[Leaf]:
         dirfiles: ty.Iterable[os.DirEntry[str]]
+        res = []
         try:
             with os.scandir(self._directory) as dirfiles:
                 if self._show_hidden:
-                    yield from (
+                    res.extend(
                         construct_file_leaf(entry.path) for entry in dirfiles
                     )
 
                 else:
-                    yield from (
+                    res.extend (
                         construct_file_leaf(entry.path)
                         for entry in dirfiles
                         if entry.name[0] != "."
@@ -100,6 +101,8 @@ class DirectorySource(Source, FilesystemWatchMixin):
 
         except OSError as exc:
             self.output_error(exc)
+
+        return res
 
     def should_sort_lexically(self) -> bool:
         return True
@@ -159,12 +162,15 @@ class FileSource(Source):
         dirs = ", ".join(f'"{d}"' for d in sorted(self.dirlist))
         return f"{mod}.{cname}(({dirs}, ), depth={self.depth})"
 
-    def get_items(self) -> ty.Iterable[Leaf]:
+    async def get_items(self) -> ty.Iterable[Leaf]:
+        res = []
         for directory in self.dirlist:
             dirfiles = fileutils.get_dirlist(
                 directory, max_depth=self.depth, exclude=self._exclude_file
             )
-            yield from map(construct_file_leaf, dirfiles)
+            res.extend(map(construct_file_leaf, dirfiles))
+
+        return res
 
     def should_sort_lexically(self) -> bool:
         return True

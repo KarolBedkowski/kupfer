@@ -128,7 +128,7 @@ class _MultipleLeafContentSource(Source):
         Source.__init__(self, str(leaf))
         self.leaf = leaf
 
-    def get_items(self) -> ty.Any:
+    async def get_items(self) -> ty.Any:
         return self.leaf.object
 
 

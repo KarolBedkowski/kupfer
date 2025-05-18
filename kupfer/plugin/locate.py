@@ -63,11 +63,10 @@ class LocateQuerySource(Source):
     def repr_key(self):
         return self.query
 
-    def get_items(self):
+    async def get_items(self):
         locate_cmd = shutil.which("locate")
         if not locate_cmd:
-            yield CommandNotAvailableLeaf(__name__, __kupfer_name__, "locate")
-            return
+            return [CommandNotAvailableLeaf(__name__, __kupfer_name__, "locate")]
 
         ignore_case = (
             "--ignore-case" if __kupfer_settings__["ignore_case"] else ""
@@ -91,9 +90,9 @@ class LocateQuerySource(Source):
                 out, ignored_err = proc.communicate()
                 for f in out.split(b"\x00")[offset:-1]:
                     yield construct_file_leaf(kupferstring.fromlocale(f))
-
-        yield from load(first_num, 0)
-        yield from load(self.max_items, first_num)
+        res = list(load(first_num, 0))
+        res.extend(load(self.max_items, first_num))
+        return res
 
     def get_gicon(self):
         return icons.ComposedIcon("gnome-terminal", self.get_icon_name())

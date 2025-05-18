@@ -388,7 +388,7 @@ class AudaciousSongsSource(Source):
     def __init__(self):
         Source.__init__(self, _("Playlist"))
 
-    def get_items(self):
+    async def get_items(self):
         try:
             return list(get_playlist_songs_dbus())
         except Exception:
@@ -426,21 +426,24 @@ class AudaciousSource(AppLeafContentMixin, Source):
         if new:
             self.mark_for_update(postpone=True)
 
-    def get_items(self):
-        yield Play()
-        yield Stop()
-        yield Pause()
-        yield Next()
-        yield Previous()
-        yield ClearQueue()
-        yield ShowPlaying()
+    async def get_items(self):
+        res = [
+        Play(),
+        Stop(),
+        Pause(),
+        Next(),
+        Previous(),
+        ClearQueue(),
+        ShowPlaying()]
         # Commented as these seem to have no effect
         # yield Shuffle()
         # yield Repeat()
         songs_source = AudaciousSongsSource()
-        yield SourceLeaf(songs_source)
+        res.append(SourceLeaf(songs_source))
         if __kupfer_settings__["playlist_toplevel"]:
-            yield from songs_source.get_leaves()
+            res.extend(item async for item in songs_source.get_leaves())
+
+        return res
 
     def get_description(self):
         return __description__

@@ -202,12 +202,12 @@ class TrashContentSource(Source):
     def is_dynamic(self):
         return True
 
-    def get_items(self):
+    async def get_items(self):
         gfile = Gio.File.new_for_uri(self._trash_uri)
+        return [TrashFile(self._trash_uri, info)
         for info in gfile.enumerate_children(
             "standard::*,trash::*", Gio.FileQueryInfoFlags.NONE, None
-        ):
-            yield TrashFile(self._trash_uri, info)
+        )]
 
     def should_sort_lexically(self):
         return True
@@ -301,11 +301,13 @@ class TrashSource(Source):
     def __init__(self):
         Source.__init__(self, _("Trash"))
 
-    def get_items(self):
+    async def get_items(self):
         try:
-            yield Trash(_TRASH_URI)
+            return [Trash(_TRASH_URI)]
         except GLib.Error:
             self.output_exc()
+
+        return []
 
     def get_leaf_repr(self):
         return InvisibleSourceLeaf(self)

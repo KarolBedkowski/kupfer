@@ -101,13 +101,13 @@ class ScreenSessionsSource(Source, FilesystemWatchMixin):
             self.screen_dir, force=True
         )
 
-    def get_items(self):
+    async def get_items(self):
         assert self.screen_dir
         if not Path(self.screen_dir).exists():
-            return
+            return []
 
-        for pid, name, _time, _status in screen_sessions_infos():
-            yield ScreenSession(pid, name)
+        return [ScreenSession(pid, name)
+        for pid, name, _time, _status in screen_sessions_infos()]
 
     def get_description(self):
         return _("Active GNU Screen sessions")

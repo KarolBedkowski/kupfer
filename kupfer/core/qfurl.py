@@ -102,7 +102,7 @@ class Qfurl:
         qfid = qfid.lstrip("/")
         return mother, qfid, typname
 
-    def resolve_in_catalog(
+    async def resolve_in_catalog(
         self, catalog: ty.Collection[Source]
     ) -> Leaf | None:
         """Resolve self in a catalog of sources.
@@ -122,7 +122,7 @@ class Qfurl:
             ):
                 continue
 
-            for obj in src.get_leaves() or []:
+            for obj in await src.get_leaves() or []:
                 if not hasattr(obj, "qf_id"):
                     continue
 

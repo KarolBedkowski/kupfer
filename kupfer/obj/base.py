@@ -390,7 +390,7 @@ class Source(KupferObject, pretty.OutputMixin):
     def repr_key(self) -> ty.Any:
         return None
 
-    def get_items(self) -> ty.Iterable[Leaf]:
+    async def get_items(self) -> ty.Iterable[Leaf]:
         """Internal method to compute and return the needed items.
 
         Subclasses should use this method to return a sequence or
@@ -398,10 +398,10 @@ class Source(KupferObject, pretty.OutputMixin):
         """
         return []
 
-    def get_items_forced(self) -> ty.Iterable[Leaf]:
+    async def get_items_forced(self) -> ty.Iterable[Leaf]:
         """Force compute and return items for source.
         Default - call get_items method."""
-        return self.get_items()
+        return await self.get_items()
 
     def is_dynamic(self) -> bool:
         """Whether to recompute contents each time it is accessed."""
@@ -425,7 +425,7 @@ class Source(KupferObject, pretty.OutputMixin):
         in locale lexical order."""
         return False
 
-    def get_leaves(self, force_update: bool = False) -> ty.Iterable[Leaf]:
+    async def get_leaves(self, force_update: bool = False) -> ty.Iterable[Leaf]:
         """Return a list of leaves.
 
         Subclasses should implement ``get_items()``, so that ``Source`` can
@@ -445,9 +445,13 @@ class Source(KupferObject, pretty.OutputMixin):
         """
 
         if self.is_dynamic():
-            items = (
-                self.get_items_forced() if force_update else self.get_items()
-            )
+            try:
+                items = (
+                    await self.get_items_forced() if force_update else await self.get_items()
+                )
+            except Exception as err:
+                ic(err, self, self.__dict__)
+                raise
 
             if self.should_sort_lexically():
                 items = kupferstring.locale_sort(items)
@@ -456,7 +460,8 @@ class Source(KupferObject, pretty.OutputMixin):
 
         if self.cached_items is None or force_update:
             items = (
-                self.get_items_forced() if force_update else self.get_items()
+                await self.get_items_forced() if force_update
+                else await self.get_items()
             )
             if self.should_sort_lexically():
                 # sorting make list
@@ -476,7 +481,8 @@ class Source(KupferObject, pretty.OutputMixin):
 
             self.last_scan = int(time.time())
 
-        return self.cached_items or ()
+        return self.cached_items or []
+
 
     def has_parent(self) -> bool:
         """Return True when source has other, parent Source."""
@@ -554,12 +560,13 @@ class TextSource(KupferObject):
         """All items are given this rank."""
         return 20
 
-    def get_items(self, text: str) -> ty.Iterable[Leaf]:
+    async def get_items(self, text: str) -> ty.Iterable[Leaf]:
         return ()
 
-    def get_text_items(self, text: str) -> ty.Iterable[Leaf]:
+    async def get_text_items(self, text: str) -> ty.Iterable[Leaf]:
         """Get leaves for string `text`."""
-        return self.get_items(text)
+        async for item in self.get_items(text):
+            yield item
 
     def has_parent(self) -> bool:
         return False

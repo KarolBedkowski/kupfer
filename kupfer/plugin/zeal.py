@@ -66,10 +66,12 @@ class ZealDocsetsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
     def monitor_include_file(self, gfile):
         return gfile and gfile.get_basename().endswith(".docset")
 
-    def get_items(self):
+    async def get_items(self):
         docsets_home = Path(self.docsets_home)
         if not docsets_home.is_dir():
             return
+
+        res =[]
 
         with os.scandir(docsets_home) as docdirs:
             for docdir in docdirs:
@@ -102,7 +104,9 @@ class ZealDocsetsSource(AppLeafContentMixin, Source, FilesystemWatchMixin):
                 if (icon := docset_dir.joinpath("icon@2x.png")).is_file():
                     icon_filename = str(icon)
 
-                yield ZealDocset(name, title, keywords, icon_filename)
+                res.append(ZealDocset(name, title, keywords, icon_filename))
+
+        return res
 
     def get_icon_name(self):
         return "zeal"

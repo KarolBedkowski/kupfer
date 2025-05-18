@@ -348,15 +348,14 @@ class WindowsSource(Source):
     def is_dynamic(self):
         return True
 
-    def get_items(self):
+    async def get_items(self):
         # wnck should be "primed" now to return the true list
         screen = Wnck.Screen.get_default()
         if screen is None:
             self.output_debug("Environment not supported")
-            return
+            return []
 
-        yield FrontmostWindow()
-        yield NextWindow()
+        res = [FrontmostWindow(), NextWindow()]
 
         for win in reversed(screen.get_windows_stacked()):
             if not win.is_skip_tasklist():
@@ -364,7 +363,9 @@ class WindowsSource(Source):
                 if name != app and app not in name:
                     name = f"{name} ({app})"
 
-                yield WindowLeaf(win.get_xid(), name)
+                res.append(WindowLeaf(win.get_xid(), name))
+
+        return res
 
     def get_description(self):
         return _("All windows on all workspaces")
@@ -453,14 +454,13 @@ class WorkspacesSource(Source):
     def _changed(self, screen, workspace):
         self.mark_for_update()
 
-    def get_items(self):
+    async def get_items(self):
         # wnck should be "primed" now to return the true list
         screen = Wnck.Screen.get_default()
         if screen is None:
             return
-
-        for wspc in screen.get_workspaces():
-            yield Workspace(wspc.get_number(), wspc.get_name())
+        return [Workspace(wspc.get_number(), wspc.get_name())
+        for wspc in screen.get_workspaces()]
 
     def get_icon_name(self):
         return "kupfer-window"
