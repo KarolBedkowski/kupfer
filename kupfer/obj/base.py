@@ -447,7 +447,9 @@ class Source(KupferObject, pretty.OutputMixin):
         if self.is_dynamic():
             try:
                 items = (
-                    await self.get_items_forced() if force_update else await self.get_items()
+                    await self.get_items_forced()
+                    if force_update
+                    else await self.get_items()
                 )
             except Exception as err:
                 ic(err, self, self.__dict__)
@@ -460,7 +462,8 @@ class Source(KupferObject, pretty.OutputMixin):
 
         if self.cached_items is None or force_update:
             items = (
-                await self.get_items_forced() if force_update
+                await self.get_items_forced()
+                if force_update
                 else await self.get_items()
             )
             if self.should_sort_lexically():

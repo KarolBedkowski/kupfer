@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import gzip
 import hashlib
 import itertools
@@ -115,7 +116,8 @@ class PeriodicRescanner(pretty.OutputMixin):
             and len(source.cached_items) == 0
         )
 
-        self._rescan_source(source, force_update=force_update, campaign=False)
+        asyncio.run(
+        self._rescan_source(source, force_update=force_update, campaign=False))
 
     def _start_source_rescan(self, source: Source) -> None:
         thread = threading.Thread(

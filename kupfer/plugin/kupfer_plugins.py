@@ -107,6 +107,7 @@ class Plugin(Leaf):
 class KupferPlugins(Source):
     def __init__(self):
         Source.__init__(self, _("Kupfer Plugins"))
+        self._repr = None
 
     async def get_items(self):
         setctl = settings.get_settings_controller()
@@ -116,7 +117,11 @@ class KupferPlugins(Source):
             if setctl.get_plugin_is_hidden(plugin_id):
                 continue
 
-            res.append(Plugin(info, info["localized_name"]))
+            plugin = Plugin(info, info["localized_name"])
+            if self.is_self_plugin(plugin):
+                self._repr = plugin
+
+            res.append()
 
         return res
 
@@ -145,9 +150,5 @@ class KupferPlugins(Source):
         self_plug_id = __name__.rsplit(".", maxsplit=1)[-1]
         return obj.object["name"] == self_plug_id
 
-    async def get_leaf_repr(self):
-        for obj in await self.get_leaves() or []:
-            if self.is_self_plugin(obj):
-                return obj
-
-        return None
+    def get_leaf_repr(self):
+        return self._repr

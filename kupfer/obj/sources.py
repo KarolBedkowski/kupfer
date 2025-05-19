@@ -39,12 +39,10 @@ class SourcesSource(Source):
     async def get_items(self) -> ty.Iterable[Leaf]:
         """Ask each Source for a Leaf substitute, else yield a SourceLeaf"""
         if self.use_reprs:
-            for src in self.sources:
-                return [src.get_leaf_repr() or SourceLeaf(src)]
+            return [src.get_leaf_repr() or SourceLeaf(src)
+                for src in self.sources]
 
-            return []
-
-        return [item async for item in map(SourceLeaf, self.sources)]
+        return list(map(SourceLeaf, self.sources))
 
     def should_sort_lexically(self) -> bool:
         return True
@@ -73,7 +71,8 @@ class MultiSource(Source):
         uniq_srcs = itertools.unique_iterator(
             S.toplevel_source() for S in self.sources
         )
-        res =[]
+
+        res = []
         for src in uniq_srcs:
             leaves = await src.get_leaves()
             if not leaves:
